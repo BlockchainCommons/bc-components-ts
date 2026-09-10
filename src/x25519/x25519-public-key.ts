@@ -30,17 +30,20 @@ import { X25519_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY } from "@blockchaincommons/tags";
 import { Digest } from "../digest.js";
 import { CryptoError } from "../error.js";
@@ -174,14 +177,14 @@ export class X25519PublicKey
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -250,14 +253,14 @@ export class X25519PublicKey
     if (name === undefined) {
       throw new Error("X25519_PUBLIC_KEY tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
@@ -268,16 +271,16 @@ export class X25519PublicKey
     if (name === undefined) {
       throw new Error("X25519_PUBLIC_KEY tag name is undefined");
     }
-    ur.checkType(name);
+    ur.expectType(name);
     const dummy = new X25519PublicKey(new Uint8Array(X25519_PUBLIC_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates an X25519PublicKey from a UR string.
    */
   static fromURString(urString: string): X25519PublicKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return X25519PublicKey.fromUR(ur);
   }
 }

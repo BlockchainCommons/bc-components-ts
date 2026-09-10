@@ -8,7 +8,7 @@
  */
 
 import { X25519PrivateKey, X25519PublicKey, SymmetricKey, hexToBytes, bytesToHex } from "../src";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { SecureRng } from "@blockchaincommons/rand";
 
 // Test vectors
 const TEST_PRIVATE_KEY_HEX = "7d68fb6fce4c86fc4527d27c7c50fbee5f9e5dc5c4e6c1d8e5f4e3d2c1b0a090";
@@ -57,7 +57,7 @@ describe("X25519PrivateKey", () => {
     });
 
     it("should create using provided RNG", () => {
-      const rng = new SecureRandomNumberGenerator();
+      const rng = new SecureRng();
       const key = X25519PrivateKey.newUsing(rng);
       expect(key).toBeInstanceOf(X25519PrivateKey);
       expect(key.data().length).toBe(32);
@@ -74,7 +74,7 @@ describe("X25519PrivateKey", () => {
     });
 
     it("should create keypair using provided RNG", () => {
-      const rng = new SecureRandomNumberGenerator();
+      const rng = new SecureRng();
       const [privateKey, publicKey] = X25519PrivateKey.keypairUsing(rng);
 
       expect(privateKey).toBeInstanceOf(X25519PrivateKey);
@@ -246,7 +246,7 @@ describe("X25519PrivateKey", () => {
     it("should serialize to UR", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const ur = key.ur();
-      expect(ur.urTypeStr()).toBe("agreement-private-key");
+      expect(ur.type.name).toBe("agreement-private-key");
     });
 
     it("should serialize to UR string", () => {
@@ -415,7 +415,7 @@ describe("X25519PublicKey", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
       const ur = publicKey.ur();
-      expect(ur.urTypeStr()).toBe("agreement-public-key");
+      expect(ur.type.name).toBe("agreement-public-key");
     });
 
     it("should serialize to UR string", () => {

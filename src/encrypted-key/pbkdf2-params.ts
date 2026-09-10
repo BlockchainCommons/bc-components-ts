@@ -16,8 +16,8 @@
  * Ported from bc-components-rust/src/encrypted_key/pbkdf2_params.rs
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor-compat";
-import { pbkdf2HmacSha256, hash as cryptoHash } from "@blockchaincommons/crypto";
+import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { pbkdf2Sha256, pbkdf2Sha512 } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
 import { Nonce } from "../nonce.js";
@@ -115,9 +115,15 @@ export class PBKDF2Params implements KeyDerivation {
   private _deriveKey(secret: Uint8Array): Uint8Array {
     switch (this._hashType) {
       case HashType.SHA256:
-        return pbkdf2HmacSha256(secret, this._salt.asBytes(), this._iterations, 32);
+        return pbkdf2Sha256(secret, this._salt.asBytes(), {
+          iterations: this._iterations,
+          dkLen: 32,
+        });
       case HashType.SHA512:
-        return cryptoHash.pbkdf2HmacSha512(secret, this._salt.asBytes(), this._iterations, 32);
+        return pbkdf2Sha512(secret, this._salt.asBytes(), {
+          iterations: this._iterations,
+          dkLen: 32,
+        });
       default:
         throw new Error(`Unknown hash type: ${String(this._hashType)}`);
     }

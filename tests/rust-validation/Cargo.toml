@@ -1,0 +1,16 @@
+[package]
+name = "components-validation"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+bc-components = { version = "=0.31.1", features = ["ssh", "pqcrypto"] }
+bc-ur = "0.19"
+bc-rand = "=0.5.0"
+dcbor = { version = "0.25", features = ["num-bigint"] }
+ssh-key = "=0.6.7"
+rand_core = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hex = "0.4"

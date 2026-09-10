@@ -21,7 +21,7 @@
  * Ported from bc-components-rust/src/encrypted_key/argon2id_params.rs
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor-compat";
+import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
 import { argon2id } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
@@ -100,7 +100,7 @@ export class Argon2idParams implements KeyDerivation {
   }
 
   private _deriveKey(secret: Uint8Array): Uint8Array {
-    return argon2id(secret, this._salt.asBytes(), 32);
+    return argon2id(secret, this._salt.asBytes(), { dkLen: 32 });
   }
 
   /**

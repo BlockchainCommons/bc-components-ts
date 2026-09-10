@@ -19,8 +19,7 @@
  */
 
 import * as sr25519 from "@scure/sr25519";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
 import { blake2b } from "@noble/hashes/blake2.js";
 import { Sr25519PublicKey } from "./sr25519-public-key.js";
 import { bytesToHex, bytesEqual } from "../utils.js";
@@ -64,7 +63,7 @@ export class Sr25519PrivateKey {
    * Create a new random Sr25519 private key.
    */
   static random(): Sr25519PrivateKey {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return Sr25519PrivateKey.randomUsing(rng);
   }
 
@@ -72,7 +71,7 @@ export class Sr25519PrivateKey {
    * Create a new random Sr25519 private key using the provided RNG.
    */
   static randomUsing(rng: RandomNumberGenerator): Sr25519PrivateKey {
-    const seed = rng.randomData(SR25519_PRIVATE_KEY_SIZE);
+    const seed = randomBytes(SR25519_PRIVATE_KEY_SIZE, { rng: rng });
     return new Sr25519PrivateKey(seed);
   }
 

@@ -20,23 +20,18 @@
 
 import {
   type Cbor,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   type Tag,
-  toByteString,
-  createTaggedCbor,
+  cbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   expectBytes,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
 import { REFERENCE as TAG_REFERENCE } from "@blockchaincommons/tags";
-import {
-  UR,
-  encodeBytewordsIdentifier,
-  encodeBytemojisIdentifier,
-} from "@blockchaincommons/uniform-resources";
+import { UR } from "@blockchaincommons/uniform-resources";
+import { shortIdentifier } from "@blockchaincommons/uniform-resources/bytewords";
 
 import { Digest } from "./digest.js";
 import type { DigestProvider } from "./digest-provider.js";
@@ -173,7 +168,7 @@ export class Reference
    * @param prefix - Optional prefix prepended with a single space.
    */
   bytewordsIdentifier(prefix?: string): string {
-    const s = encodeBytewordsIdentifier(this.refDataShort()).toUpperCase();
+    const s = shortIdentifier(this.refDataShort()).toUpperCase();
     return prefix !== undefined ? `${prefix} ${s}` : s;
   }
 
@@ -183,7 +178,7 @@ export class Reference
    * @param prefix - Optional prefix prepended with a single space.
    */
   bytemojiIdentifier(prefix?: string): string {
-    const s = encodeBytemojisIdentifier(this.refDataShort()).toUpperCase();
+    const s = shortIdentifier(this.refDataShort(), { style: "bytemoji" }).toUpperCase();
     return prefix !== undefined ? `${prefix} ${s}` : s;
   }
 
@@ -217,9 +212,9 @@ export class Reference
       case "hex":
         return this.refHexShort();
       case "bytewords":
-        return encodeBytewordsIdentifier(this.refDataShort());
+        return shortIdentifier(this.refDataShort());
       case "bytemojis":
-        return encodeBytemojisIdentifier(this.refDataShort());
+        return shortIdentifier(this.refDataShort(), { style: "bytemoji" });
       default: {
         const _exhaustive: never = format;
         throw CryptoError.invalidFormat(`Unknown reference format: ${String(_exhaustive)}`);
@@ -256,11 +251,11 @@ export class Reference
 
   /** Untagged CBOR — a single byte string of the 32 raw bytes. */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   taggedCborData(): Uint8Array {
@@ -302,21 +297,21 @@ export class Reference
 
   /** UR representation — `ur:reference/...`, untagged CBOR payload. */
   ur(): UR {
-    return UR.new(Reference.UR_TYPE, this.untaggedCbor());
+    return UR.from(Reference.UR_TYPE, this.untaggedCbor());
   }
 
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   static fromUR(ur: UR): Reference {
-    ur.checkType(Reference.UR_TYPE);
+    ur.expectType(Reference.UR_TYPE);
     const dummy = new Reference(new Uint8Array(Reference.REFERENCE_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   static fromURString(s: string): Reference {
-    return Reference.fromUR(UR.fromURString(s));
+    return Reference.fromUR(UR.parse(s));
   }
 
   // ============================================================================

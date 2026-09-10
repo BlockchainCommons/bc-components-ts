@@ -37,16 +37,14 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
 import { JSON as TAG_JSON } from "@blockchaincommons/tags";
 import { bytesToHex, hexToBytes } from "./utils.js";
 
@@ -172,14 +170,14 @@ export class JSON implements CborTaggedEncodable, CborTaggedDecodable<JSON> {
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**

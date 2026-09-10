@@ -2,13 +2,11 @@
  * Copyright © 2023-2026 Blockchain Commons, LLC
  * Copyright © 2025-2026 Parity Technologies
  *
- *
  * Utility functions for byte array conversions and comparisons.
  *
  * These functions provide cross-platform support for common byte manipulation
  * operations needed in cryptographic and encoding contexts.
  *
- * @packageDocumentation
  */
 
 /**

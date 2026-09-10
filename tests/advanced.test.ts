@@ -173,7 +173,7 @@ describe("PrivateKeyBase", () => {
     it("should serialize to UR", () => {
       const pkb = PrivateKeyBase.new();
       const ur = pkb.ur();
-      expect(ur.urTypeStr()).toBe("crypto-prvkey-base");
+      expect(ur.type.name).toBe("crypto-prvkey-base");
     });
 
     it("should serialize to UR string", () => {
@@ -347,7 +347,7 @@ describe("PrivateKeys", () => {
     it("should serialize to UR", () => {
       const pk = PrivateKeys.new();
       const ur = pk.ur();
-      expect(ur.urTypeStr()).toBe("crypto-prvkeys");
+      expect(ur.type.name).toBe("crypto-prvkeys");
     });
 
     it("should roundtrip through UR string", () => {
@@ -509,7 +509,7 @@ describe("PublicKeys", () => {
       const pk = PrivateKeys.new();
       const pubKeys = pk.publicKeys();
       const ur = pubKeys.ur();
-      expect(ur.urTypeStr()).toBe("crypto-pubkeys");
+      expect(ur.type.name).toBe("crypto-pubkeys");
     });
 
     it("should roundtrip through UR string", () => {
@@ -532,9 +532,9 @@ describe("SSKRShareCbor", () => {
   let testShareData: Uint8Array;
 
   beforeAll(() => {
-    const secret = Secret.new(testSecret);
-    const group = GroupSpec.new(2, 3); // 2 of 3
-    const spec = Spec.new(1, [group]); // 1 of 1 group
+    const secret = Secret.from(testSecret);
+    const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 }); // 2 of 3
+    const spec = Spec.from({ groupThreshold: 1, groups: [group] }); // 1 of 1 group
     const groups = sskrGenerate(spec, secret);
     testShareData = groups[0][0];
   });
@@ -662,9 +662,9 @@ describe("SSKR Integration", () => {
         secretData[i] = i;
       }
 
-      const secret = Secret.new(secretData);
-      const group = GroupSpec.new(2, 3); // 2 of 3
-      const spec = Spec.new(1, [group]); // 1 of 1 group
+      const secret = Secret.from(secretData);
+      const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 }); // 2 of 3
+      const spec = Spec.from({ groupThreshold: 1, groups: [group] }); // 1 of 1 group
 
       const groups = sskrGenerateShares(spec, secret);
       expect(groups).toHaveLength(1);
@@ -672,11 +672,11 @@ describe("SSKR Integration", () => {
 
       // Recover with first 2 shares
       const recoveredSecret = sskrCombineShares([groups[0][0], groups[0][1]]);
-      expect(recoveredSecret.getData()).toEqual(secretData);
+      expect(recoveredSecret.bytes).toEqual(secretData);
 
       // Recover with last 2 shares
       const recoveredSecret2 = sskrCombineShares([groups[0][1], groups[0][2]]);
-      expect(recoveredSecret2.getData()).toEqual(secretData);
+      expect(recoveredSecret2.bytes).toEqual(secretData);
     });
 
     it("should work with multiple groups", () => {
@@ -685,10 +685,10 @@ describe("SSKR Integration", () => {
         secretData[i] = i;
       }
 
-      const secret = Secret.new(secretData);
-      const group1 = GroupSpec.new(2, 3); // 2 of 3
-      const group2 = GroupSpec.new(3, 5); // 3 of 5
-      const spec = Spec.new(2, [group1, group2]); // 2 of 2 groups
+      const secret = Secret.from(secretData);
+      const group1 = GroupSpec.from({ memberThreshold: 2, memberCount: 3 }); // 2 of 3
+      const group2 = GroupSpec.from({ memberThreshold: 3, memberCount: 5 }); // 3 of 5
+      const spec = Spec.from({ groupThreshold: 2, groups: [group1, group2] }); // 2 of 2 groups
 
       const groups = sskrGenerateShares(spec, secret);
       expect(groups).toHaveLength(2);
@@ -711,14 +711,14 @@ describe("SSKR Integration", () => {
         groups[1][1],
         groups[1][2],
       ]);
-      expect(recoveredSecret.getData()).toEqual(secretData);
+      expect(recoveredSecret.bytes).toEqual(secretData);
     });
 
     it("should roundtrip shares through CBOR", () => {
       const secretData = new Uint8Array(16).fill(0x42);
-      const secret = Secret.new(secretData);
-      const group = GroupSpec.new(2, 3);
-      const spec = Spec.new(1, [group]);
+      const secret = Secret.from(secretData);
+      const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 });
+      const spec = Spec.from({ groupThreshold: 1, groups: [group] });
 
       const groups = sskrGenerateShares(spec, secret);
 
@@ -730,16 +730,16 @@ describe("SSKR Integration", () => {
 
       // Should still recover the secret
       const recovered = sskrCombineShares([recoveredShares[0], recoveredShares[1]]);
-      expect(recovered.getData()).toEqual(secretData);
+      expect(recovered.bytes).toEqual(secretData);
     });
   });
 
   describe("raw sskr functions", () => {
     it("sskrGenerate and sskrCombine should work", () => {
       const secretData = new Uint8Array(16).fill(0xaa);
-      const secret = Secret.new(secretData);
-      const group = GroupSpec.new(2, 3);
-      const spec = Spec.new(1, [group]);
+      const secret = Secret.from(secretData);
+      const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 });
+      const spec = Spec.from({ groupThreshold: 1, groups: [group] });
 
       const groups = sskrGenerate(spec, secret);
       expect(groups).toHaveLength(1);
@@ -749,7 +749,7 @@ describe("SSKR Integration", () => {
       expect(groups[0][0]).toBeInstanceOf(Uint8Array);
 
       const recovered = sskrCombine([groups[0][0], groups[0][1]]);
-      expect(recovered.getData()).toEqual(secretData);
+      expect(recovered.bytes).toEqual(secretData);
     });
   });
 });
@@ -765,9 +765,9 @@ describe("PrivateKeyBase + SSKR Integration", () => {
     const originalData = pkb.asBytes();
 
     // Split it using SSKR
-    const secret = Secret.new(originalData);
-    const group = GroupSpec.new(2, 3);
-    const spec = Spec.new(1, [group]);
+    const secret = Secret.from(originalData);
+    const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 });
+    const spec = Spec.from({ groupThreshold: 1, groups: [group] });
 
     const groups = sskrGenerateShares(spec, secret);
 
@@ -775,7 +775,7 @@ describe("PrivateKeyBase + SSKR Integration", () => {
     const recovered = sskrCombineShares([groups[0][0], groups[0][1]]);
 
     // Create new PrivateKeyBase from recovered data
-    const recoveredPkb = PrivateKeyBase.fromData(recovered.getData());
+    const recoveredPkb = PrivateKeyBase.fromData(recovered.bytes);
 
     // Should derive the same keys
     const originalSigning = pkb.ed25519SigningPrivateKey();

@@ -22,23 +22,26 @@
  * Ported from bc-components-rust/src/private_key_base.rs
  */
 
-import { SecureRandomNumberGenerator, type RandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "./codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { PRIVATE_KEY_BASE as TAG_PRIVATE_KEY_BASE } from "@blockchaincommons/tags";
-import { hkdfHmacSha256 } from "@blockchaincommons/crypto";
+import { hkdfSha256 } from "@blockchaincommons/crypto";
 
 import { X25519PrivateKey } from "./x25519/x25519-private-key.js";
 import { Ed25519PrivateKey } from "./ed25519/ed25519-private-key.js";
@@ -94,7 +97,7 @@ export class PrivateKeyBase
    * Create a new random PrivateKeyBase.
    */
   static new(): PrivateKeyBase {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return PrivateKeyBase.newUsing(rng);
   }
 
@@ -102,7 +105,7 @@ export class PrivateKeyBase
    * Create a new random PrivateKeyBase using the provided RNG.
    */
   static newUsing(rng: RandomNumberGenerator): PrivateKeyBase {
-    const data = rng.randomData(PRIVATE_KEY_BASE_DEFAULT_SIZE);
+    const data = randomBytes(PRIVATE_KEY_BASE_DEFAULT_SIZE, { rng: rng });
     return new PrivateKeyBase(data);
   }
 
@@ -278,7 +281,7 @@ export class PrivateKeyBase
       case "ed25519": {
         // Mirror `ssh-key` 0.6.7 `Ed25519PrivateKey::random`:
         // `rng.fill_bytes(&mut [0u8; 32])`. The 32 bytes are the seed.
-        const seed = rng.randomData(32);
+        const seed = randomBytes(32, { rng: rng });
         const pubBytes = ed25519.getPublicKey(seed);
         data = { kind: "ed25519", seed, pubBytes: new Uint8Array(pubBytes) };
         break;
@@ -294,7 +297,7 @@ export class PrivateKeyBase
         // `0 < scalar < n` predicate as Rust.
         let scalar: Uint8Array;
         for (;;) {
-          const bytes = rng.randomData(scalarLen);
+          const bytes = randomBytes(scalarLen, { rng: rng });
           if (curve.utils.isValidSecretKey(bytes)) {
             scalar = bytes;
             break;
@@ -355,7 +358,7 @@ export class PrivateKeyBase
    * Matches Rust's hkdf_hmac_sha256(key_material, salt, key_len) with empty info.
    */
   private _deriveKey(salt: string): Uint8Array {
-    return hkdfHmacSha256(this._data, new TextEncoder().encode(salt), 32);
+    return hkdfSha256(this._data, new TextEncoder().encode(salt), 32);
   }
 
   // ============================================================================
@@ -396,14 +399,14 @@ export class PrivateKeyBase
    * Returns the untagged CBOR encoding.
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -471,32 +474,32 @@ export class PrivateKeyBase
     if (name === undefined) {
       throw new Error("PRIVATE_KEY_BASE tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a PrivateKeyBase from a UR.
    */
   static fromUR(ur: UR): PrivateKeyBase {
-    if (ur.urTypeStr() !== TAG_PRIVATE_KEY_BASE.name) {
-      throw new Error(`Expected UR type ${TAG_PRIVATE_KEY_BASE.name}, got ${ur.urTypeStr()}`);
+    if (ur.type.name !== TAG_PRIVATE_KEY_BASE.name) {
+      throw new Error(`Expected UR type ${TAG_PRIVATE_KEY_BASE.name}, got ${ur.type.name}`);
     }
     const dummy = new PrivateKeyBase(new Uint8Array(PRIVATE_KEY_BASE_DEFAULT_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a PrivateKeyBase from a UR string.
    */
   static fromURString(urString: string): PrivateKeyBase {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return PrivateKeyBase.fromUR(ur);
   }
 }

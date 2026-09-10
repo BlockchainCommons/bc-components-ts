@@ -28,15 +28,18 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  createTaggedCbor,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
   validateTag,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { ENCRYPTED_KEY as TAG_ENCRYPTED_KEY } from "@blockchaincommons/tags";
 
 import { type SymmetricKey } from "../symmetric/symmetric-key.js";
@@ -245,7 +248,7 @@ export class EncryptedKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -340,14 +343,14 @@ export class EncryptedKey
     if (name === undefined) {
       throw new Error("TAG_ENCRYPTED_KEY.name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
@@ -358,15 +361,15 @@ export class EncryptedKey
     if (name === undefined) {
       throw new Error("TAG_ENCRYPTED_KEY.name is undefined");
     }
-    ur.checkType(name);
-    return EncryptedKey.fromUntaggedCborData(ur.cbor().toData());
+    ur.expectType(name);
+    return EncryptedKey.fromUntaggedCborData(ur.cbor.toData());
   }
 
   /**
    * Creates an EncryptedKey from a UR string.
    */
   static fromURString(urString: string): EncryptedKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return EncryptedKey.fromUR(ur);
   }
 }

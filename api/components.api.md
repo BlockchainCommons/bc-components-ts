@@ -4,25 +4,19 @@
 
 ```ts
 
-import { Cbor } from '@blockchaincommons/dcbor-compat';
-import { CborTaggedDecodable } from '@blockchaincommons/dcbor-compat';
-import { CborTaggedEncodable } from '@blockchaincommons/dcbor-compat';
+import { Cbor } from '@blockchaincommons/dcbor';
+import { CborTagged } from '@blockchaincommons/dcbor';
 import { COMPRESSED } from '@blockchaincommons/tags';
 import { ENCRYPTED } from '@blockchaincommons/tags';
 import { ENVELOPE } from '@blockchaincommons/tags';
 import { KNOWN_VALUE } from '@blockchaincommons/tags';
 import { LEAF } from '@blockchaincommons/tags';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
-import { SecureRandomNumberGenerator } from '@blockchaincommons/rand';
-import { sskrCombine } from '@blockchaincommons/sskr';
-import { sskrGenerate } from '@blockchaincommons/sskr';
-import { sskrGenerateUsing } from '@blockchaincommons/sskr';
 import { GroupSpec as SSKRGroupSpec } from '@blockchaincommons/sskr';
 import { Secret as SSKRSecret } from '@blockchaincommons/sskr';
 import { Spec as SSKRSpec } from '@blockchaincommons/sskr';
-import { Tag } from '@blockchaincommons/dcbor-compat';
+import { Tag } from '@blockchaincommons/dcbor';
 import { UR } from '@blockchaincommons/uniform-resources';
-import { UREncodable } from '@blockchaincommons/uniform-resources';
 
 // @public
 export class Argon2idParams implements KeyDerivation {
@@ -44,6 +38,10 @@ export class Argon2idParams implements KeyDerivation {
 // @public
 export function argon2idParams(params?: Argon2idParams): KeyDerivationParams;
 
+// Warning: (ae-forgotten-export) The symbol "CborTaggedEncodable" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "CborTaggedDecodable" needs to be exported by the entry point index.d.ts
+// Warning: (ae-forgotten-export) The symbol "UREncodable" needs to be exported by the entry point index.d.ts
+//
 // @public (undocumented)
 export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, UREncodable {
     // (undocumented)
@@ -423,7 +421,7 @@ export class Ed25519PrivateKey {
     static fromHex(hex: string): Ed25519PrivateKey;
     publicKey(): Ed25519PublicKey;
     static random(): Ed25519PrivateKey;
-    static randomUsing(rng: SecureRandomNumberGenerator): Ed25519PrivateKey;
+    static randomUsing(rng: RandomNumberGenerator): Ed25519PrivateKey;
     sign(message: Uint8Array): Uint8Array;
     toBase64(): string;
     toData(): Uint8Array;
@@ -1220,7 +1218,7 @@ export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, U
     // (undocumented)
     static readonly NONCE_SIZE: number;
     static random(): Nonce;
-    static randomUsing(rng: SecureRandomNumberGenerator): Nonce;
+    static randomUsing(rng: RandomNumberGenerator): Nonce;
     taggedCbor(): Cbor;
     taggedCborData(): Uint8Array;
     toBase64(): string;
@@ -1564,15 +1562,11 @@ export class Seed implements CborTaggedEncodable, CborTaggedDecodable<Seed>, URE
     static new(): Seed;
     static newOpt(data: Uint8Array, name: string | undefined, note: string | undefined, creationDate: Date | undefined): Seed;
     static newWithLen(count: number): Seed;
-    static newWithLenUsing(count: number, rng: {
-        randomData: (size: number) => Uint8Array;
-    }): Seed;
+    static newWithLenUsing(count: number, rng: RandomNumberGenerator): Seed;
     note(): string;
     privateKeyData(): Uint8Array;
     static random(size?: number, metadata?: SeedMetadata): Seed;
-    static randomUsing(rng: {
-        randomData: (size: number) => Uint8Array;
-    }, size?: number, metadata?: SeedMetadata): Seed;
+    static randomUsing(rng: RandomNumberGenerator, size?: number, metadata?: SeedMetadata): Seed;
     // @deprecated
     setCreatedAt(date: Date): void;
     setCreationDate(creationDate: Date | undefined): void;
@@ -1782,10 +1776,10 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, CborTagged
     withSshComment(comment: string): SigningPublicKey;
 }
 
-// @public
+// @public (undocumented)
 export interface SimpleRng {
     // (undocumented)
-    fillRandomData(data: Uint8Array): void;
+    fillBytes(data: Uint8Array): void;
 }
 
 // @public
@@ -2028,29 +2022,32 @@ export class SSHSignature {
     toString(): string;
 }
 
-export { sskrCombine }
+// @public (undocumented)
+export function sskrCombine(shares: Uint8Array[]): SSKRSecret;
 
-// @public
+// @public (undocumented)
 export function sskrCombineShares(shares: SSKRShare[]): SSKRSecret;
 
-export { sskrGenerate }
-
 // @public
+export function sskrGenerate(spec: SSKRSpec, masterSecret: SSKRSecret): Uint8Array[][];
+
+// @public (undocumented)
 export function sskrGenerateShares(spec: SSKRSpec, masterSecret: SSKRSecret): SSKRShare[][];
 
-// @public
+// @public (undocumented)
 export function sskrGenerateSharesUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: SimpleRng): SSKRShare[][];
 
-export { sskrGenerateUsing }
+// @public (undocumented)
+export function sskrGenerateUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: RandomNumberGenerator): Uint8Array[][];
 
 export { SSKRGroupSpec }
 
 export { SSKRSecret }
 
-// @public
+// @public (undocumented)
 export type SSKRShare = SSKRShareCbor;
 
-// @public
+// @public (undocumented)
 export const SSKRShare: {
     fromData: (data: Uint8Array) => SSKRShareCbor;
     fromHex: (hex: string) => SSKRShareCbor;
@@ -2059,31 +2056,55 @@ export const SSKRShare: {
     fromUntaggedCborData: (data: Uint8Array) => SSKRShareCbor;
 };
 
-// @public
+// @public (undocumented)
 export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<SSKRShareCbor> {
+    // (undocumented)
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    // (undocumented)
     data(): Uint8Array;
+    // (undocumented)
     equals(other: SSKRShareCbor): boolean;
+    // (undocumented)
     static fromData(data: Uint8Array): SSKRShareCbor;
+    // (undocumented)
     static fromHex(hex: string): SSKRShareCbor;
+    // (undocumented)
     fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
+    // (undocumented)
     static fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
+    // (undocumented)
     static fromTaggedCborData(data: Uint8Array): SSKRShareCbor;
+    // (undocumented)
     fromUntaggedCbor(cborValue: Cbor): SSKRShareCbor;
+    // (undocumented)
     static fromUntaggedCborData(data: Uint8Array): SSKRShareCbor;
+    // (undocumented)
     groupCount(): number;
+    // (undocumented)
     groupIndex(): number;
+    // (undocumented)
     groupThreshold(): number;
+    // (undocumented)
     hex(): string;
+    // (undocumented)
     identifier(): number;
+    // (undocumented)
     identifierHex(): string;
+    // (undocumented)
     memberIndex(): number;
+    // (undocumented)
     memberThreshold(): number;
+    // (undocumented)
     shareValue(): Uint8Array;
+    // (undocumented)
     taggedCbor(): Cbor;
+    // (undocumented)
     taggedCborData(): Uint8Array;
+    // (undocumented)
     toString(): string;
+    // (undocumented)
     untaggedCbor(): Cbor;
 }
 
@@ -2112,7 +2133,7 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
     hex(): string;
     static new(): SymmetricKey;
     static random(): SymmetricKey;
-    static randomUsing(rng: SecureRandomNumberGenerator): SymmetricKey;
+    static randomUsing(rng: RandomNumberGenerator): SymmetricKey;
     // (undocumented)
     static readonly SYMMETRIC_KEY_SIZE: number;
     taggedCbor(): Cbor;

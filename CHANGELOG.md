@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Ported to the canonical `@blockchaincommons/dcbor` (the `dcbor-compat` shim is gone) and to the redesigned `crypto`, `rand`, `sskr`, `tags` and `uniform-resources` siblings. Every wire byte is unchanged; the port is verified against a frozen pre-port baseline (`tests/differential.test.ts`) and against `bc-components-rust` 0.31.1 (`tests/rust-validation`, see `RUST_DIVERGENCES.md`).
+- A `Seed` map value of the wrong CBOR type is now rejected with `InvalidData` (was an incidental `DataTooShort`).
+
+### Added
+
+- Golden vectors (`tests/vectors/vectors.json`), a differential corpus, property tests, and ADRs 0001–0006 under `docs/adr/`.
+
 ## 1.0.0-beta.1
 
 Extracted from the [`paritytech/bcts`](https://github.com/paritytech/bcts) monorepo, where this library was published as `@bcts/components`. The public API is unchanged; see [MIGRATION.md](./MIGRATION.md).

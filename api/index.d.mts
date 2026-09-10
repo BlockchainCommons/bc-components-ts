@@ -1,8 +1,8 @@
-import { Cbor, CborTaggedDecodable, CborTaggedEncodable, Tag } from "@blockchaincommons/dcbor-compat";
+import { Cbor, CborMap, CborTagged, Tag } from "@blockchaincommons/dcbor";
 import { COMPRESSED, ENCRYPTED, ENVELOPE, KNOWN_VALUE, LEAF } from "@blockchaincommons/tags";
-import { UR, UREncodable } from "@blockchaincommons/uniform-resources";
-import { RandomNumberGenerator, SecureRandomNumberGenerator } from "@blockchaincommons/rand";
-import { GroupSpec as SSKRGroupSpec, Secret as SSKRSecret, Spec as SSKRSpec, sskrCombine, sskrGenerate, sskrGenerateUsing } from "@blockchaincommons/sskr";
+import { UR } from "@blockchaincommons/uniform-resources";
+import { RandomNumberGenerator } from "@blockchaincommons/rand";
+import { GroupSpec as SSKRGroupSpec, Secret as SSKRSecret, Spec as SSKRSpec } from "@blockchaincommons/sskr";
 //#region src/error.d.ts
 /**
  * Copyright © 2023-2026 Blockchain Commons, LLC
@@ -493,6 +493,26 @@ interface PrivateKeyDataProvider {
  */
 declare function isPrivateKeyDataProvider(obj: unknown): obj is PrivateKeyDataProvider;
 //#endregion
+//#region src/codable.d.ts
+/** Encodes to tagged CBOR; the first tag is the one written. */
+interface CborTaggedEncodable extends CborTagged {
+  untaggedCbor(): Cbor;
+  taggedCbor(): Cbor;
+  taggedCborData?(): Uint8Array;
+}
+/** Decodes from tagged or untagged CBOR. */
+interface CborTaggedDecodable<T> extends CborTagged {
+  fromUntaggedCbor(cbor: Cbor): T;
+  fromTaggedCbor(cbor: Cbor): T;
+  fromTaggedCborData?(data: Uint8Array): T;
+  fromUntaggedCborData?(data: Uint8Array): T;
+}
+/** Presents itself as a UR. */
+interface UREncodable {
+  ur(): UR;
+  urString(): string;
+}
+//#endregion
 //#region src/x25519/x25519-public-key.d.ts
 declare class X25519PublicKey implements CborTaggedEncodable, CborTaggedDecodable<X25519PublicKey>, UREncodable {
   static readonly KEY_SIZE: number;
@@ -637,7 +657,7 @@ declare class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, 
   /**
    * Generate a random nonce using provided RNG.
    */
-  static randomUsing(rng: SecureRandomNumberGenerator): Nonce;
+  static randomUsing(rng: RandomNumberGenerator): Nonce;
   /**
    * Get the data of the nonce.
    */
@@ -1119,7 +1139,7 @@ declare class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<S
   /**
    * Generate a random symmetric key using provided RNG.
    */
-  static randomUsing(rng: SecureRandomNumberGenerator): SymmetricKey;
+  static randomUsing(rng: RandomNumberGenerator): SymmetricKey;
   /**
    * Get the data of the symmetric key.
    */
@@ -2902,13 +2922,11 @@ declare class HKDFRng implements RandomNumberGenerator {
  * Copyright © 2023-2026 Blockchain Commons, LLC
  * Copyright © 2025-2026 Parity Technologies
  *
- *
  * Utility functions for byte array conversions and comparisons.
  *
  * These functions provide cross-platform support for common byte manipulation
  * operations needed in cryptographic and encoding contexts.
  *
- * @packageDocumentation
  */
 /**
  * Convert a Uint8Array to a lowercase hexadecimal string.
@@ -3196,9 +3214,7 @@ declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Seed>, UR
    * @param rng - Random number generator
    * @throws CryptoError if count < 16
    */
-  static newWithLenUsing(count: number, rng: {
-    randomData: (size: number) => Uint8Array;
-  }): Seed;
+  static newWithLenUsing(count: number, rng: RandomNumberGenerator): Seed;
   /**
    * Create a new seed from data and optional metadata.
    *
@@ -3245,9 +3261,7 @@ declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Seed>, UR
    * @param size - Number of bytes (must be >= 16, default 32)
    * @param metadata - Optional metadata object
    */
-  static randomUsing(rng: {
-    randomData: (size: number) => Uint8Array;
-  }, size?: number, metadata?: SeedMetadata): Seed;
+  static randomUsing(rng: RandomNumberGenerator, size?: number, metadata?: SeedMetadata): Seed;
   /**
    * Return the data of the seed as a reference to the internal bytes.
    *
@@ -3680,9 +3694,9 @@ declare class Ed25519PublicKey {
   static fromHex(hex: string): Ed25519PublicKey;
   /** Returns the 32 raw public key bytes (copy). */
   data(): Uint8Array;
-  /** Alias of {@link data}. */
+  /** Alias of {@link Ed25519PublicKey.data}. */
   asBytes(): Uint8Array;
-  /** Backwards-compatible alias of {@link data}. */
+  /** Backwards-compatible alias of {@link Ed25519PublicKey.data}. */
   toData(): Uint8Array;
   /**
    * Get hex string representation
@@ -4572,7 +4586,7 @@ declare class Ed25519PrivateKey {
   /**
    * Generate a random Ed25519PrivateKey using provided RNG
    */
-  static randomUsing(rng: SecureRandomNumberGenerator): Ed25519PrivateKey;
+  static randomUsing(rng: RandomNumberGenerator): Ed25519PrivateKey;
   /**
    * Derives an Ed25519 private key from the given key material via
    * HKDF-SHA-256 with salt `"signing"` and empty info (matches Rust
@@ -4583,9 +4597,9 @@ declare class Ed25519PrivateKey {
    * Get the raw seed bytes (32 bytes).
    */
   data(): Uint8Array;
-  /** Alias of {@link data}. */
+  /** Alias of {@link Ed25519PrivateKey.data}. */
   asBytes(): Uint8Array;
-  /** Backwards-compatible alias of {@link data}. */
+  /** Backwards-compatible alias of {@link Ed25519PrivateKey.data}. */
   toData(): Uint8Array;
   /**
    * Get hex string representation of the seed
@@ -6744,7 +6758,7 @@ declare class XID implements CborTaggedEncodable, CborTaggedDecodable<XID>, UREn
   static newFromSigningKey(signingPublicKey: SigningPublicKey): XID;
   /**
    * Mirror of Rust's `From<&SigningPublicKey> for XID`.
-   * Equivalent to {@link newFromSigningKey}; provided for API parity.
+   * Equivalent to {@link XID.newFromSigningKey}; provided for API parity.
    */
   static fromSigningPublicKey(signingPublicKey: SigningPublicKey): XID;
   /**
@@ -7820,134 +7834,35 @@ declare class EncryptedKey implements CborTaggedEncodable, CborTaggedDecodable<E
 }
 //#endregion
 //#region src/sskr.d.ts
-/**
- * SSKRShareCbor - CBOR/UR wrapper for an SSKR share.
- *
- * An SSKR share is a binary encoding of:
- * - Identifier (2 bytes)
- * - Group metadata (1 byte): group_threshold-1 (4 bits) + group_count-1 (4 bits)
- * - Member metadata (1 byte): group_index (4 bits) + member_threshold-1 (4 bits)
- * - Member index (1 byte): reserved (4 bits, must be 0) + member_index (4 bits)
- * - Share value (variable length)
- */
 declare class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<SSKRShareCbor> {
   private readonly _data;
   private constructor();
-  /**
-   * Create an SSKRShareCbor from raw share bytes.
-   *
-   * @param data - The share bytes (5+ bytes)
-   */
   static fromData(data: Uint8Array): SSKRShareCbor;
-  /**
-   * Create an SSKRShareCbor from a hex string.
-   *
-   * @param hex - The share as a hex string
-   */
   static fromHex(hex: string): SSKRShareCbor;
-  /**
-   * Returns the raw share bytes.
-   */
   asBytes(): Uint8Array;
-  /**
-   * Returns a copy of the raw share bytes.
-   */
   data(): Uint8Array;
-  /**
-   * Returns the share as a hex string.
-   */
   hex(): string;
-  /**
-   * Returns the identifier (2 bytes) as a number.
-   */
   identifier(): number;
-  /**
-   * Returns the identifier as a hex string.
-   */
   identifierHex(): string;
-  /**
-   * Returns the group threshold (minimum number of groups needed).
-   */
   groupThreshold(): number;
-  /**
-   * Returns the total number of groups.
-   */
   groupCount(): number;
-  /**
-   * Returns this share's group index (0-based).
-   */
   groupIndex(): number;
-  /**
-   * Returns the member threshold for this share's group.
-   */
   memberThreshold(): number;
-  /**
-   * Returns this share's member index within its group (0-based).
-   */
   memberIndex(): number;
-  /**
-   * Returns the share value (the actual secret share data).
-   */
   shareValue(): Uint8Array;
-  /**
-   * Compare with another SSKRShareCbor.
-   */
   equals(other: SSKRShareCbor): boolean;
-  /**
-   * Get string representation.
-   */
   toString(): string;
-  /**
-   * Returns the CBOR tags associated with SSKRShare.
-   * Includes both current tag (40309) and legacy tag (309) for compatibility.
-   */
   cborTags(): Tag[];
-  /**
-   * Returns the untagged CBOR encoding.
-   */
   untaggedCbor(): Cbor;
-  /**
-   * Returns the tagged CBOR encoding.
-   */
   taggedCbor(): Cbor;
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
   taggedCborData(): Uint8Array;
-  /**
-   * Creates an SSKRShareCbor by decoding it from untagged CBOR.
-   */
   fromUntaggedCbor(cborValue: Cbor): SSKRShareCbor;
-  /**
-   * Creates an SSKRShareCbor by decoding it from tagged CBOR.
-   * Accepts both tag 40309 and legacy tag 309.
-   */
   fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-  /**
-   * Static method to decode from tagged CBOR.
-   */
   static fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
   static fromTaggedCborData(data: Uint8Array): SSKRShareCbor;
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
   static fromUntaggedCborData(data: Uint8Array): SSKRShareCbor;
 }
-/**
- * SSKRShare - Alias for SSKRShareCbor to match Rust API naming.
- *
- * In Rust, this type is called `SSKRShare`. The TypeScript implementation
- * uses `SSKRShareCbor` to distinguish it from raw share data, but we provide
- * this alias for API parity with bc-components-rust.
- */
 type SSKRShare = SSKRShareCbor;
-/**
- * Create an SSKRShare from raw data.
- * This is a convenience function that matches the Rust constructor pattern.
- */
 declare const SSKRShare: {
   fromData: (data: Uint8Array) => SSKRShareCbor;
   fromHex: (hex: string) => SSKRShareCbor;
@@ -7955,70 +7870,15 @@ declare const SSKRShare: {
   fromTaggedCborData: (data: Uint8Array) => SSKRShareCbor;
   fromUntaggedCborData: (data: Uint8Array) => SSKRShareCbor;
 };
-/**
- * Generates SSKR shares for the given spec and secret.
- *
- * This function matches the Rust `sskr_generate` API by returning wrapped
- * SSKRShare objects instead of raw byte arrays.
- *
- * @param spec - The SSKRSpec instance defining group/member thresholds
- * @param masterSecret - The SSKRSecret to be split into shares
- * @returns Nested array of SSKRShare instances (groups × members)
- *
- * @example
- * ```typescript
- * import { SSKRSecret, SSKRSpec, SSKRGroupSpec, sskrGenerateShares } from '@blockchaincommons/components';
- *
- * const secret = SSKRSecret.new(new Uint8Array(16).fill(0x42));
- * const group = SSKRGroupSpec.new(2, 3); // 2 of 3
- * const spec = SSKRSpec.new(1, [group]); // 1 group required
- *
- * const shares = sskrGenerateShares(spec, secret);
- * // shares[0] contains 3 SSKRShare instances
- * ```
- */
+/** Raw share bytes per group, as sskr's `generateShares` + `shareBytes`. */
+declare function sskrGenerate(spec: SSKRSpec, masterSecret: SSKRSecret): Uint8Array[][];
+declare function sskrGenerateUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: RandomNumberGenerator): Uint8Array[][];
+declare function sskrCombine(shares: Uint8Array[]): SSKRSecret;
 declare function sskrGenerateShares(spec: SSKRSpec, masterSecret: SSKRSecret): SSKRShare[][];
-/**
- * Interface for RNG that only requires fillRandomData method.
- * This is a subset of the full RandomNumberGenerator interface.
- */
 interface SimpleRng {
-  fillRandomData(data: Uint8Array): void;
+  fillBytes(data: Uint8Array): void;
 }
-/**
- * Generates SSKR shares using a custom random number generator.
- *
- * This function matches the Rust `sskr_generate_using` API by returning
- * wrapped SSKRShare objects and allowing a custom RNG for deterministic
- * testing.
- *
- * @param spec - The SSKRSpec instance defining group/member thresholds
- * @param masterSecret - The SSKRSecret to be split into shares
- * @param rng - Random number generator (must have fillRandomData method)
- * @returns Nested array of SSKRShare instances (groups × members)
- */
 declare function sskrGenerateSharesUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: SimpleRng): SSKRShare[][];
-/**
- * Combines SSKR shares to reconstruct the original secret.
- *
- * This function matches the Rust `sskr_combine` API by accepting
- * wrapped SSKRShare objects.
- *
- * @param shares - Array of SSKRShare instances to combine
- * @returns The reconstructed SSKRSecret
- * @throws Error if shares cannot be combined (insufficient shares, mismatched IDs, etc.)
- *
- * @example
- * ```typescript
- * import { sskrGenerateShares, sskrCombineShares } from '@blockchaincommons/components';
- *
- * // Generate shares
- * const shares = sskrGenerateShares(spec, secret);
- *
- * // Combine 2 shares from the first group
- * const recoveredSecret = sskrCombineShares([shares[0][0], shares[0][1]]);
- * ```
- */
 declare function sskrCombineShares(shares: SSKRShare[]): SSKRSecret;
 //#endregion
 //#region src/ssh/ssh-certificate.d.ts

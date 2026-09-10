@@ -41,16 +41,12 @@
  */
 
 import { deflateRaw, inflateRaw } from "pako";
-import { hash as cryptoHash } from "@blockchaincommons/crypto";
+import { crc32 } from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
   type CborInput,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
-  toByteString,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
@@ -58,7 +54,8 @@ import {
   expectArray,
   expectInteger,
   expectBytes,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
 import { COMPRESSED as TAG_COMPRESSED } from "@blockchaincommons/tags";
 import { Digest } from "./digest.js";
 import type { DigestProvider } from "./digest-provider.js";
@@ -143,7 +140,7 @@ export class Compressed
     // Raw DEFLATE (RFC 1951, no zlib header/trailer) at level 6 — matches
     // Rust `miniz_oxide::deflate::compress_to_vec(data, 6)`.
     const compressedData = deflateRaw(decompressedData, { level: 6 });
-    const checksum = cryptoHash.crc32(decompressedData);
+    const checksum = crc32(decompressedData);
     const decompressedSize = decompressedData.length;
     const compressedSize = compressedData.length;
 
@@ -181,7 +178,7 @@ export class Compressed
       const decompressedData = inflateRaw(this._compressedData);
 
       // Verify checksum
-      if (cryptoHash.crc32(decompressedData) !== this._checksum) {
+      if (crc32(decompressedData) !== this._checksum) {
         throw CryptoError.cryptoOperation("compressed data checksum mismatch");
       }
 
@@ -323,7 +320,7 @@ export class Compressed
     const elements: CborInput[] = [
       this._checksum >>> 0, // Ensure unsigned 32-bit
       this._decompressedSize,
-      toByteString(this._compressedData),
+      cbor(this._compressedData),
     ];
     if (this._digest !== undefined) {
       elements.push(this._digest.taggedCbor());
@@ -335,7 +332,7 @@ export class Compressed
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**

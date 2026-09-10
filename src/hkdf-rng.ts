@@ -45,7 +45,7 @@
  * ```
  */
 
-import { hkdfHmacSha256 } from "@blockchaincommons/crypto";
+import { hkdfSha256 } from "@blockchaincommons/crypto";
 import type { RandomNumberGenerator } from "@blockchaincommons/rand";
 
 const DEFAULT_PAGE_LENGTH = 32;
@@ -119,7 +119,7 @@ export class HKDFRng implements RandomNumberGenerator {
   private fillBuffer(): void {
     const saltString = `${this._salt}-${this._pageIndex}`;
     const encoder = new TextEncoder();
-    this._buffer = hkdfHmacSha256(this._keyMaterial, encoder.encode(saltString), this._pageLength);
+    this._buffer = hkdfSha256(this._keyMaterial, encoder.encode(saltString), this._pageLength);
     this._position = 0;
     this._pageIndex += 1;
   }

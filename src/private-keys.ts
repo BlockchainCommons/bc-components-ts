@@ -25,17 +25,20 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
   expectArray,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "./codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { PRIVATE_KEYS as TAG_PRIVATE_KEYS } from "@blockchaincommons/tags";
 
 import { SigningPrivateKey } from "./signing/signing-private-key.js";
@@ -247,7 +250,7 @@ export class PrivateKeys
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -324,32 +327,32 @@ export class PrivateKeys
     if (name === undefined) {
       throw new Error("PRIVATE_KEYS tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a PrivateKeys from a UR.
    */
   static fromUR(ur: UR): PrivateKeys {
-    if (ur.urTypeStr() !== TAG_PRIVATE_KEYS.name) {
-      throw new Error(`Expected UR type ${TAG_PRIVATE_KEYS.name}, got ${ur.urTypeStr()}`);
+    if (ur.type.name !== TAG_PRIVATE_KEYS.name) {
+      throw new Error(`Expected UR type ${TAG_PRIVATE_KEYS.name}, got ${ur.type.name}`);
     }
     const dummy = PrivateKeys.new();
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a PrivateKeys from a UR string.
    */
   static fromURString(urString: string): PrivateKeys {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return PrivateKeys.fromUR(ur);
   }
 }

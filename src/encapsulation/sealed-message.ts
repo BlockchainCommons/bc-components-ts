@@ -46,17 +46,20 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
   expectArray,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { SEALED_MESSAGE as TAG_SEALED_MESSAGE } from "@blockchaincommons/tags";
 import { Nonce } from "../nonce.js";
 import { EncryptedMessage } from "../symmetric/encrypted-message.js";
@@ -226,7 +229,7 @@ export class SealedMessage
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -324,14 +327,14 @@ export class SealedMessage
     if (name === undefined) {
       throw new Error("TAG_SEALED_MESSAGE.name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
@@ -342,15 +345,15 @@ export class SealedMessage
     if (name === undefined) {
       throw new Error("TAG_SEALED_MESSAGE.name is undefined");
     }
-    ur.checkType(name);
-    return SealedMessage.fromUntaggedCborData(ur.cbor().toData());
+    ur.expectType(name);
+    return SealedMessage.fromUntaggedCborData(ur.cbor.toData());
   }
 
   /**
    * Creates a SealedMessage from a UR string.
    */
   static fromURString(urString: string): SealedMessage {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return SealedMessage.fromUR(ur);
   }
 }

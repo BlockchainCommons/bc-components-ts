@@ -28,27 +28,29 @@
  * Ported from bc-components-rust/src/ec_key/ec_public_key.rs
  */
 
-import {
-  ECDSA_PUBLIC_KEY_SIZE,
-  ecdsaVerify,
-  ecdsaDecompressPublicKey,
-} from "@blockchaincommons/crypto";
+import { ecdsa, ECDSA_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
 import {
   type Cbor,
+  type CborInput,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
-  toByteString,
   expectMap,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
-import { EC_KEY as TAG_EC_KEY, EC_KEY_V1 as TAG_EC_KEY_V1 } from "@blockchaincommons/tags";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  mapGetBoolean,
+  mapGetBytes,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
+import { EC_KEY as TAG_EC_KEY, LEGACY_TAGS } from "@blockchaincommons/tags";
+const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
 import { CryptoError } from "../error.js";
 import { ECUncompressedPublicKey } from "./ec-uncompressed-public-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
@@ -157,7 +159,7 @@ export class ECPublicKey
    * Convert this compressed public key to uncompressed format.
    */
   uncompressedPublicKey(): ECUncompressedPublicKey {
-    const uncompressed = ecdsaDecompressPublicKey(this._data);
+    const uncompressed = ecdsa.decompressPublicKey(this._data);
     return ECUncompressedPublicKey.fromData(uncompressed);
   }
 
@@ -170,7 +172,7 @@ export class ECPublicKey
    */
   verify(signature: Uint8Array, message: Uint8Array): boolean {
     try {
-      return ecdsaVerify(this._data, signature, message);
+      return ecdsa.verify(this._data, signature, message);
     } catch {
       return false;
     }
@@ -212,8 +214,8 @@ export class ECPublicKey
    * Note: No key 2 indicates this is a public key
    */
   untaggedCbor(): Cbor {
-    const map = new Map<number, unknown>();
-    map.set(3, toByteString(this._data));
+    const map = new Map<number, CborInput>();
+    map.set(3, cbor(this._data));
     return cbor(map);
   }
 
@@ -221,7 +223,7 @@ export class ECPublicKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -244,14 +246,14 @@ export class ECPublicKey
     const map = expectMap(cborValue);
 
     // Check that key 2 is not present (would indicate private key)
-    const isPrivate = map.get<number, boolean>(2);
+    const isPrivate = mapGetBoolean(map, 2);
     if (isPrivate === true) {
       throw new Error("Expected ECPublicKey but found private key (key 2 is true)");
     }
 
     // Get key data from key 3
     // CborMap.extract() returns native types (Uint8Array for byte strings)
-    const keyData = map.extract<number, Uint8Array>(3);
+    const keyData = mapGetBytes(map, 3);
     if (keyData === undefined || keyData.length === 0) {
       throw new Error("ECPublicKey CBOR must have key 3 (data)");
     }
@@ -306,14 +308,14 @@ export class ECPublicKey
     if (name === undefined) {
       throw new Error("TAG_EC_KEY.name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
@@ -324,16 +326,16 @@ export class ECPublicKey
     if (name === undefined) {
       throw new Error("TAG_EC_KEY.name is undefined");
     }
-    ur.checkType(name);
+    ur.expectType(name);
     const dummy = new ECPublicKey(new Uint8Array(ECDSA_PUBLIC_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates an ECPublicKey from a UR string.
    */
   static fromURString(urString: string): ECPublicKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return ECPublicKey.fromUR(ur);
   }
 }

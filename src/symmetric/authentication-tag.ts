@@ -20,7 +20,7 @@
  * Ported from bc-components-rust/src/symmetric/authentication_tag.rs
  */
 
-import { type Cbor, toByteString, expectBytes, decodeCbor } from "@blockchaincommons/dcbor-compat";
+import { type Cbor, cbor, expectBytes, decodeCbor } from "@blockchaincommons/dcbor";
 import { CryptoError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
@@ -139,7 +139,7 @@ export class AuthenticationTag {
    * AuthenticationTag has no CBOR tag - it's serialized as a plain byte string.
    */
   toCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**

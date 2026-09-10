@@ -25,19 +25,22 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
   expectArray,
   expectInteger,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { MLKEM_CIPHERTEXT as TAG_MLKEM_CIPHERTEXT } from "@blockchaincommons/tags";
 
 import {
@@ -162,7 +165,7 @@ export class MLKEMCiphertext
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -239,33 +242,33 @@ export class MLKEMCiphertext
     if (name === undefined) {
       throw new Error("MLKEM_CIPHERTEXT tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates an MLKEMCiphertext from a UR.
    */
   static fromUR(ur: UR): MLKEMCiphertext {
-    if (ur.urTypeStr() !== TAG_MLKEM_CIPHERTEXT.name) {
-      throw new Error(`Expected UR type ${TAG_MLKEM_CIPHERTEXT.name}, got ${ur.urTypeStr()}`);
+    if (ur.type.name !== TAG_MLKEM_CIPHERTEXT.name) {
+      throw new Error(`Expected UR type ${TAG_MLKEM_CIPHERTEXT.name}, got ${ur.type.name}`);
     }
     const dummyData = new Uint8Array(mlkemCiphertextSize(MLKEMLevel.MLKEM512));
     const dummy = new MLKEMCiphertext(MLKEMLevel.MLKEM512, dummyData);
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates an MLKEMCiphertext from a UR string.
    */
   static fromURString(urString: string): MLKEMCiphertext {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return MLKEMCiphertext.fromUR(ur);
   }
 }

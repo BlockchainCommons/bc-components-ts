@@ -23,24 +23,19 @@
  * Ported from bc-components-rust/src/symmetric/symmetric_key.rs
  */
 
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
-import {
-  aeadChaCha20Poly1305EncryptWithAad,
-  aeadChaCha20Poly1305DecryptWithAad,
-} from "@blockchaincommons/crypto";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
+import { chacha20Poly1305 } from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
 import { SYMMETRIC_KEY as TAG_SYMMETRIC_KEY } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
 import { CryptoError } from "../error.js";
@@ -108,15 +103,15 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
    * Generate a random symmetric key.
    */
   static random(): SymmetricKey {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return SymmetricKey.randomUsing(rng);
   }
 
   /**
    * Generate a random symmetric key using provided RNG.
    */
-  static randomUsing(rng: SecureRandomNumberGenerator): SymmetricKey {
-    return new SymmetricKey(rng.randomData(SYMMETRIC_KEY_SIZE));
+  static randomUsing(rng: RandomNumberGenerator): SymmetricKey {
+    return new SymmetricKey(randomBytes(SYMMETRIC_KEY_SIZE, { rng: rng }));
   }
 
   // ============================================================================
@@ -195,12 +190,11 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
     const effectiveNonce = nonce ?? Nonce.new();
     const effectiveAad = aad ?? new Uint8Array(0);
 
-    const [ciphertext, authTag] = aeadChaCha20Poly1305EncryptWithAad(
-      plaintext,
-      this._data,
-      effectiveNonce.data(),
-      effectiveAad,
-    );
+    const sealed = chacha20Poly1305.encrypt(this._data, effectiveNonce.data(), plaintext, {
+      aad: effectiveAad,
+    });
+    const ciphertext = sealed.subarray(0, sealed.length - chacha20Poly1305.TAG_SIZE);
+    const authTag = sealed.subarray(sealed.length - chacha20Poly1305.TAG_SIZE);
 
     return EncryptedMessage.new(ciphertext, effectiveAad, effectiveNonce, authTag);
   }
@@ -209,13 +203,14 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
    * Decrypt the given encrypted message with this key.
    */
   decrypt(message: EncryptedMessage): Uint8Array {
-    return aeadChaCha20Poly1305DecryptWithAad(
-      message.ciphertext(),
-      this._data,
-      message.nonce().data(),
-      message.aad(),
-      message.authenticationTag().data(),
-    );
+    const ct = message.ciphertext();
+    const tag = message.authenticationTag().data();
+    const sealed = new Uint8Array(ct.length + tag.length);
+    sealed.set(ct);
+    sealed.set(tag, ct.length);
+    return chacha20Poly1305.decrypt(this._data, message.nonce().data(), sealed, {
+      aad: message.aad(),
+    });
   }
 
   // ============================================================================
@@ -233,14 +228,14 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -312,30 +307,30 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
    * inner CBOR must be untagged — matches Rust's `UREncodable` blanket impl.
    */
   ur(): UR {
-    return UR.new(SymmetricKey.UR_TYPE, this.untaggedCbor());
+    return UR.from(SymmetricKey.UR_TYPE, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation of the symmetric key.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a SymmetricKey from a UR.
    */
   static fromUR(ur: UR): SymmetricKey {
-    ur.checkType(SymmetricKey.UR_TYPE);
+    ur.expectType(SymmetricKey.UR_TYPE);
     const dummy = SymmetricKey.fromData(new Uint8Array(SymmetricKey.SYMMETRIC_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a SymmetricKey from a UR string.
    */
   static fromURString(urString: string): SymmetricKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return SymmetricKey.fromUR(ur);
   }
 

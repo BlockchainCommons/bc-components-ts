@@ -50,23 +50,26 @@
  * ```
  */
 
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
 import { SYMMETRIC_NONCE_SIZE } from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "./codable.js";
 import { NONCE as TAG_NONCE } from "@blockchaincommons/tags";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { CryptoError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 
@@ -90,8 +93,8 @@ export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, U
    * Create a new random nonce.
    */
   static new(): Nonce {
-    const rng = new SecureRandomNumberGenerator();
-    return new Nonce(rng.randomData(Nonce.NONCE_SIZE));
+    const rng = secureRng();
+    return new Nonce(randomBytes(Nonce.NONCE_SIZE, { rng: rng }));
   }
 
   /**
@@ -137,8 +140,8 @@ export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, U
   /**
    * Generate a random nonce using provided RNG.
    */
-  static randomUsing(rng: SecureRandomNumberGenerator): Nonce {
-    return new Nonce(rng.randomData(Nonce.NONCE_SIZE));
+  static randomUsing(rng: RandomNumberGenerator): Nonce {
+    return new Nonce(randomBytes(Nonce.NONCE_SIZE, { rng: rng }));
   }
 
   // ============================================================================
@@ -220,14 +223,14 @@ export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, U
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -292,30 +295,30 @@ export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, U
    * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
    */
   ur(): UR {
-    return UR.new("nonce", this.untaggedCbor());
+    return UR.from("nonce", this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a Nonce from a UR.
    */
   static fromUR(ur: UR): Nonce {
-    ur.checkType("nonce");
+    ur.expectType("nonce");
     const instance = new Nonce(new Uint8Array(Nonce.NONCE_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor());
+    return instance.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a Nonce from a UR string.
    */
   static fromURString(urString: string): Nonce {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return Nonce.fromUR(ur);
   }
 }

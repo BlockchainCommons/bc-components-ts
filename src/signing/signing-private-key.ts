@@ -28,16 +28,12 @@ import type { RandomNumberGenerator } from "@blockchaincommons/rand";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
-  toByteString,
-  toTaggedValue,
+  taggedValue,
   expectArray,
   expectBytes,
   expectText,
   expectUnsigned,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
@@ -45,7 +41,9 @@ import {
   isBytes,
   isArray,
   isTagged,
-} from "@blockchaincommons/dcbor-compat";
+  asTaggedValue,
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
 import {
   SIGNING_PRIVATE_KEY as TAG_SIGNING_PRIVATE_KEY,
   MLDSA_PRIVATE_KEY as TAG_MLDSA_PRIVATE_KEY,
@@ -798,25 +796,25 @@ export class SigningPrivateKey
           throw new Error("EC private key is missing");
         }
         // Rust: CBOR::to_byte_string(key.data()) - bare byte string
-        return toByteString(this._ecKey.toData());
+        return cbor(this._ecKey.toData());
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecKey === undefined) {
           throw new Error("EC private key is missing");
         }
-        return cbor([1, toByteString(this._ecKey.toData())]);
+        return cbor([1, cbor(this._ecKey.toData())]);
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
           throw new Error("Ed25519 private key is missing");
         }
-        return cbor([2, toByteString(this._ed25519Key.toData())]);
+        return cbor([2, cbor(this._ed25519Key.toData())]);
       }
       case SignatureScheme.Sr25519: {
         if (this._sr25519Key === undefined) {
           throw new Error("Sr25519 private key is missing");
         }
-        return cbor([3, toByteString(this._sr25519Key.toData())]);
+        return cbor([3, cbor(this._sr25519Key.toData())]);
       }
       case SignatureScheme.MLDSA44:
       case SignatureScheme.MLDSA65:
@@ -836,7 +834,7 @@ export class SigningPrivateKey
         }
         // Mirror Rust `SigningPrivateKey::SSH` untagged CBOR encoding:
         // `CBOR::to_tagged_value(TAG_SSH_TEXT_PRIVATE_KEY, key.to_openssh())`.
-        return toTaggedValue(TAG_SSH_TEXT_PRIVATE_KEY, this._sshKey.toOpenssh());
+        return taggedValue(TAG_SSH_TEXT_PRIVATE_KEY, this._sshKey.toOpenssh());
       }
     }
   }
@@ -845,7 +843,7 @@ export class SigningPrivateKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -901,7 +899,7 @@ export class SigningPrivateKey
 
     // Tagged format for MLDSA / SSH
     if (isTagged(cborValue)) {
-      const tagged = cborValue.asTagged();
+      const tagged = asTaggedValue(cborValue);
       if (tagged?.[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
         const mldsaKey = MLDSAPrivateKey.fromTaggedCbor(cborValue);
         return SigningPrivateKey.newMldsa(mldsaKey);
@@ -985,32 +983,32 @@ export class SigningPrivateKey
     // string already implies the tag. Using `taggedCbor()` here would
     // double-tag the content, diverging from Rust and breaking interop.
     // Mirrors the canonical `toUR` pattern (`ur-encodable.ts`).
-    return UR.new(SigningPrivateKey.UR_TYPE, this.untaggedCbor());
+    return UR.from(SigningPrivateKey.UR_TYPE, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation of the signing private key.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a SigningPrivateKey from a UR.
    */
   static fromUR(ur: UR): SigningPrivateKey {
-    ur.checkType(SigningPrivateKey.UR_TYPE);
+    ur.expectType(SigningPrivateKey.UR_TYPE);
     // The UR content is untagged (the type implies the tag), so decode it
     // directly as untagged CBOR. Mirrors the canonical `fromUR` pattern
     // (`ur-decodable.ts`).
-    return SigningPrivateKey.fromUntaggedCbor(ur.cbor());
+    return SigningPrivateKey.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a SigningPrivateKey from a UR string.
    */
   static fromURString(urString: string): SigningPrivateKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return SigningPrivateKey.fromUR(ur);
   }
 

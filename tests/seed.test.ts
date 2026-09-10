@@ -302,14 +302,11 @@ describe("Seed", () => {
 
     it("should create seed with Seed.newWithLenUsing()", () => {
       // Simple deterministic RNG for testing
-      let counter = 0;
       const rng = {
-        randomData: (size: number) => {
-          const data = new Uint8Array(size);
-          for (let i = 0; i < size; i++) {
-            data[i] = counter++;
-          }
-          return data;
+        nextU32: () => 0,
+        nextU64: () => 0n,
+        fillBytes: (data: Uint8Array) => {
+          for (let i = 0; i < data.length; i++) data[i] = i;
         },
       };
 

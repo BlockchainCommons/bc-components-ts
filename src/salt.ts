@@ -56,26 +56,26 @@
  * ```
  */
 
-import {
-  SecureRandomNumberGenerator,
-  type RandomNumberGenerator,
-  rngNextInClosedRangeI32,
-} from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
+import { nextInClosedRangeI32 } from "@blockchaincommons/rand/samplers";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "./codable.js";
 import { SALT as TAG_SALT } from "@blockchaincommons/tags";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { CryptoError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 
@@ -120,7 +120,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
    * @throws Error if the number of bytes is less than 8.
    */
   static newWithLen(count: number): Salt {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return Salt.newWithLenUsing(count, rng);
   }
 
@@ -133,7 +133,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
     if (count < MIN_SALT_SIZE) {
       throw CryptoError.dataTooShort("salt", MIN_SALT_SIZE, count);
     }
-    return new Salt(rng.randomData(count));
+    return new Salt(randomBytes(count, { rng: rng }));
   }
 
   /**
@@ -145,7 +145,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
     if (minSize < MIN_SALT_SIZE) {
       throw CryptoError.dataTooShort("salt", MIN_SALT_SIZE, minSize);
     }
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return Salt.newInRangeUsing(minSize, maxSize, rng);
   }
 
@@ -158,7 +158,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
     if (minSize < MIN_SALT_SIZE) {
       throw CryptoError.dataTooShort("salt", MIN_SALT_SIZE, minSize);
     }
-    const count = rngNextInClosedRangeI32(rng, minSize, maxSize);
+    const count = nextInClosedRangeI32(rng, minSize, maxSize);
     return Salt.newWithLenUsing(count, rng);
   }
 
@@ -167,7 +167,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
    * the object being salted.
    */
   static newForSize(size: number): Salt {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return Salt.newForSizeUsing(size, rng);
   }
 
@@ -296,14 +296,14 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -368,30 +368,30 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
    * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
    */
   ur(): UR {
-    return UR.new("salt", this.untaggedCbor());
+    return UR.from("salt", this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a Salt from a UR.
    */
   static fromUR(ur: UR): Salt {
-    ur.checkType("salt");
+    ur.expectType("salt");
     const instance = new Salt(new Uint8Array(0));
-    return instance.fromUntaggedCbor(ur.cbor());
+    return instance.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a Salt from a UR string.
    */
   static fromURString(urString: string): Salt {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return Salt.fromUR(ur);
   }
 }

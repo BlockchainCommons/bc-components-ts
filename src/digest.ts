@@ -46,18 +46,21 @@ import { sha256, SHA256_SIZE } from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "./codable.js";
 import { DIGEST as TAG_DIGEST } from "@blockchaincommons/tags";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { CryptoError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { DigestProvider } from "./digest-provider.js";
@@ -278,14 +281,14 @@ export class Digest
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -350,30 +353,30 @@ export class Digest
    * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
    */
   ur(): UR {
-    return UR.new("digest", this.untaggedCbor());
+    return UR.from("digest", this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a Digest from a UR.
    */
   static fromUR(ur: UR): Digest {
-    ur.checkType("digest");
+    ur.expectType("digest");
     const instance = new Digest(new Uint8Array(Digest.DIGEST_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor());
+    return instance.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a Digest from a UR string.
    */
   static fromURString(urString: string): Digest {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return Digest.fromUR(ur);
   }
 

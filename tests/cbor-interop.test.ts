@@ -19,8 +19,17 @@ import {
   EncapsulationPrivateKey,
   PrivateKeys,
 } from "../src";
-import { decodeCbor } from "@blockchaincommons/dcbor-compat";
-import { makeFakeRandomNumberGenerator } from "@blockchaincommons/rand";
+import {
+  decodeCbor,
+  isTagged,
+  asTaggedValue,
+  isBytes,
+  expectBytes,
+  isArray,
+  expectArray,
+  expectInteger,
+} from "@blockchaincommons/dcbor";
+import { SeededRng } from "@blockchaincommons/rand";
 
 // Test vectors from Rust bc-components-rust
 const TEST_PRIVATE_KEY_HEX = "322b5c1dd5a17c3481c2297990c85c232ed3c17b52ce9905c6ec5193ad132c36";
@@ -57,13 +66,13 @@ describe("CBOR Interoperability", () => {
       const decoded = decodeCbor(taggedCbor);
 
       // Should be tagged with 40021 (SigningPrivateKey tag)
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40021);
 
       // Content should be a byte string (not an array)
-      expect(content.isByteString()).toBe(true);
-      expect(bytesToHex(content.toByteString())).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(isBytes(content)).toBe(true);
+      expect(bytesToHex(expectBytes(content))).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should encode ECDSA private key as [1, byte_string] (matching Rust)", () => {
@@ -74,16 +83,16 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = privateKey.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40021);
 
       // Content should be an array [1, byte_string]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(1); // ECDSA discriminator
-      expect(bytesToHex(array[1].toByteString())).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(Number(expectInteger(array[0]))).toBe(1); // ECDSA discriminator
+      expect(bytesToHex(expectBytes(array[1]))).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should encode Ed25519 private key as [2, byte_string] (matching Rust)", () => {
@@ -94,16 +103,16 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = privateKey.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40021);
 
       // Content should be an array [2, byte_string]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(2); // Ed25519 discriminator
-      expect(bytesToHex(array[1].toByteString())).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(Number(expectInteger(array[0]))).toBe(2); // Ed25519 discriminator
+      expect(bytesToHex(expectBytes(array[1]))).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should encode Sr25519 private key as [3, byte_string] (matching Rust)", () => {
@@ -114,16 +123,16 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = privateKey.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40021);
 
       // Content should be an array [3, byte_string]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(3); // Sr25519 discriminator
-      expect(bytesToHex(array[1].toByteString())).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(Number(expectInteger(array[0]))).toBe(3); // Sr25519 discriminator
+      expect(bytesToHex(expectBytes(array[1]))).toBe(TEST_PRIVATE_KEY_HEX);
     });
   });
 
@@ -138,14 +147,14 @@ describe("CBOR Interoperability", () => {
       const decoded = decodeCbor(taggedCbor);
 
       // Should be tagged with 40022 (SigningPublicKey tag)
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40022);
 
       // Content should be a byte string (not an array)
-      expect(content.isByteString()).toBe(true);
+      expect(isBytes(content)).toBe(true);
       // Schnorr public key is 32 bytes (x-only)
-      expect(content.toByteString().length).toBe(32);
+      expect(expectBytes(content).length).toBe(32);
     });
 
     it("should encode ECDSA public key as [1, byte_string] (matching Rust)", () => {
@@ -156,17 +165,17 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = publicKey.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40022);
 
       // Content should be an array [1, byte_string]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(1); // ECDSA discriminator
+      expect(Number(expectInteger(array[0]))).toBe(1); // ECDSA discriminator
       // ECDSA public key is 33 bytes (compressed)
-      expect(array[1].toByteString().length).toBe(33);
+      expect(expectBytes(array[1]).length).toBe(33);
     });
 
     it("should encode Ed25519 public key as [2, byte_string] (matching Rust)", () => {
@@ -177,17 +186,17 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = publicKey.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40022);
 
       // Content should be an array [2, byte_string]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(2); // Ed25519 discriminator
+      expect(Number(expectInteger(array[0]))).toBe(2); // Ed25519 discriminator
       // Ed25519 public key is 32 bytes
-      expect(array[1].toByteString().length).toBe(32);
+      expect(expectBytes(array[1]).length).toBe(32);
     });
   });
 
@@ -205,21 +214,21 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = signature.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40020); // Signature tag
 
       // ECDSA should be [1, signature_bytes]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(1); // ECDSA discriminator
-      expect(array[1].toByteString().length).toBe(64); // ECDSA signature is 64 bytes
+      expect(Number(expectInteger(array[0]))).toBe(1); // ECDSA discriminator
+      expect(expectBytes(array[1]).length).toBe(64); // ECDSA signature is 64 bytes
 
       // ECDSA signatures are deterministic, so verify exact match with Rust
       const expectedSigHex =
         "1458d0f3d97e25109b38fd965782b43213134d02b01388a14e74ebf21e5dea4866f25a23866de9ecf0f9b72404d8192ed71fba4dc355cd89b47213e855cf6d23";
-      expect(bytesToHex(array[1].toByteString())).toBe(expectedSigHex);
+      expect(bytesToHex(expectBytes(array[1]))).toBe(expectedSigHex);
     });
 
     it("should encode Schnorr signature as bare byte_string (matching Rust)", () => {
@@ -230,13 +239,13 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = signature.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40020); // Signature tag
 
       // Schnorr should be a bare byte string (not array)
-      expect(content.isByteString()).toBe(true);
-      expect(content.toByteString().length).toBe(64); // Schnorr signature is 64 bytes
+      expect(isBytes(content)).toBe(true);
+      expect(expectBytes(content).length).toBe(64); // Schnorr signature is 64 bytes
     });
 
     it("should produce deterministic Schnorr signature with fake RNG (matching Rust)", () => {
@@ -248,7 +257,7 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newSchnorr(ecKey);
 
       // Use fake RNG for deterministic signature
-      const fakeRng = makeFakeRandomNumberGenerator();
+      const fakeRng = SeededRng.forTesting();
       const signature = privateKey.signWithOptions(TEST_MESSAGE, {
         type: "Schnorr",
         rng: fakeRng,
@@ -257,10 +266,10 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = signature.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      const [, content] = decoded.toTagged();
+      const [, content] = asTaggedValue(decoded)!;
       const expectedSigHex =
         "9d113392074dd52dfb7f309afb3698a1993cd14d32bc27c00070407092c9ec8c096643b5b1b535bb5277c44f256441ac660cd600739aa910b150d4f94757cf95";
-      expect(bytesToHex(content.toByteString())).toBe(expectedSigHex);
+      expect(bytesToHex(expectBytes(content))).toBe(expectedSigHex);
     });
 
     it("should encode Ed25519 signature as [2, byte_string] (matching Rust)", () => {
@@ -271,16 +280,16 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = signature.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40020); // Signature tag
 
       // Ed25519 should be [2, signature_bytes]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(2); // Ed25519 discriminator
-      expect(array[1].toByteString().length).toBe(64); // Ed25519 signature is 64 bytes
+      expect(Number(expectInteger(array[0]))).toBe(2); // Ed25519 discriminator
+      expect(expectBytes(array[1]).length).toBe(64); // Ed25519 signature is 64 bytes
     });
 
     it("should encode Sr25519 signature as [3, byte_string] (matching Rust)", () => {
@@ -291,16 +300,16 @@ describe("CBOR Interoperability", () => {
       const taggedCbor = signature.taggedCborData();
       const decoded = decodeCbor(taggedCbor);
 
-      expect(decoded.isTagged()).toBe(true);
-      const [tag, content] = decoded.toTagged();
+      expect(isTagged(decoded)).toBe(true);
+      const [tag, content] = asTaggedValue(decoded)!;
       expect(Number(tag.value)).toBe(40020); // Signature tag
 
       // Sr25519 should be [3, signature_bytes]
-      expect(content.isArray()).toBe(true);
-      const array = content.toArray();
+      expect(isArray(content)).toBe(true);
+      const array = expectArray(content);
       expect(array.length).toBe(2);
-      expect(Number(array[0].toInteger())).toBe(3); // Sr25519 discriminator
-      expect(array[1].toByteString().length).toBe(64); // Sr25519 signature is 64 bytes
+      expect(Number(expectInteger(array[0]))).toBe(3); // Sr25519 discriminator
+      expect(expectBytes(array[1]).length).toBe(64); // Sr25519 signature is 64 bytes
     });
   });
 

@@ -17,8 +17,8 @@
  * Ported from bc-components-rust/src/encrypted_key/scrypt_params.rs
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor-compat";
-import { scryptOpt } from "@blockchaincommons/crypto";
+import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { scrypt } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
 import { Nonce } from "../nonce.js";
@@ -134,7 +134,12 @@ export class ScryptParams implements KeyDerivation {
   }
 
   private _deriveKey(secret: Uint8Array): Uint8Array {
-    return scryptOpt(secret, this._salt.asBytes(), 32, this._logN, this._r, this._p);
+    return scrypt(secret, this._salt.asBytes(), {
+      dkLen: 32,
+      logN: this._logN,
+      r: this._r,
+      p: this._p,
+    });
   }
 
   /**

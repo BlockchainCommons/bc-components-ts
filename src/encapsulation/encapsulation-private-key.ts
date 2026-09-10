@@ -23,21 +23,24 @@
  * Ported from bc-components-rust/src/encapsulation/encapsulation_private_key.rs
  */
 
-import { SecureRandomNumberGenerator, type RandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
   tagValue,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import {
   X25519_PRIVATE_KEY as TAG_X25519_PRIVATE_KEY,
   MLKEM_PRIVATE_KEY as TAG_MLKEM_PRIVATE_KEY,
@@ -151,7 +154,7 @@ export class EncapsulationPrivateKey
    * Generate a new random X25519 encapsulation private key.
    */
   static random(): EncapsulationPrivateKey {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return EncapsulationPrivateKey.newUsing(rng);
   }
 
@@ -422,7 +425,7 @@ export class EncapsulationPrivateKey
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PrivateKey;
       if (pk === undefined) throw new Error("X25519 private key not set");
-      return toByteString(pk.data());
+      return cbor(pk.data());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
       if (pk === undefined) throw new Error("MLKEM private key not set");
@@ -435,7 +438,7 @@ export class EncapsulationPrivateKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -520,7 +523,7 @@ export class EncapsulationPrivateKey
     if (this._scheme === EncapsulationScheme.X25519) {
       const name = TAG_X25519_PRIVATE_KEY.name;
       if (name === undefined) throw new Error("TAG_X25519_PRIVATE_KEY.name is undefined");
-      return UR.new(name, this.untaggedCbor());
+      return UR.from(name, this.untaggedCbor());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
       if (pk === undefined) throw new Error("MLKEM private key not set");
@@ -533,7 +536,7 @@ export class EncapsulationPrivateKey
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
@@ -541,26 +544,26 @@ export class EncapsulationPrivateKey
    */
   static fromUR(ur: UR): EncapsulationPrivateKey {
     // Check for known UR types
-    if (ur.urTypeStr() === TAG_X25519_PRIVATE_KEY.name) {
+    if (ur.type.name === TAG_X25519_PRIVATE_KEY.name) {
       const dummy = EncapsulationPrivateKey.fromX25519PrivateKey(
         X25519PrivateKey.fromData(new Uint8Array(32)),
       );
-      return dummy.fromUntaggedCbor(ur.cbor());
+      return dummy.fromUntaggedCbor(ur.cbor);
     }
 
-    if (ur.urTypeStr() === TAG_MLKEM_PRIVATE_KEY.name) {
+    if (ur.type.name === TAG_MLKEM_PRIVATE_KEY.name) {
       const mlkemPrivate = MLKEMPrivateKey.fromUR(ur);
       return EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
     }
 
-    throw new Error(`Unknown UR type for EncapsulationPrivateKey: ${ur.urTypeStr()}`);
+    throw new Error(`Unknown UR type for EncapsulationPrivateKey: ${ur.type.name}`);
   }
 
   /**
    * Creates an EncapsulationPrivateKey from a UR string.
    */
   static fromURString(urString: string): EncapsulationPrivateKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return EncapsulationPrivateKey.fromUR(ur);
   }
 }

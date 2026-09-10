@@ -27,7 +27,7 @@
  * Ported from bc-components-rust/src/ec_key/schnorr_public_key.rs
  */
 
-import { SCHNORR_PUBLIC_KEY_SIZE, schnorrVerify } from "@blockchaincommons/crypto";
+import { schnorr, SCHNORR_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
 import { Digest } from "../digest.js";
 import { CryptoError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
@@ -129,7 +129,7 @@ export class SchnorrPublicKey implements ECKeyBase {
    */
   schnorrVerify(signature: Uint8Array, message: Uint8Array): boolean {
     try {
-      return schnorrVerify(this._data, signature, message);
+      return schnorr.verify(this._data, signature, message);
     } catch {
       return false;
     }

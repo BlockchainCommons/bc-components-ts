@@ -17,8 +17,8 @@
  * Ported from bc-components-rust/src/encrypted_key/hkdf_params.rs
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor-compat";
-import { hkdfHmacSha256, hash as cryptoHash } from "@blockchaincommons/crypto";
+import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { hkdfSha256, hkdfSha512 } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
 import { Nonce } from "../nonce.js";
@@ -107,9 +107,9 @@ export class HKDFParams implements KeyDerivation {
   private _deriveKey(secret: Uint8Array): Uint8Array {
     switch (this._hashType) {
       case HashType.SHA256:
-        return hkdfHmacSha256(secret, this._salt.asBytes(), 32);
+        return hkdfSha256(secret, this._salt.asBytes(), 32);
       case HashType.SHA512:
-        return cryptoHash.hkdfHmacSha512(secret, this._salt.asBytes(), 32);
+        return hkdfSha512(secret, this._salt.asBytes(), 32);
       default:
         throw new Error(`Unknown hash type: ${String(this._hashType)}`);
     }

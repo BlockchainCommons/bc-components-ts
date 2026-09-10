@@ -234,7 +234,7 @@ describe("MLDSAPrivateKey", () => {
     it("should serialize to UR", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA44);
       const ur = privateKey.ur();
-      expect(ur.urTypeStr()).toBe("mldsa-private-key");
+      expect(ur.type.name).toBe("mldsa-private-key");
     });
 
     it("should roundtrip through UR string", () => {
@@ -267,7 +267,7 @@ describe("MLDSAPublicKey", () => {
     it("should serialize to UR", () => {
       const [, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
       const ur = publicKey.ur();
-      expect(ur.urTypeStr()).toBe("mldsa-public-key");
+      expect(ur.type.name).toBe("mldsa-public-key");
     });
 
     it("should roundtrip through UR string", () => {
@@ -303,7 +303,7 @@ describe("MLDSASignature", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
       const signature = privateKey.sign(new Uint8Array([1, 2, 3]));
       const ur = signature.ur();
-      expect(ur.urTypeStr()).toBe("mldsa-signature");
+      expect(ur.type.name).toBe("mldsa-signature");
     });
 
     it("should roundtrip through UR string", () => {
@@ -523,7 +523,7 @@ describe("MLKEMPrivateKey", () => {
     it("should serialize to UR", () => {
       const [privateKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM512);
       const ur = privateKey.ur();
-      expect(ur.urTypeStr()).toBe("mlkem-private-key");
+      expect(ur.type.name).toBe("mlkem-private-key");
     });
 
     it("should roundtrip through UR string", () => {
@@ -556,7 +556,7 @@ describe("MLKEMPublicKey", () => {
     it("should serialize to UR", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
       const ur = publicKey.ur();
-      expect(ur.urTypeStr()).toBe("mlkem-public-key");
+      expect(ur.type.name).toBe("mlkem-public-key");
     });
 
     it("should roundtrip through UR string", () => {
@@ -592,7 +592,7 @@ describe("MLKEMCiphertext", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
       const { ciphertext } = publicKey.encapsulate();
       const ur = ciphertext.ur();
-      expect(ur.urTypeStr()).toBe("mlkem-ciphertext");
+      expect(ur.type.name).toBe("mlkem-ciphertext");
     });
 
     it("should roundtrip through UR string", () => {

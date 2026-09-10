@@ -46,20 +46,22 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
-  toByteString,
   expectArray,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
 import { ENCRYPTED as TAG_ENCRYPTED } from "@blockchaincommons/tags";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { Nonce } from "../nonce.js";
 import { Digest } from "../digest.js";
 import { AuthenticationTag } from "./authentication-tag.js";
@@ -221,13 +223,13 @@ export class EncryptedMessage
    */
   untaggedCbor(): Cbor {
     const elements: Cbor[] = [
-      toByteString(this._ciphertext),
-      toByteString(this._nonce.data()),
-      toByteString(this._auth.data()),
+      cbor(this._ciphertext),
+      cbor(this._nonce.data()),
+      cbor(this._auth.data()),
     ];
 
     if (this._aad.length > 0) {
-      elements.push(toByteString(this._aad));
+      elements.push(cbor(this._aad));
     }
 
     return cbor(elements);
@@ -237,7 +239,7 @@ export class EncryptedMessage
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -325,35 +327,35 @@ export class EncryptedMessage
    * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
    */
   ur(): UR {
-    return UR.new("encrypted", this.untaggedCbor());
+    return UR.from("encrypted", this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates an EncryptedMessage from a UR.
    */
   static fromUR(ur: UR): EncryptedMessage {
-    ur.checkType("encrypted");
+    ur.expectType("encrypted");
     const dummy = new EncryptedMessage(
       new Uint8Array(0),
       new Uint8Array(0),
       Nonce.new(),
       AuthenticationTag.fromData(new Uint8Array(16)),
     );
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates an EncryptedMessage from a UR string.
    */
   static fromURString(urString: string): EncryptedMessage {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return EncryptedMessage.fromUR(ur);
   }
 }

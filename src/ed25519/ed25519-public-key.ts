@@ -8,9 +8,9 @@
  */
 
 import {
+  ed25519,
   ED25519_PUBLIC_KEY_SIZE,
   ED25519_SIGNATURE_SIZE,
-  ed25519Verify,
 } from "@blockchaincommons/crypto";
 import { Digest } from "../digest.js";
 import { CryptoError } from "../error.js";
@@ -62,12 +62,12 @@ export class Ed25519PublicKey {
     return new Uint8Array(this._data);
   }
 
-  /** Alias of {@link data}. */
+  /** Alias of {@link Ed25519PublicKey.data}. */
   asBytes(): Uint8Array {
     return this.data();
   }
 
-  /** Backwards-compatible alias of {@link data}. */
+  /** Backwards-compatible alias of {@link Ed25519PublicKey.data}. */
   toData(): Uint8Array {
     return this.data();
   }
@@ -94,7 +94,7 @@ export class Ed25519PublicKey {
       if (signature.length !== ED25519_SIGNATURE_SIZE) {
         throw CryptoError.invalidSize(ED25519_SIGNATURE_SIZE, signature.length);
       }
-      return ed25519Verify(this._data, message, signature);
+      return ed25519.verify(this._data, signature, message);
     } catch (e) {
       throw CryptoError.cryptoOperation(`Ed25519 verification failed: ${String(e)}`);
     }

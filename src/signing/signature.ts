@@ -22,24 +22,20 @@
  */
 
 import {
-  ED25519_SIGNATURE_SIZE,
   ECDSA_SIGNATURE_SIZE,
   SCHNORR_SIGNATURE_SIZE,
+  ED25519_SIGNATURE_SIZE,
 } from "@blockchaincommons/crypto";
 import { SR25519_SIGNATURE_SIZE } from "../sr25519/sr25519-private-key.js";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
-  toByteString,
-  toTaggedValue,
+  taggedValue,
   expectArray,
   expectBytes,
   expectText,
   expectUnsigned,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
@@ -47,7 +43,9 @@ import {
   isBytes,
   isArray,
   isTagged,
-} from "@blockchaincommons/dcbor-compat";
+  asTaggedValue,
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
 import {
   SIGNATURE as TAG_SIGNATURE,
   MLDSA_SIGNATURE as TAG_MLDSA_SIGNATURE,
@@ -464,13 +462,13 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
     switch (this._type) {
       case SignatureScheme.Schnorr:
         // Rust: CBOR::to_byte_string(data) - bare byte string
-        return toByteString(this._data);
+        return cbor(this._data);
       case SignatureScheme.Ecdsa:
-        return cbor([1, toByteString(this._data)]);
+        return cbor([1, cbor(this._data)]);
       case SignatureScheme.Ed25519:
-        return cbor([2, toByteString(this._data)]);
+        return cbor([2, cbor(this._data)]);
       case SignatureScheme.Sr25519:
-        return cbor([3, toByteString(this._data)]);
+        return cbor([3, cbor(this._data)]);
       case SignatureScheme.MLDSA44:
       case SignatureScheme.MLDSA65:
       case SignatureScheme.MLDSA87: {
@@ -489,7 +487,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
         }
         // Mirror Rust `Signature::SSH(sig) => to_tagged_value(TAG_SSH_TEXT_SIGNATURE, pem)`
         // (`signature.rs:643-646`).
-        return toTaggedValue(TAG_SSH_TEXT_SIGNATURE, this._sshSig.toPem());
+        return taggedValue(TAG_SSH_TEXT_SIGNATURE, this._sshSig.toPem());
       }
     }
   }
@@ -498,7 +496,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -553,7 +551,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
 
     // Tagged format for MLDSA / SSH
     if (isTagged(cborValue)) {
-      const tagged = cborValue.asTagged();
+      const tagged = asTaggedValue(cborValue);
       if (tagged?.[0].value === TAG_MLDSA_SIGNATURE.value) {
         const mldsaSig = MLDSASignature.fromTaggedCbor(cborValue);
         return Signature.mldsaFromSignature(mldsaSig);
@@ -621,30 +619,30 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
    * inner CBOR must be untagged — matches Rust's `UREncodable` blanket impl.
    */
   ur(): UR {
-    return UR.new(Signature.UR_TYPE, this.untaggedCbor());
+    return UR.from(Signature.UR_TYPE, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation of the signature.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a Signature from a UR.
    */
   static fromUR(ur: UR): Signature {
-    ur.checkType(Signature.UR_TYPE);
+    ur.expectType(Signature.UR_TYPE);
     const dummy = Signature.schnorrFromData(new Uint8Array(SCHNORR_SIGNATURE_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a Signature from a UR string.
    */
   static fromURString(urString: string): Signature {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return Signature.fromUR(ur);
   }
 

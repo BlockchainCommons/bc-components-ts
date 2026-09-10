@@ -34,18 +34,21 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
 import { UUID as TAG_UUID } from "@blockchaincommons/tags";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { CryptoError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
 
@@ -221,14 +224,14 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -293,30 +296,30 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
    * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
    */
   ur(): UR {
-    return UR.new("uuid", this.untaggedCbor());
+    return UR.from("uuid", this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a UUID from a UR.
    */
   static fromUR(ur: UR): UUID {
-    ur.checkType("uuid");
+    ur.expectType("uuid");
     const instance = new UUID(new Uint8Array(UUID_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor());
+    return instance.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a UUID from a UR string.
    */
   static fromURString(urString: string): UUID {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return UUID.fromUR(ur);
   }
 }

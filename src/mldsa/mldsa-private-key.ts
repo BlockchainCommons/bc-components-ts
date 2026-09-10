@@ -25,22 +25,24 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
   expectArray,
   expectInteger,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { MLDSA_PRIVATE_KEY as TAG_MLDSA_PRIVATE_KEY } from "@blockchaincommons/tags";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
 
 import {
   MLDSALevel,
@@ -84,7 +86,7 @@ export class MLDSAPrivateKey
    * @param level - The ML-DSA security level (default: MLDSA65)
    */
   static new(level: MLDSALevel = MLDSALevel.MLDSA65): MLDSAPrivateKey {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return MLDSAPrivateKey.newUsing(level, rng);
   }
 
@@ -116,7 +118,7 @@ export class MLDSAPrivateKey
    * @returns Tuple of [privateKey, publicKey]
    */
   static keypair(level: MLDSALevel = MLDSALevel.MLDSA65): [MLDSAPrivateKey, MLDSAPublicKey] {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return MLDSAPrivateKey.keypairUsing(level, rng);
   }
 
@@ -268,7 +270,7 @@ export class MLDSAPrivateKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -345,33 +347,33 @@ export class MLDSAPrivateKey
     if (name === undefined) {
       throw new Error("MLDSA_PRIVATE_KEY tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates an MLDSAPrivateKey from a UR.
    */
   static fromUR(ur: UR): MLDSAPrivateKey {
-    if (ur.urTypeStr() !== TAG_MLDSA_PRIVATE_KEY.name) {
-      throw new Error(`Expected UR type ${TAG_MLDSA_PRIVATE_KEY.name}, got ${ur.urTypeStr()}`);
+    if (ur.type.name !== TAG_MLDSA_PRIVATE_KEY.name) {
+      throw new Error(`Expected UR type ${TAG_MLDSA_PRIVATE_KEY.name}, got ${ur.type.name}`);
     }
     const dummyData = new Uint8Array(mldsaPrivateKeySize(MLDSALevel.MLDSA44));
     const dummy = new MLDSAPrivateKey(MLDSALevel.MLDSA44, dummyData);
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates an MLDSAPrivateKey from a UR string.
    */
   static fromURString(urString: string): MLDSAPrivateKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return MLDSAPrivateKey.fromUR(ur);
   }
 }

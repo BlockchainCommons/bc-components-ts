@@ -22,7 +22,7 @@ import {
   Ed25519PrivateKey,
   ECPrivateKey,
 } from "../src";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { SecureRng } from "@blockchaincommons/rand";
 
 // Test vectors from the Rust implementation
 const TEST_PRIVATE_KEY_HEX = "322b5c1dd5a17c3481c2297990c85c232ed3c17b52ce9905c6ec5193ad132c36";
@@ -115,7 +115,7 @@ describe("SignatureScheme", () => {
 
   describe("createKeypairUsing", () => {
     it("should create keypair using provided RNG", () => {
-      const rng = new SecureRandomNumberGenerator();
+      const rng = new SecureRng();
       const [privateKey, publicKey] = createKeypairUsing(SignatureScheme.Ed25519, rng);
 
       expect(privateKey).toBeInstanceOf(SigningPrivateKey);

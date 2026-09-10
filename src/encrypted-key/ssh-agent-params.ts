@@ -16,13 +16,7 @@
  * Ported from bc-components-rust/src/encrypted_key/ssh_agent_params.rs
  */
 
-import {
-  type Cbor,
-  cbor,
-  expectArray,
-  expectNumber,
-  expectText,
-} from "@blockchaincommons/dcbor-compat";
+import { type Cbor, cbor, expectArray, expectNumber, expectText } from "@blockchaincommons/dcbor";
 
 import { Salt } from "../salt.js";
 import type { SymmetricKey } from "../symmetric/symmetric-key.js";

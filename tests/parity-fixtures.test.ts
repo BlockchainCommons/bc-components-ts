@@ -35,16 +35,15 @@ import {
   SymmetricKey,
   Signature,
 } from "../src/index.js";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { SecureRng, randomBytes } from "@blockchaincommons/rand";
 import { bytesToHex } from "../src/utils.js";
 import { ECPrivateKey } from "../src/ec-key/index.js";
-import { registerTagsIn } from "@blockchaincommons/tags";
-import { getGlobalTagsStore } from "@blockchaincommons/dcbor-compat";
+import { registerTags } from "@blockchaincommons/tags";
 
 beforeAll(() => {
   // Side-effect: globally register every BC tag so `decodeCbor` /
   // `extractTaggedContent` know what to do with `#6.40018` etc.
-  registerTagsIn(getGlobalTagsStore());
+  registerTags();
 });
 
 describe("Digest — Rust fixture", () => {
@@ -207,7 +206,7 @@ describe("UR conventions — payload is untagged CBOR (matches Rust)", () => {
     const sig = Signature.schnorrFromData(ec.schnorrSign(new TextEncoder().encode("hi")));
     const ur = sig.ur();
     // The UR payload should be untagged: a bare byte string, not #6.40020(...).
-    const cborBytes = ur.cbor().toData();
+    const cborBytes = ur.cbor.toData();
     // CBOR major-2 byte string with 64 bytes (Schnorr): 0x58 0x40 + bytes.
     expect(cborBytes[0]).toBe(0x58);
     expect(cborBytes[1]).toBe(0x40);
@@ -215,10 +214,10 @@ describe("UR conventions — payload is untagged CBOR (matches Rust)", () => {
   });
 
   it("SymmetricKey.ur() does NOT double-tag the payload", () => {
-    const rng = new SecureRandomNumberGenerator();
-    const key = SymmetricKey.fromData(rng.randomData(32));
+    const rng = new SecureRng();
+    const key = SymmetricKey.fromData(randomBytes(32, { rng }));
     const ur = key.ur();
-    const cborBytes = ur.cbor().toData();
+    const cborBytes = ur.cbor.toData();
     // 32-byte byte string: 0x58 0x20 + bytes.
     expect(cborBytes[0]).toBe(0x58);
     expect(cborBytes[1]).toBe(0x20);

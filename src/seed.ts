@@ -39,25 +39,30 @@
  * type "seed".
  */
 
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
   CborMap,
   CborDate,
-  toByteString,
   expectMap,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { SEED as TAG_SEED, SEED_V1 as TAG_SEED_V1 } from "@blockchaincommons/tags";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  mapGetText,
+  mapGetBytes,
+  type UREncodable,
+} from "./codable.js";
+import { SEED as TAG_SEED, LEGACY_TAGS } from "@blockchaincommons/tags";
+const TAG_SEED_V1 = LEGACY_TAGS.SEED_V1;
+import { UR } from "@blockchaincommons/uniform-resources";
 import { CryptoError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { PrivateKeyDataProvider } from "./private-key-data-provider.js";
@@ -115,7 +120,7 @@ export class Seed
    * @throws CryptoError if count < 16
    */
   static newWithLen(count: number): Seed {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return Seed.newWithLenUsing(count, rng);
   }
 
@@ -128,8 +133,8 @@ export class Seed
    * @param rng - Random number generator
    * @throws CryptoError if count < 16
    */
-  static newWithLenUsing(count: number, rng: { randomData: (size: number) => Uint8Array }): Seed {
-    const data = rng.randomData(count);
+  static newWithLenUsing(count: number, rng: RandomNumberGenerator): Seed {
+    const data = randomBytes(count, { rng: rng });
     return Seed.newOpt(data, undefined, undefined, undefined);
   }
 
@@ -204,11 +209,7 @@ export class Seed
    * @param size - Number of bytes (must be >= 16, default 32)
    * @param metadata - Optional metadata object
    */
-  static randomUsing(
-    rng: { randomData: (size: number) => Uint8Array },
-    size = 32,
-    metadata?: SeedMetadata,
-  ): Seed {
+  static randomUsing(rng: RandomNumberGenerator, size = 32, metadata?: SeedMetadata): Seed {
     const seed = Seed.newWithLenUsing(size, rng);
     if (metadata?.name !== undefined) seed.setName(metadata.name);
     if (metadata?.note !== undefined) seed.setNote(metadata.note);
@@ -415,17 +416,17 @@ export class Seed
    * - 4: note (optional, omitted if empty)
    */
   untaggedCbor(): Cbor {
-    const map = CborMap.new();
-    map.insert(1, toByteString(this._data));
+    const map = new CborMap();
+    map.set(1, cbor(this._data));
     if (this._creationDate !== undefined) {
-      const cborDate = CborDate.fromDatetime(this._creationDate);
-      map.insert(2, cborDate.taggedCbor());
+      const cborDate = CborDate.fromDate(this._creationDate);
+      map.set(2, cborDate.taggedCbor());
     }
     if (this._name.length > 0) {
-      map.insert(3, this._name);
+      map.set(3, this._name);
     }
     if (this._note.length > 0) {
-      map.insert(4, this._note);
+      map.set(4, this._note);
     }
     return cbor(map);
   }
@@ -434,7 +435,7 @@ export class Seed
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -456,26 +457,26 @@ export class Seed
 
     // Key 1: seed data (required)
     // CborMap.extract() returns native types (Uint8Array for byte strings)
-    const data = map.extract<number, Uint8Array>(1);
-    if (data.length === 0) {
+    const data = mapGetBytes(map, 1);
+    if (data === undefined || data.length === 0) {
       throw CryptoError.invalidData("Seed data is empty");
     }
 
     // Key 2: creation date (optional)
     // For tagged values (like dates), the extract returns the tagged Cbor object
     let creationDate: Date | undefined;
-    const dateValue = map.get<number, Cbor>(2);
+    const dateValue = map.get(2);
     if (dateValue !== undefined) {
       // The date is stored as a tagged CBOR value (tag 1)
-      const cborDate = CborDate.fromTaggedCbor(cbor(dateValue));
-      creationDate = cborDate.datetime();
+      const cborDate = CborDate.fromTaggedCbor(dateValue);
+      creationDate = cborDate.toDate();
     }
 
     // Key 3: name (optional)
-    const name = map.get<number, string>(3);
+    const name = mapGetText(map, 3);
 
     // Key 4: note (optional)
-    const note = map.get<number, string>(4);
+    const note = mapGetText(map, 4);
 
     return Seed.newOpt(new Uint8Array(data), name, note, creationDate);
   }
@@ -523,30 +524,30 @@ export class Seed
    * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
    */
   ur(): UR {
-    return UR.new("seed", this.untaggedCbor());
+    return UR.from("seed", this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a Seed from a UR.
    */
   static fromUR(ur: UR): Seed {
-    ur.checkType("seed");
+    ur.expectType("seed");
     const instance = Seed.new();
-    return instance.fromUntaggedCbor(ur.cbor());
+    return instance.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a Seed from a UR string.
    */
   static fromURString(urString: string): Seed {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return Seed.fromUR(ur);
   }
 }

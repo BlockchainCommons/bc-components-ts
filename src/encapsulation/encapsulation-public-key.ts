@@ -28,17 +28,20 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
   tagValue,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import {
   X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY,
   MLKEM_PUBLIC_KEY as TAG_MLKEM_PUBLIC_KEY,
@@ -343,7 +346,7 @@ export class EncapsulationPublicKey
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
       if (pk === undefined) throw new Error("X25519 public key not set");
-      return toByteString(pk.data());
+      return cbor(pk.data());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
       if (pk === undefined) throw new Error("MLKEM public key not set");
@@ -356,7 +359,7 @@ export class EncapsulationPublicKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -441,7 +444,7 @@ export class EncapsulationPublicKey
     if (this._scheme === EncapsulationScheme.X25519) {
       const name = TAG_X25519_PUBLIC_KEY.name;
       if (name === undefined) throw new Error("TAG_X25519_PUBLIC_KEY.name is undefined");
-      return UR.new(name, this.untaggedCbor());
+      return UR.from(name, this.untaggedCbor());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
       if (pk === undefined) throw new Error("MLKEM public key not set");
@@ -454,7 +457,7 @@ export class EncapsulationPublicKey
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
@@ -462,26 +465,26 @@ export class EncapsulationPublicKey
    */
   static fromUR(ur: UR): EncapsulationPublicKey {
     // Check for known UR types
-    if (ur.urTypeStr() === TAG_X25519_PUBLIC_KEY.name) {
+    if (ur.type.name === TAG_X25519_PUBLIC_KEY.name) {
       const dummy = EncapsulationPublicKey.fromX25519PublicKey(
         X25519PublicKey.fromData(new Uint8Array(32)),
       );
-      return dummy.fromUntaggedCbor(ur.cbor());
+      return dummy.fromUntaggedCbor(ur.cbor);
     }
 
-    if (ur.urTypeStr() === TAG_MLKEM_PUBLIC_KEY.name) {
+    if (ur.type.name === TAG_MLKEM_PUBLIC_KEY.name) {
       const mlkemPublic = MLKEMPublicKey.fromUR(ur);
       return EncapsulationPublicKey.fromMlkem(mlkemPublic);
     }
 
-    throw new Error(`Unknown UR type for EncapsulationPublicKey: ${ur.urTypeStr()}`);
+    throw new Error(`Unknown UR type for EncapsulationPublicKey: ${ur.type.name}`);
   }
 
   /**
    * Creates an EncapsulationPublicKey from a UR string.
    */
   static fromURString(urString: string): EncapsulationPublicKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return EncapsulationPublicKey.fromUR(ur);
   }
 }

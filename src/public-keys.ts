@@ -27,17 +27,20 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
   expectArray,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "./codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { PUBLIC_KEYS as TAG_PUBLIC_KEYS } from "@blockchaincommons/tags";
 
 import { SigningPublicKey } from "./signing/signing-public-key.js";
@@ -221,7 +224,7 @@ export class PublicKeys
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -320,22 +323,22 @@ export class PublicKeys
     if (name === undefined) {
       throw new Error("PUBLIC_KEYS tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a PublicKeys from a UR.
    */
   static fromUR(ur: UR): PublicKeys {
-    if (ur.urTypeStr() !== TAG_PUBLIC_KEYS.name) {
-      throw new Error(`Expected UR type ${TAG_PUBLIC_KEYS.name}, got ${ur.urTypeStr()}`);
+    if (ur.type.name !== TAG_PUBLIC_KEYS.name) {
+      throw new Error(`Expected UR type ${TAG_PUBLIC_KEYS.name}, got ${ur.type.name}`);
     }
     // We need a dummy instance to call instance methods
     const signingKeyPrefix = new Uint8Array([0x82, 0x02, 0x58, 0x20]);
@@ -349,14 +352,14 @@ export class PublicKeys
     const encapsulationKey = EncapsulationPublicKey.fromUntaggedCborData(encapsulationKeyData);
 
     const dummy = new PublicKeys(signingKey, encapsulationKey);
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a PublicKeys from a UR string.
    */
   static fromURString(urString: string): PublicKeys {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return PublicKeys.fromUR(ur);
   }
 }

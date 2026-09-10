@@ -26,27 +26,25 @@
  * Ported from bc-components-rust/src/x25519/x25519_private_key.rs
  */
 
-import { SecureRandomNumberGenerator, type RandomNumberGenerator } from "@blockchaincommons/rand";
-import {
-  X25519_PRIVATE_KEY_SIZE,
-  x25519PublicKeyFromPrivateKey,
-  x25519SharedKey,
-  deriveAgreementPrivateKey,
-} from "@blockchaincommons/crypto";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
+import { x25519, X25519_PRIVATE_KEY_SIZE } from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { X25519_PRIVATE_KEY as TAG_X25519_PRIVATE_KEY } from "@blockchaincommons/tags";
 import { CryptoError } from "../error.js";
 import { X25519PublicKey } from "./x25519-public-key.js";
@@ -83,7 +81,7 @@ export class X25519PrivateKey
    * Generate a new random X25519PrivateKey.
    */
   static random(): X25519PrivateKey {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return X25519PrivateKey.newUsing(rng);
   }
 
@@ -91,7 +89,7 @@ export class X25519PrivateKey
    * Generate a new random X25519PrivateKey using provided RNG.
    */
   static newUsing(rng: RandomNumberGenerator): X25519PrivateKey {
-    return new X25519PrivateKey(rng.randomData(X25519_PRIVATE_KEY_SIZE));
+    return new X25519PrivateKey(randomBytes(X25519_PRIVATE_KEY_SIZE, { rng: rng }));
   }
 
   /**
@@ -120,7 +118,7 @@ export class X25519PrivateKey
    * @returns A new X25519PrivateKey derived from the key material
    */
   static deriveFromKeyMaterial(keyMaterial: Uint8Array): X25519PrivateKey {
-    return new X25519PrivateKey(deriveAgreementPrivateKey(keyMaterial));
+    return new X25519PrivateKey(x25519.deriveAgreementPrivateKey(keyMaterial));
   }
 
   /**
@@ -199,7 +197,7 @@ export class X25519PrivateKey
    */
   publicKey(): X25519PublicKey {
     if (this._publicKey === undefined) {
-      const publicKeyBytes = x25519PublicKeyFromPrivateKey(this._data);
+      const publicKeyBytes = x25519.publicKey(this._data);
       this._publicKey = X25519PublicKey.fromData(publicKeyBytes);
     }
     return this._publicKey;
@@ -213,7 +211,7 @@ export class X25519PrivateKey
    * @returns A SymmetricKey derived from the shared secret
    */
   sharedKeyWith(publicKey: X25519PublicKey): SymmetricKey {
-    const shared = x25519SharedKey(this._data, publicKey.data());
+    const shared = x25519.sharedKey(this._data, publicKey.data());
     return SymmetricKey.fromData(shared);
   }
 
@@ -224,7 +222,7 @@ export class X25519PrivateKey
    */
   sharedSecret(publicKey: X25519PublicKey): Uint8Array {
     try {
-      const shared = x25519SharedKey(this._data, publicKey.data());
+      const shared = x25519.sharedKey(this._data, publicKey.data());
       return new Uint8Array(shared);
     } catch (e: unknown) {
       throw CryptoError.cryptoOperation(`ECDH key agreement failed: ${String(e)}`);
@@ -264,14 +262,14 @@ export class X25519PrivateKey
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -340,14 +338,14 @@ export class X25519PrivateKey
     if (name === undefined) {
       throw new Error("X25519_PRIVATE_KEY tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
@@ -358,16 +356,16 @@ export class X25519PrivateKey
     if (name === undefined) {
       throw new Error("X25519_PRIVATE_KEY tag name is undefined");
     }
-    ur.checkType(name);
+    ur.expectType(name);
     const dummy = new X25519PrivateKey(new Uint8Array(X25519_PRIVATE_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates an X25519PrivateKey from a UR string.
    */
   static fromURString(urString: string): X25519PrivateKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return X25519PrivateKey.fromUR(ur);
   }
 }

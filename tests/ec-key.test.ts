@@ -21,7 +21,7 @@ import {
   isECPublicKeyBase,
 } from "../src";
 import type { ECKeyBase, ECKey, ECPublicKeyBase } from "../src";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { SecureRng } from "@blockchaincommons/rand";
 
 // Test vectors
 const TEST_PRIVATE_KEY_HEX = "e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35";
@@ -70,7 +70,7 @@ describe("ECPrivateKey", () => {
     });
 
     it("should create using provided RNG", () => {
-      const rng = new SecureRandomNumberGenerator();
+      const rng = new SecureRng();
       const key = ECPrivateKey.newUsing(rng);
       expect(key).toBeInstanceOf(ECPrivateKey);
       expect(key.data().length).toBe(32);
@@ -87,7 +87,7 @@ describe("ECPrivateKey", () => {
     });
 
     it("should create keypair using provided RNG", () => {
-      const rng = new SecureRandomNumberGenerator();
+      const rng = new SecureRng();
       const [privateKey, publicKey] = ECPrivateKey.keypairUsing(rng);
 
       expect(privateKey).toBeInstanceOf(ECPrivateKey);
@@ -225,7 +225,7 @@ describe("ECPrivateKey", () => {
 
     it("should sign with custom RNG", () => {
       const privateKey = ECPrivateKey.random();
-      const rng = new SecureRandomNumberGenerator();
+      const rng = new SecureRng();
       const signature = privateKey.schnorrSignUsing(TEST_MESSAGE, rng);
       const schnorrPubKey = privateKey.schnorrPublicKey();
       expect(schnorrPubKey.schnorrVerify(signature, TEST_MESSAGE)).toBe(true);
@@ -297,7 +297,7 @@ describe("ECPrivateKey", () => {
     it("should serialize to UR", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const ur = key.ur();
-      expect(ur.urTypeStr()).toBe("eckey");
+      expect(ur.type.name).toBe("eckey");
     });
 
     it("should serialize to UR string", () => {
@@ -457,7 +457,7 @@ describe("ECPublicKey", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
       const ur = publicKey.ur();
-      expect(ur.urTypeStr()).toBe("eckey");
+      expect(ur.type.name).toBe("eckey");
     });
 
     it("should roundtrip through UR string", () => {

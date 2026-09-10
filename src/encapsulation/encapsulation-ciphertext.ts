@@ -20,16 +20,14 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
   tagValue,
-} from "@blockchaincommons/dcbor-compat";
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
 import {
   X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY,
   MLKEM_CIPHERTEXT as TAG_MLKEM_CIPHERTEXT,
@@ -254,7 +252,7 @@ export class EncapsulationCiphertext
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
       if (pk === undefined) throw new Error("X25519 public key not set");
-      return toByteString(pk.data());
+      return cbor(pk.data());
     } else if (isMlkemScheme(this._scheme)) {
       const ct = this._mlkemCiphertext;
       if (ct === undefined) throw new Error("MLKEM ciphertext not set");
@@ -267,7 +265,7 @@ export class EncapsulationCiphertext
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**

@@ -27,16 +27,12 @@ import { ED25519_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
-  toByteString,
-  toTaggedValue,
+  taggedValue,
   expectArray,
   expectBytes,
   expectText,
   expectUnsigned,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
@@ -44,7 +40,9 @@ import {
   isBytes,
   isArray,
   isTagged,
-} from "@blockchaincommons/dcbor-compat";
+  asTaggedValue,
+} from "@blockchaincommons/dcbor";
+import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
 import {
   SIGNING_PUBLIC_KEY as TAG_SIGNING_PUBLIC_KEY,
   MLDSA_PUBLIC_KEY as TAG_MLDSA_PUBLIC_KEY,
@@ -626,25 +624,25 @@ export class SigningPublicKey
           throw new Error("Schnorr public key is missing");
         }
         // Rust: CBOR::to_byte_string(key.data()) - bare byte string
-        return toByteString(this._schnorrKey.toData());
+        return cbor(this._schnorrKey.toData());
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecdsaKey === undefined) {
           throw new Error("ECDSA public key is missing");
         }
-        return cbor([1, toByteString(this._ecdsaKey.toData())]);
+        return cbor([1, cbor(this._ecdsaKey.toData())]);
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
           throw new Error("Ed25519 public key is missing");
         }
-        return cbor([2, toByteString(this._ed25519Key.toData())]);
+        return cbor([2, cbor(this._ed25519Key.toData())]);
       }
       case SignatureScheme.Sr25519: {
         if (this._sr25519Key === undefined) {
           throw new Error("Sr25519 public key is missing");
         }
-        return cbor([3, toByteString(this._sr25519Key.toData())]);
+        return cbor([3, cbor(this._sr25519Key.toData())]);
       }
       case SignatureScheme.MLDSA44:
       case SignatureScheme.MLDSA65:
@@ -664,7 +662,7 @@ export class SigningPublicKey
         }
         // Mirror Rust `SigningPublicKey::SSH(key) => to_tagged_value(TAG_SSH_TEXT_PUBLIC_KEY, openssh)`
         // (`signing_public_key.rs:441-443`).
-        return toTaggedValue(TAG_SSH_TEXT_PUBLIC_KEY, this._sshKey.toOpenssh());
+        return taggedValue(TAG_SSH_TEXT_PUBLIC_KEY, this._sshKey.toOpenssh());
       }
     }
   }
@@ -673,7 +671,7 @@ export class SigningPublicKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -728,7 +726,7 @@ export class SigningPublicKey
 
     // Tagged format for MLDSA / SSH
     if (isTagged(cborValue)) {
-      const tagged = cborValue.asTagged();
+      const tagged = asTaggedValue(cborValue);
       if (tagged?.[0].value === TAG_MLDSA_PUBLIC_KEY.value) {
         const mldsaKey = MLDSAPublicKey.fromTaggedCbor(cborValue);
         return SigningPublicKey.fromMldsa(mldsaKey);
@@ -816,32 +814,32 @@ export class SigningPublicKey
     // double-tag the content (`tag(40022, …)` inside the UR), diverging from
     // Rust and breaking interop. Mirrors the canonical `toUR` pattern
     // (`ur-encodable.ts`).
-    return UR.new(SigningPublicKey.UR_TYPE, this.untaggedCbor());
+    return UR.from(SigningPublicKey.UR_TYPE, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation of the signing public key.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a SigningPublicKey from a UR.
    */
   static fromUR(ur: UR): SigningPublicKey {
-    ur.checkType(SigningPublicKey.UR_TYPE);
+    ur.expectType(SigningPublicKey.UR_TYPE);
     // The UR content is untagged (the type implies tag 40022), so decode it
     // directly as untagged CBOR. Mirrors the canonical `fromUR` pattern
     // (`ur-decodable.ts`).
-    return SigningPublicKey.fromUntaggedCbor(ur.cbor());
+    return SigningPublicKey.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a SigningPublicKey from a UR string.
    */
   static fromURString(urString: string): SigningPublicKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return SigningPublicKey.fromUR(ur);
   }
 

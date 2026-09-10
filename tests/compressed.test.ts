@@ -174,3 +174,26 @@ describe("Compressed", () => {
     });
   });
 });
+
+describe("Compressed - miniz_oxide interop (RUST_DIVERGENCES D3)", () => {
+  // Produced by tests/rust-validation/examples/dump_compressed.rs with
+  // bc-components-rust 0.31.1 (miniz_oxide level 6). pako's level-6 stream
+  // for the same input differs; both sides must decompress each other's.
+  const RUST_TAGGED_HEX =
+    "d99c43831a0eca22c618e4583cd5cb010dc0200c04402b2f6099124c90d22c9f504adae27f3a1070cd430ddc790cc3a70792856e5a0fc457aa94d609f4c1cd14ae0f3a592fda3df007";
+  const TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ".repeat(4);
+
+  it("decompresses a stream produced by miniz_oxide", () => {
+    const bytes = Uint8Array.from(RUST_TAGGED_HEX.match(/../g)!.map((b) => parseInt(b, 16)));
+    const c = Compressed.fromTaggedCborData(bytes);
+    expect(new TextDecoder().decode(c.decompress())).toBe(TEXT);
+    expect(c.decompressedSize()).toBe(TEXT.length);
+  });
+
+  it("produces a different but equivalent stream with pako", () => {
+    const ours = Compressed.fromDecompressedData(new TextEncoder().encode(TEXT));
+    const hex = Array.from(ours.taggedCborData(), (b) => b.toString(16).padStart(2, "0")).join("");
+    expect(hex).not.toBe(RUST_TAGGED_HEX);
+    expect(ours.decompress()).toEqual(new TextEncoder().encode(TEXT));
+  });
+});

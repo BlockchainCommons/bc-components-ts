@@ -37,23 +37,22 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  toByteString,
+  cbor,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { XID as TAG_XID } from "@blockchaincommons/tags";
+} from "@blockchaincommons/dcbor";
 import {
-  UR,
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
   type UREncodable,
-  encodeBytewordsIdentifier,
-  encodeBytemojisIdentifier,
-} from "@blockchaincommons/uniform-resources";
+} from "../codable.js";
+import { XID as TAG_XID } from "@blockchaincommons/tags";
+import { UR } from "@blockchaincommons/uniform-resources";
+import { shortIdentifier } from "@blockchaincommons/uniform-resources/bytewords";
 import { CryptoError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
 import { Digest } from "../digest.js";
@@ -194,7 +193,7 @@ export class XID
 
   /**
    * Mirror of Rust's `From<&SigningPublicKey> for XID`.
-   * Equivalent to {@link newFromSigningKey}; provided for API parity.
+   * Equivalent to {@link XID.newFromSigningKey}; provided for API parity.
    */
   static fromSigningPublicKey(signingPublicKey: SigningPublicKey): XID {
     return XID.newFromSigningKey(signingPublicKey);
@@ -296,7 +295,7 @@ export class XID
    * @returns Space-separated uppercase bytewords, e.g., "🅧 URGE DICE GURU IRIS"
    */
   bytewordsIdentifier(prefix = false): string {
-    const words = encodeBytewordsIdentifier(this._data.slice(0, 4)).toUpperCase();
+    const words = shortIdentifier(this._data.slice(0, 4)).toUpperCase();
     return prefix ? `${XID_PREFIX} ${words}` : words;
   }
 
@@ -307,7 +306,7 @@ export class XID
    * @returns Space-separated emojis, e.g., "🅧 🐻 😻 🍞 💐"
    */
   bytemojisIdentifier(prefix = false): string {
-    const emojis = encodeBytemojisIdentifier(this._data.slice(0, 4));
+    const emojis = shortIdentifier(this._data.slice(0, 4), { style: "bytemoji" });
     return prefix ? `${XID_PREFIX} ${emojis}` : emojis;
   }
 
@@ -366,14 +365,14 @@ export class XID
    * Returns the untagged CBOR encoding (as a byte string).
    */
   untaggedCbor(): Cbor {
-    return toByteString(this._data);
+    return cbor(this._data);
   }
 
   /**
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -438,30 +437,30 @@ export class XID
    * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
    */
   ur(): UR {
-    return UR.new("xid", this.untaggedCbor());
+    return UR.from("xid", this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates a XID from a UR.
    */
   static fromUR(ur: UR): XID {
-    ur.checkType("xid");
+    ur.expectType("xid");
     const instance = new XID(new Uint8Array(XID_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor());
+    return instance.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates a XID from a UR string.
    */
   static fromURString(urString: string): XID {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return XID.fromUR(ur);
   }
 }

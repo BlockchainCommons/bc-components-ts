@@ -23,8 +23,7 @@
  */
 
 import { ml_kem512, ml_kem768, ml_kem1024 } from "@noble/post-quantum/ml-kem.js";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
 
 /**
  * ML-KEM security levels.
@@ -154,7 +153,7 @@ export interface MLKEMEncapsulationResult {
  * @returns Object containing publicKey and secretKey bytes
  */
 export function mlkemGenerateKeypair(level: MLKEMLevel): MLKEMKeypairData {
-  const rng = new SecureRandomNumberGenerator();
+  const rng = secureRng();
   return mlkemGenerateKeypairUsing(level, rng);
 }
 
@@ -170,7 +169,7 @@ export function mlkemGenerateKeypairUsing(
   rng: RandomNumberGenerator,
 ): MLKEMKeypairData {
   // Generate random seed for keypair generation
-  const seed = rng.randomData(64);
+  const seed = randomBytes(64, { rng: rng });
 
   switch (level) {
     case MLKEMLevel.MLKEM512: {

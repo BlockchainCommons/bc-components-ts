@@ -25,22 +25,24 @@
 import {
   type Cbor,
   type Tag,
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   cbor,
   expectArray,
   expectInteger,
   expectBytes,
-  createTaggedCbor,
   validateTag,
   extractTaggedContent,
   decodeCbor,
   tagsForValues,
-} from "@blockchaincommons/dcbor-compat";
-import { UR, type UREncodable } from "@blockchaincommons/uniform-resources";
+} from "@blockchaincommons/dcbor";
+import {
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
+  taggedCborOf,
+  type UREncodable,
+} from "../codable.js";
+import { UR } from "@blockchaincommons/uniform-resources";
 import { MLKEM_PRIVATE_KEY as TAG_MLKEM_PRIVATE_KEY } from "@blockchaincommons/tags";
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
-import { SecureRandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
 
 import {
   MLKEMLevel,
@@ -86,7 +88,7 @@ export class MLKEMPrivateKey
    * @param level - The ML-KEM security level (default: MLKEM768)
    */
   static new(level: MLKEMLevel = MLKEMLevel.MLKEM768): MLKEMPrivateKey {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return MLKEMPrivateKey.newUsing(level, rng);
   }
 
@@ -118,7 +120,7 @@ export class MLKEMPrivateKey
    * @returns Tuple of [privateKey, publicKey]
    */
   static keypair(level: MLKEMLevel = MLKEMLevel.MLKEM768): [MLKEMPrivateKey, MLKEMPublicKey] {
-    const rng = new SecureRandomNumberGenerator();
+    const rng = secureRng();
     return MLKEMPrivateKey.keypairUsing(level, rng);
   }
 
@@ -248,7 +250,7 @@ export class MLKEMPrivateKey
    * Returns the tagged CBOR encoding.
    */
   taggedCbor(): Cbor {
-    return createTaggedCbor(this);
+    return taggedCborOf(this);
   }
 
   /**
@@ -325,33 +327,33 @@ export class MLKEMPrivateKey
     if (name === undefined) {
       throw new Error("MLKEM_PRIVATE_KEY tag name is undefined");
     }
-    return UR.new(name, this.untaggedCbor());
+    return UR.from(name, this.untaggedCbor());
   }
 
   /**
    * Returns the UR string representation.
    */
   urString(): string {
-    return this.ur().string();
+    return this.ur().toString();
   }
 
   /**
    * Creates an MLKEMPrivateKey from a UR.
    */
   static fromUR(ur: UR): MLKEMPrivateKey {
-    if (ur.urTypeStr() !== TAG_MLKEM_PRIVATE_KEY.name) {
-      throw new Error(`Expected UR type ${TAG_MLKEM_PRIVATE_KEY.name}, got ${ur.urTypeStr()}`);
+    if (ur.type.name !== TAG_MLKEM_PRIVATE_KEY.name) {
+      throw new Error(`Expected UR type ${TAG_MLKEM_PRIVATE_KEY.name}, got ${ur.type.name}`);
     }
     const dummyData = new Uint8Array(mlkemPrivateKeySize(MLKEMLevel.MLKEM512));
     const dummy = new MLKEMPrivateKey(MLKEMLevel.MLKEM512, dummyData);
-    return dummy.fromUntaggedCbor(ur.cbor());
+    return dummy.fromUntaggedCbor(ur.cbor);
   }
 
   /**
    * Creates an MLKEMPrivateKey from a UR string.
    */
   static fromURString(urString: string): MLKEMPrivateKey {
-    const ur = UR.fromURString(urString);
+    const ur = UR.parse(urString);
     return MLKEMPrivateKey.fromUR(ur);
   }
 }
