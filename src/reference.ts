@@ -32,7 +32,11 @@ import {
   tagsForValues,
 } from "@blockchaincommons/dcbor-compat";
 import { REFERENCE as TAG_REFERENCE } from "@blockchaincommons/tags";
-import { UR, encodeBytewordsIdentifier, encodeBytemojisIdentifier } from "@blockchaincommons/uniform-resources";
+import {
+  UR,
+  encodeBytewordsIdentifier,
+  encodeBytemojisIdentifier,
+} from "@blockchaincommons/uniform-resources";
 
 import { Digest } from "./digest.js";
 import type { DigestProvider } from "./digest-provider.js";

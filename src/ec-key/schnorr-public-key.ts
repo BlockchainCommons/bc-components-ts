@@ -34,7 +34,7 @@ import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import type { ECKeyBase } from "./ec-key-base.js";
 
 export class SchnorrPublicKey implements ECKeyBase {
-  static readonly KEY_SIZE = SCHNORR_PUBLIC_KEY_SIZE;
+  static readonly KEY_SIZE: number = SCHNORR_PUBLIC_KEY_SIZE;
 
   private readonly _data: Uint8Array;
 

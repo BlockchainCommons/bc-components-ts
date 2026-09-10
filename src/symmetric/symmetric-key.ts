@@ -51,7 +51,7 @@ import { EncryptedMessage } from "./encrypted-message.js";
 const SYMMETRIC_KEY_SIZE = 32;
 
 export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<SymmetricKey> {
-  static readonly SYMMETRIC_KEY_SIZE = SYMMETRIC_KEY_SIZE;
+  static readonly SYMMETRIC_KEY_SIZE: number = SYMMETRIC_KEY_SIZE;
 
   private readonly _data: Uint8Array;
 

@@ -52,7 +52,7 @@ import { bytesToHex, toBase64 } from "../utils.js";
 const UUID_SIZE = 16;
 
 export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, UREncodable {
-  static readonly UUID_SIZE = UUID_SIZE;
+  static readonly UUID_SIZE: number = UUID_SIZE;
 
   private readonly _data: Uint8Array;
 

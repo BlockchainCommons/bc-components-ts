@@ -27,7 +27,7 @@ import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 const AUTHENTICATION_TAG_SIZE = 16;
 
 export class AuthenticationTag {
-  static readonly AUTHENTICATION_TAG_SIZE = AUTHENTICATION_TAG_SIZE;
+  static readonly AUTHENTICATION_TAG_SIZE: number = AUTHENTICATION_TAG_SIZE;
 
   private readonly _data: Uint8Array;
 

@@ -48,7 +48,7 @@ export const DEFAULT_SCRYPT_P = 1;
  * - p: Parallelization parameter
  */
 export class ScryptParams implements KeyDerivation {
-  static readonly INDEX = KeyDerivationMethod.Scrypt;
+  static readonly INDEX: KeyDerivationMethod = KeyDerivationMethod.Scrypt;
 
   private readonly _salt: Salt;
   private readonly _logN: number;

@@ -63,7 +63,7 @@ import type { ECKey } from "./ec-key-base.js";
 export class ECPrivateKey
   implements ECKey, CborTaggedEncodable, CborTaggedDecodable<ECPrivateKey>, UREncodable
 {
-  static readonly KEY_SIZE = ECDSA_PRIVATE_KEY_SIZE;
+  static readonly KEY_SIZE: number = ECDSA_PRIVATE_KEY_SIZE;
 
   private readonly _data: Uint8Array;
   private _publicKey?: ECPublicKey;

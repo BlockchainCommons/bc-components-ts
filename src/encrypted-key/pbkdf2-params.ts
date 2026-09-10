@@ -35,7 +35,7 @@ export const DEFAULT_PBKDF2_ITERATIONS = 100_000;
  * PBKDF2 parameters for password-based key derivation.
  */
 export class PBKDF2Params implements KeyDerivation {
-  static readonly INDEX = KeyDerivationMethod.PBKDF2;
+  static readonly INDEX: KeyDerivationMethod = KeyDerivationMethod.PBKDF2;
 
   private readonly _salt: Salt;
   private readonly _iterations: number;

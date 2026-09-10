@@ -40,7 +40,7 @@ import type { KeyDerivation } from "./key-derivation.js";
  * attacks.
  */
 export class Argon2idParams implements KeyDerivation {
-  static readonly INDEX = KeyDerivationMethod.Argon2id;
+  static readonly INDEX: KeyDerivationMethod = KeyDerivationMethod.Argon2id;
 
   private readonly _salt: Salt;
 

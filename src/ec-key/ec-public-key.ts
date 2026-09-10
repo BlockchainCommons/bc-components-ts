@@ -28,7 +28,11 @@
  * Ported from bc-components-rust/src/ec_key/ec_public_key.rs
  */
 
-import { ECDSA_PUBLIC_KEY_SIZE, ecdsaVerify, ecdsaDecompressPublicKey } from "@blockchaincommons/crypto";
+import {
+  ECDSA_PUBLIC_KEY_SIZE,
+  ecdsaVerify,
+  ecdsaDecompressPublicKey,
+} from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
@@ -53,7 +57,7 @@ import type { ECPublicKeyBase } from "./ec-key-base.js";
 export class ECPublicKey
   implements ECPublicKeyBase, CborTaggedEncodable, CborTaggedDecodable<ECPublicKey>, UREncodable
 {
-  static readonly KEY_SIZE = ECDSA_PUBLIC_KEY_SIZE;
+  static readonly KEY_SIZE: number = ECDSA_PUBLIC_KEY_SIZE;
 
   private readonly _data: Uint8Array;
 

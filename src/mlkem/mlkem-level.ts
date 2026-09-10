@@ -46,7 +46,12 @@ export enum MLKEMLevel {
 /**
  * Key sizes for each ML-KEM security level.
  */
-export const MLKEM_KEY_SIZES = {
+export const MLKEM_KEY_SIZES: Readonly<
+  Record<
+    MLKEMLevel,
+    { privateKey: number; publicKey: number; ciphertext: number; sharedSecret: number }
+  >
+> = {
   [MLKEMLevel.MLKEM512]: {
     privateKey: 1632,
     publicKey: 800,

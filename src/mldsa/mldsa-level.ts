@@ -46,7 +46,9 @@ export enum MLDSALevel {
 /**
  * Key sizes for each ML-DSA security level.
  */
-export const MLDSA_KEY_SIZES = {
+export const MLDSA_KEY_SIZES: Readonly<
+  Record<MLDSALevel, { privateKey: number; publicKey: number; signature: number }>
+> = {
   [MLDSALevel.MLDSA44]: {
     privateKey: 2560,
     publicKey: 1312,

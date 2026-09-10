@@ -56,7 +56,7 @@ import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 export class X25519PrivateKey
   implements CborTaggedEncodable, CborTaggedDecodable<X25519PrivateKey>, UREncodable
 {
-  static readonly KEY_SIZE = X25519_PRIVATE_KEY_SIZE;
+  static readonly KEY_SIZE: number = X25519_PRIVATE_KEY_SIZE;
 
   private readonly _data: Uint8Array;
   private _publicKey?: X25519PublicKey;

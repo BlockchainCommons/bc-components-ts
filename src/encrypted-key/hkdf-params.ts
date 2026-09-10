@@ -38,7 +38,7 @@ export const SALT_LEN = 16;
  * but NOT for password-based key derivation.
  */
 export class HKDFParams implements KeyDerivation {
-  static readonly INDEX = KeyDerivationMethod.HKDF;
+  static readonly INDEX: KeyDerivationMethod = KeyDerivationMethod.HKDF;
 
   private readonly _salt: Salt;
   private readonly _hashType: HashType;

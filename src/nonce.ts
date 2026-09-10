@@ -71,7 +71,7 @@ import { CryptoError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 
 export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, UREncodable {
-  static readonly NONCE_SIZE = SYMMETRIC_NONCE_SIZE;
+  static readonly NONCE_SIZE: number = SYMMETRIC_NONCE_SIZE;
 
   private readonly _data: Uint8Array;
 

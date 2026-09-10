@@ -36,7 +36,7 @@ export const SR25519_PUBLIC_KEY_SIZE = 32;
 export const SR25519_SIGNATURE_SIZE = 64;
 
 /** Default signing context (Substrate/Polkadot compatible) */
-export const SR25519_DEFAULT_CONTEXT = new TextEncoder().encode("substrate");
+export const SR25519_DEFAULT_CONTEXT: Uint8Array = new TextEncoder().encode("substrate");
 
 /**
  * Sr25519PrivateKey - Private key for Schnorr signatures over Ristretto25519.

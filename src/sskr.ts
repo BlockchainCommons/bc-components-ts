@@ -34,7 +34,10 @@ import {
   tagsForValues,
   tagValue,
 } from "@blockchaincommons/dcbor-compat";
-import { SSKR_SHARE as TAG_SSKR_SHARE, SSKR_SHARE_V1 as TAG_SSKR_SHARE_V1 } from "@blockchaincommons/tags";
+import {
+  SSKR_SHARE as TAG_SSKR_SHARE,
+  SSKR_SHARE_V1 as TAG_SSKR_SHARE_V1,
+} from "@blockchaincommons/tags";
 
 import { bytesToHex, hexToBytes } from "./utils.js";
 import {

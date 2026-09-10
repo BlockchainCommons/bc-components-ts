@@ -21,7 +21,11 @@
  * Ported from bc-components-rust/src/signing/signature.rs
  */
 
-import { ED25519_SIGNATURE_SIZE, ECDSA_SIGNATURE_SIZE, SCHNORR_SIGNATURE_SIZE } from "@blockchaincommons/crypto";
+import {
+  ED25519_SIGNATURE_SIZE,
+  ECDSA_SIGNATURE_SIZE,
+  SCHNORR_SIGNATURE_SIZE,
+} from "@blockchaincommons/crypto";
 import { SR25519_SIGNATURE_SIZE } from "../sr25519/sr25519-private-key.js";
 import {
   type Cbor,

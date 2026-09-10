@@ -65,7 +65,7 @@ import type { DigestProvider } from "./digest-provider.js";
 export class Digest
   implements DigestProvider, CborTaggedEncodable, CborTaggedDecodable<Digest>, UREncodable
 {
-  static readonly DIGEST_SIZE = SHA256_SIZE;
+  static readonly DIGEST_SIZE: number = SHA256_SIZE;
 
   private readonly _data: Uint8Array;
 

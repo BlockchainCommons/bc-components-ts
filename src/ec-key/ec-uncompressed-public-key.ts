@@ -26,7 +26,10 @@
  * Ported from bc-components-rust/src/ec_key/ec_uncompressed_public_key.rs
  */
 
-import { ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE, ecdsaCompressPublicKey } from "@blockchaincommons/crypto";
+import {
+  ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE,
+  ecdsaCompressPublicKey,
+} from "@blockchaincommons/crypto";
 import {
   type Cbor,
   type Tag,
@@ -54,7 +57,7 @@ export class ECUncompressedPublicKey
     CborTaggedDecodable<ECUncompressedPublicKey>,
     UREncodable
 {
-  static readonly KEY_SIZE = ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE;
+  static readonly KEY_SIZE: number = ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE;
 
   private readonly _data: Uint8Array;
 

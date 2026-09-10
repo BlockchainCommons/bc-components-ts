@@ -105,7 +105,7 @@ export class XID
     XIDProvider,
     ReferenceProvider
 {
-  static readonly XID_SIZE = XID_SIZE;
+  static readonly XID_SIZE: number = XID_SIZE;
 
   private readonly _data: Uint8Array;
 
