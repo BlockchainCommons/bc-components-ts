@@ -12,17 +12,17 @@
 import type { RandomNumberGenerator } from "@blockchaincommons/rand";
 import { PrivateKeys } from "./private-keys.js";
 import { PublicKeys } from "./public-keys.js";
+import { defaultSignatureScheme } from "./signing/signature-scheme.js";
 import {
-  defaultSignatureScheme,
   createKeypair as createSigningKeypair,
   createKeypairUsing as createSigningKeypairUsing,
-} from "./signing/signature-scheme.js";
+} from "./signing/keypair.js";
 import type { SignatureScheme } from "./signing/signature-scheme.js";
+import { defaultEncapsulationScheme } from "./encapsulation/encapsulation-scheme.js";
 import {
-  defaultEncapsulationScheme,
   createEncapsulationKeypair,
   createEncapsulationKeypairUsing,
-} from "./encapsulation/encapsulation-scheme.js";
+} from "./encapsulation/keypair.js";
 import type { EncapsulationScheme } from "./encapsulation/encapsulation-scheme.js";
 
 /**

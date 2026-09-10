@@ -100,9 +100,8 @@ export {
   SigningPrivateKey,
   SigningPublicKey,
 } from "./signing/index.js";
+export { createKeypair, createKeypairUsing } from "./signing/keypair.js";
 export {
-  createKeypair,
-  createKeypairUsing,
   defaultSignatureScheme,
   isSshScheme,
   isMldsaScheme,

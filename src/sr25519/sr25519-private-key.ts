@@ -24,18 +24,14 @@ import { blake2b } from "@noble/hashes/blake2.js";
 import { Sr25519PublicKey } from "./sr25519-public-key.js";
 import { bytesToHex, bytesEqual } from "../utils.js";
 import { CryptoError } from "../error.js";
+import { SR25519_PRIVATE_KEY_SIZE, SR25519_DEFAULT_CONTEXT } from "./constants.js";
 
-/** Size of SR25519 private key (seed) in bytes */
-export const SR25519_PRIVATE_KEY_SIZE = 32;
-
-/** Size of SR25519 public key in bytes */
-export const SR25519_PUBLIC_KEY_SIZE = 32;
-
-/** Size of SR25519 signature in bytes */
-export const SR25519_SIGNATURE_SIZE = 64;
-
-/** Default signing context (Substrate/Polkadot compatible) */
-export const SR25519_DEFAULT_CONTEXT: Uint8Array = new TextEncoder().encode("substrate");
+export {
+  SR25519_PRIVATE_KEY_SIZE,
+  SR25519_PUBLIC_KEY_SIZE,
+  SR25519_SIGNATURE_SIZE,
+  SR25519_DEFAULT_CONTEXT,
+} from "./constants.js";
 
 /**
  * Sr25519PrivateKey - Private key for Schnorr signatures over Ristretto25519.

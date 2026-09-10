@@ -27,12 +27,8 @@
  * Ported from bc-components-rust/src/encapsulation/mod.rs
  */
 
-export {
-  EncapsulationScheme,
-  defaultEncapsulationScheme,
-  createEncapsulationKeypair,
-  createEncapsulationKeypairUsing,
-} from "./encapsulation-scheme.js";
+export { EncapsulationScheme, defaultEncapsulationScheme } from "./encapsulation-scheme.js";
+export { createEncapsulationKeypair, createEncapsulationKeypairUsing } from "./keypair.js";
 export { EncapsulationPrivateKey } from "./encapsulation-private-key.js";
 export { EncapsulationPublicKey } from "./encapsulation-public-key.js";
 export { EncapsulationCiphertext } from "./encapsulation-ciphertext.js";

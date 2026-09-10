@@ -56,6 +56,7 @@ import {
   type CborTaggedEncodable,
   type CborTaggedDecodable,
   taggedCborOf,
+  forgetTaggedCbor,
   mapGetText,
   mapGetBytes,
   type UREncodable,
@@ -282,6 +283,7 @@ export class Seed
    */
   setName(name: string): void {
     this._name = name;
+    forgetTaggedCbor(this);
   }
 
   /**
@@ -300,6 +302,7 @@ export class Seed
    */
   setNote(note: string): void {
     this._note = note;
+    forgetTaggedCbor(this);
   }
 
   /**
@@ -318,6 +321,7 @@ export class Seed
    */
   setCreationDate(creationDate: Date | undefined): void {
     this._creationDate = creationDate;
+    forgetTaggedCbor(this);
   }
 
   /**

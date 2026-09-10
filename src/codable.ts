@@ -37,11 +37,29 @@ export interface UREncodable {
   urString(): string;
 }
 
-/** The value wrapped in its first tag. */
+/**
+ * Tagged CBOR memo, keyed by the value object. Every codable type here is an
+ * immutable value (readonly fields, no setters) except `Seed`, whose setters
+ * call `forgetTaggedCbor`. The memo makes repeated `taggedCborData()` /
+ * `Digest.fromImage(taggedCborData())` calls on the same object (references,
+ * XIDs, envelope leaf digests) free after the first.
+ */
+const TAGGED_CBOR = new WeakMap<object, Cbor>();
+
+/** The value wrapped in its first tag; memoised per object. */
 export function taggedCborOf(value: CborTaggedEncodable): Cbor {
+  const memo = TAGGED_CBOR.get(value);
+  if (memo !== undefined) return memo;
   const tag: Tag | undefined = value.cborTags()[0];
   if (tag === undefined) throw new Error("No tags defined for this type");
-  return taggedValue(tag, value.untaggedCbor());
+  const out = taggedValue(tag, value.untaggedCbor());
+  TAGGED_CBOR.set(value, out);
+  return out;
+}
+
+/** Drop the memoised tagged CBOR of a value that has just been mutated. */
+export function forgetTaggedCbor(value: object): void {
+  TAGGED_CBOR.delete(value);
 }
 
 export function mapGetBoolean(map: CborMap, key: number): boolean | undefined {

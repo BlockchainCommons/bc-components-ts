@@ -27,13 +27,8 @@
  */
 
 export type { Signer, Verifier } from "./signer.js";
-export {
-  SignatureScheme,
-  defaultSignatureScheme,
-  isSshScheme,
-  createKeypair,
-  createKeypairUsing,
-} from "./signature-scheme.js";
+export { SignatureScheme, defaultSignatureScheme, isSshScheme } from "./signature-scheme.js";
+export { createKeypair, createKeypairUsing } from "./keypair.js";
 export { Signature } from "./signature.js";
 export { SigningPrivateKey } from "./signing-private-key.js";
 export { SigningPublicKey } from "./signing-public-key.js";

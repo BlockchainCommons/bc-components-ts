@@ -14,7 +14,7 @@
  */
 
 import * as sr25519 from "@scure/sr25519";
-import { SR25519_PUBLIC_KEY_SIZE, SR25519_DEFAULT_CONTEXT } from "./sr25519-private-key.js";
+import { SR25519_PUBLIC_KEY_SIZE, SR25519_DEFAULT_CONTEXT } from "./constants.js";
 import { bytesToHex, bytesEqual } from "../utils.js";
 import { CryptoError } from "../error.js";
 

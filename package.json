@@ -31,6 +31,50 @@
       },
       "default": "./dist/index.mjs"
     },
+    "./ssh": {
+      "import": {
+        "types": "./dist/ssh.d.mts",
+        "default": "./dist/ssh.mjs"
+      },
+      "require": {
+        "types": "./dist/ssh.d.cts",
+        "default": "./dist/ssh.cjs"
+      },
+      "default": "./dist/ssh.mjs"
+    },
+    "./pq": {
+      "import": {
+        "types": "./dist/pq.d.mts",
+        "default": "./dist/pq.mjs"
+      },
+      "require": {
+        "types": "./dist/pq.d.cts",
+        "default": "./dist/pq.cjs"
+      },
+      "default": "./dist/pq.mjs"
+    },
+    "./kdf": {
+      "import": {
+        "types": "./dist/kdf.d.mts",
+        "default": "./dist/kdf.mjs"
+      },
+      "require": {
+        "types": "./dist/kdf.d.cts",
+        "default": "./dist/kdf.cjs"
+      },
+      "default": "./dist/kdf.mjs"
+    },
+    "./sskr": {
+      "import": {
+        "types": "./dist/sskr.d.mts",
+        "default": "./dist/sskr.mjs"
+      },
+      "require": {
+        "types": "./dist/sskr.d.cts",
+        "default": "./dist/sskr.cjs"
+      },
+      "default": "./dist/sskr.mjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [

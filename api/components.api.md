@@ -4,11 +4,13 @@
 
 ```ts
 
+import { bytesToHex } from '@blockchaincommons/dcbor';
 import { Cbor } from '@blockchaincommons/dcbor';
 import { CborTagged } from '@blockchaincommons/dcbor';
 import { COMPRESSED } from '@blockchaincommons/tags';
 import { ENCRYPTED } from '@blockchaincommons/tags';
 import { ENVELOPE } from '@blockchaincommons/tags';
+import { hexToBytes } from '@blockchaincommons/dcbor';
 import { KNOWN_VALUE } from '@blockchaincommons/tags';
 import { LEAF } from '@blockchaincommons/tags';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
@@ -102,8 +104,7 @@ export class AuthenticationTag {
 // @public
 export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean;
 
-// @public
-export function bytesToHex(data: Uint8Array): string;
+export { bytesToHex }
 
 export { COMPRESSED }
 
@@ -711,8 +712,7 @@ export function hashTypeToCbor(hashType: HashType): Cbor;
 // @public
 export function hashTypeToString(hashType: HashType): string;
 
-// @public
-export function hexToBytes(hex: string): Uint8Array;
+export { hexToBytes }
 
 // @public
 export class HKDFParams implements KeyDerivation {

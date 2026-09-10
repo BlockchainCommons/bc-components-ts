@@ -5,10 +5,13 @@
 ### Changed
 
 - Ported to the canonical `@blockchaincommons/dcbor` (the `dcbor-compat` shim is gone) and to the redesigned `crypto`, `rand`, `sskr`, `tags` and `uniform-resources` siblings. Every wire byte is unchanged; the port is verified against a frozen pre-port baseline (`tests/differential.test.ts`) and against `bc-components-rust` 0.31.1 (`tests/rust-validation`, see `RUST_DIVERGENCES.md`).
+- `hexToBytes` is dcbor's: whitespace inside a hex string is tolerated, and malformed hex throws `CborError`.
+- Tagged CBOR of a value object is memoised; repeated `taggedCborData()`, references and XIDs over the same object no longer re-encode.
 - A `Seed` map value of the wrong CBOR type is now rejected with `InvalidData` (was an incidental `DataTooShort`).
 
 ### Added
 
+- Subpath entries `@blockchaincommons/components/ssh`, `/pq`, `/kdf` and `/sskr` (the root entry still exports everything for now).
 - Golden vectors (`tests/vectors/vectors.json`), a differential corpus, property tests, and ADRs 0001–0006 under `docs/adr/`.
 
 ## 1.0.0-beta.1

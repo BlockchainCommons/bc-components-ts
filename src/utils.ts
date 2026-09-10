@@ -9,51 +9,9 @@
  *
  */
 
-/**
- * Convert a Uint8Array to a lowercase hexadecimal string.
- *
- * @param data - The byte array to convert
- * @returns A lowercase hex string representation (2 characters per byte)
- *
- * @example
- * ```typescript
- * const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
- * bytesToHex(bytes); // "deadbeef"
- * ```
- */
-export function bytesToHex(data: Uint8Array): string {
-  return Array.from(data)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/**
- * Convert a hexadecimal string to a Uint8Array.
- *
- * @param hex - A hex string (must have even length, case-insensitive)
- * @returns The decoded byte array
- * @throws {Error} If the hex string has odd length or contains invalid characters
- *
- * @example
- * ```typescript
- * hexToBytes("deadbeef"); // Uint8Array([0xde, 0xad, 0xbe, 0xef])
- * hexToBytes("DEADBEEF"); // Uint8Array([0xde, 0xad, 0xbe, 0xef])
- * hexToBytes("xyz"); // throws Error: Invalid hex string
- * ```
- */
-export function hexToBytes(hex: string): Uint8Array {
-  if (hex.length % 2 !== 0) {
-    throw new Error(`Hex string must have even length, got ${hex.length}`);
-  }
-  if (!/^[0-9A-Fa-f]*$/.test(hex)) {
-    throw new Error("Invalid hex string: contains non-hexadecimal characters");
-  }
-  const data = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    data[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-  }
-  return data;
-}
+// Hex goes through dcbor: native `Uint8Array.toHex`/`fromHex` where the
+// platform has them, and one validation rule across the closure.
+export { bytesToHex, hexToBytes } from "@blockchaincommons/dcbor";
 
 /**
  * Convert a Uint8Array to a base64-encoded string.

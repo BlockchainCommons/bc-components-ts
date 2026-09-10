@@ -1,7 +1,13 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: {
+    index: "src/index.ts",
+    ssh: "src/ssh/index.ts",
+    pq: "src/pq.ts",
+    kdf: "src/kdf.ts",
+    sskr: "src/sskr.ts",
+  },
   outDir: "dist",
   format: ["cjs", "esm"],
   dts: true,
