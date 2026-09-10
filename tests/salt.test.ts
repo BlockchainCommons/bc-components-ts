@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from "vitest";
 import { Salt } from "../src/salt.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("Salt", () => {
   const MIN_SALT_SIZE = 8;
@@ -207,14 +209,14 @@ describe("Salt", () => {
 
     it("should serialize to tagged CBOR", () => {
       const salt = Salt.newWithLen(16);
-      const tagged = salt.taggedCbor();
+      const tagged = salt.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const salt = Salt.newWithLen(16);
-      const data = salt.taggedCborData();
+      const data = salt.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -222,8 +224,8 @@ describe("Salt", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const salt = Salt.newWithLen(16);
-      const data = salt.taggedCborData();
-      const restored = Salt.fromTaggedCborData(data);
+      const data = salt.toCbor().toData();
+      const restored = Salt.fromCbor(decodeCbor(data));
 
       expect(restored.equals(salt)).toBe(true);
     });
@@ -231,7 +233,7 @@ describe("Salt", () => {
     it("should roundtrip through untagged CBOR", () => {
       const salt = Salt.newWithLen(16);
       const data = salt.untaggedCbor().toData();
-      const restored = Salt.fromUntaggedCborData(data);
+      const restored = Salt.fromCbor(decodeCbor(data));
 
       expect(restored.equals(salt)).toBe(true);
     });
@@ -240,22 +242,22 @@ describe("Salt", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const salt = Salt.newWithLen(16);
-      const ur = salt.ur();
+      const ur = salt.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
       const salt = Salt.newWithLen(16);
-      const urString = salt.urString();
+      const urString = salt.toUR().toString();
 
       expect(urString.startsWith("ur:salt/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
       const salt = Salt.newWithLen(16);
-      const urString = salt.urString();
-      const restored = Salt.fromURString(urString);
+      const urString = salt.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), Salt.codec);
 
       expect(restored.equals(salt)).toBe(true);
     });
@@ -263,7 +265,7 @@ describe("Salt", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_salt/invalid";
 
-      expect(() => Salt.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), Salt.codec)).toThrow();
     });
   });
 });

@@ -36,20 +36,16 @@ import {
   type Tag,
   cbor,
   expectMap,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
 import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   taggedCborOf,
   mapGetBoolean,
   mapGetBytes,
-  type UREncodable,
+  type ComponentCodec,
+  defineCodec,
 } from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { EC_KEY as TAG_EC_KEY, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
 import { ComponentsError } from "../error.js";
@@ -58,9 +54,7 @@ import { SchnorrPublicKey } from "./schnorr-public-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import type { ECKey } from "./ec-key-base.js";
 
-export class ECPrivateKey
-  implements ECKey, CborTaggedEncodable, CborTaggedDecodable<ECPrivateKey>, UREncodable
-{
+export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   static readonly KEY_SIZE: number = ECDSA_PRIVATE_KEY_SIZE;
 
   private readonly _data: Uint8Array;
@@ -284,14 +278,35 @@ export class ECPrivateKey
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with ECPrivateKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<ECPrivateKey> = defineCodec({
+    tags: [TAG_EC_KEY, TAG_EC_KEY_V1],
+    decodeUntagged: (cborValue) => {
+      const map = expectMap(cborValue);
+
+      // Check for key 2 (isPrivate = true)
+      const isPrivate = mapGetBoolean(map, 2);
+      if (isPrivate !== true) {
+        throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 2 set to true");
+      }
+
+      // Get key data from key 3
+      // CborMap.extract() returns native types (Uint8Array for byte strings)
+      const keyData = mapGetBytes(map, 3);
+      if (keyData === undefined || keyData.length === 0) {
+        throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 3 (data)");
+      }
+
+      return ECPrivateKey.fromDataRef(keyData);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_EC_KEY.value, TAG_EC_KEY_V1.value]);
+    return [...ECPrivateKey.codec.tags];
   }
 
   /**
@@ -306,123 +321,26 @@ export class ECPrivateKey
     return cbor(map);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): ECPrivateKey {
+    return ECPrivateKey.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an ECPrivateKey by decoding it from untagged CBOR.
-   *
-   * Format: { 2: true, 3: h'<32-byte-key>' }
-   */
-  fromUntaggedCbor(cborValue: Cbor): ECPrivateKey {
-    const map = expectMap(cborValue);
-
-    // Check for key 2 (isPrivate = true)
-    const isPrivate = mapGetBoolean(map, 2);
-    if (isPrivate !== true) {
-      throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 2 set to true");
-    }
-
-    // Get key data from key 3
-    // CborMap.extract() returns native types (Uint8Array for byte strings)
-    const keyData = mapGetBytes(map, 3);
-    if (keyData === undefined || keyData.length === 0) {
-      throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 3 (data)");
-    }
-
-    return ECPrivateKey.fromDataRef(keyData);
-  }
-
-  /**
-   * Creates an ECPrivateKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): ECPrivateKey {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): ECPrivateKey {
-    const dummy = new ECPrivateKey(new Uint8Array(ECDSA_PRIVATE_KEY_SIZE));
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): ECPrivateKey {
-    const cborValue = decodeCbor(data);
-    return ECPrivateKey.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): ECPrivateKey {
-    const cborValue = decodeCbor(data);
-    const dummy = new ECPrivateKey(new Uint8Array(ECDSA_PRIVATE_KEY_SIZE));
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the ECPrivateKey.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    const name = TAG_EC_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an ECPrivateKey from a UR.
-   */
-  static fromUR(ur: UR): ECPrivateKey {
-    const name = TAG_EC_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
-    }
-    ur.expectType(name);
-    const dummy = new ECPrivateKey(new Uint8Array(ECDSA_PRIVATE_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates an ECPrivateKey from a UR string.
-   */
-  static fromURString(urString: string): ECPrivateKey {
-    const ur = UR.parse(urString);
-    return ECPrivateKey.fromUR(ur);
-  }
 }

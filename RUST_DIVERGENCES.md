@@ -60,6 +60,10 @@ The following surfaces have no counterpart in `bc-components-rust` 0.31.1 and
 are exercised only by the TypeScript golden vectors (55 vectors, class `D2` in
 the harness):
 
+- **`toUR()` on every codable type.** The reference has no `UREncodable` for
+  `JSON`, `SSKRShare`, `EncapsulationCiphertext` or `AuthenticationTag`; the
+  TypeScript types produce `ur:json`, `ur:sskr`, `ur:agreement-public-key`
+  (X25519 ciphertext) and `ur:…` from their tag names (class `D5`).
 - **Sr25519** keys, signatures, and `PrivateKeyBase` derivation (`@scure/sr25519`).
 - **EC key CBOR decoding.** The reference implements only the encoding
   direction for `ECPrivateKey`, `ECPublicKey`, `ECUncompressedPublicKey`, and
@@ -92,6 +96,16 @@ the harness):
   aux randomness, ML-KEM encapsulation) are compared by round trip: the
   TypeScript ciphertext or signature is opened or verified in Rust, and the
   fixed parts (recipient key, plaintext, AAD) must match.
+
+## 4. Known gaps (the reference has it, TypeScript does not)
+
+- **SSH DSA key generation.** `createKeypair("SshDsa")` and
+  `PrivateKeyBase.sshSigningPrivateKey({ kind: "dsa" })` throw; the
+  reference's byte-deterministic DSA-1024 generation (FIPS 186-4 prime
+  search) is not ported. DSA keys parsed from PEM sign, verify and round-trip.
+- **`MLDSAPrivateKey.publicKey()`.** noble's ML-DSA does not derive the
+  public key from the secret key; generate both with `keypair()` /
+  `createKeypair()`, which TypeScript does, and keep the public key.
 
 ## Maintenance
 

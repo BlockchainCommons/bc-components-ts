@@ -18,6 +18,7 @@ import {
   Signature,
   createKeypair,
 } from "../src/index.js";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("Sr25519PrivateKey", () => {
   describe("creation", () => {
@@ -230,8 +231,8 @@ describe("SigningPrivateKey with Sr25519", () => {
   describe("CBOR serialization", () => {
     it("should roundtrip through CBOR", () => {
       const signingKey = SigningPrivateKey.randomSr25519();
-      const cborData = signingKey.taggedCborData();
-      const restored = SigningPrivateKey.fromTaggedCborData(cborData);
+      const cborData = signingKey.toCbor().toData();
+      const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(SignatureScheme.Sr25519);
       expect(restored.equals(signingKey)).toBe(true);
@@ -271,8 +272,8 @@ describe("SigningPublicKey with Sr25519", () => {
     it("should roundtrip through CBOR", () => {
       const signingPrivateKey = SigningPrivateKey.randomSr25519();
       const signingPublicKey = signingPrivateKey.publicKey();
-      const cborData = signingPublicKey.taggedCborData();
-      const restored = SigningPublicKey.fromTaggedCborData(cborData);
+      const cborData = signingPublicKey.toCbor().toData();
+      const restored = SigningPublicKey.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(SignatureScheme.Sr25519);
       expect(restored.equals(signingPublicKey)).toBe(true);
@@ -338,8 +339,8 @@ describe("Signature with Sr25519", () => {
     it("should roundtrip through CBOR", () => {
       const sigData = new Uint8Array(SR25519_SIGNATURE_SIZE).fill(0x42);
       const signature = Signature.sr25519FromData(sigData);
-      const cborData = signature.taggedCborData();
-      const restored = Signature.fromTaggedCborData(cborData);
+      const cborData = signature.toCbor().toData();
+      const restored = Signature.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(SignatureScheme.Sr25519);
       expect(restored.equals(signature)).toBe(true);

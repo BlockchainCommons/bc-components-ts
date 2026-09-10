@@ -31,30 +31,16 @@
  * type "uuid".
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { UUID as TAG_UUID } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
 
 const UUID_SIZE = 16;
 
-export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, UREncodable {
+export class UUID implements ToCbor, ToUR {
   static readonly UUID_SIZE: number = UUID_SIZE;
 
   private readonly _data: Uint8Array;
@@ -210,14 +196,21 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with UUID.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<UUID> = defineCodec({
+    tags: [TAG_UUID],
+    decodeUntagged: (cbor) => {
+      const data = expectBytes(cbor);
+      return UUID.fromDataRef(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_UUID.value]);
+    return [...UUID.codec.tags];
   }
 
   /**
@@ -227,99 +220,26 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): UUID {
+    return UUID.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a UUID by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cbor: Cbor): UUID {
-    const data = expectBytes(cbor);
-    return UUID.fromDataRef(data);
-  }
-
-  /**
-   * Creates a UUID by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): UUID {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cbor: Cbor): UUID {
-    const instance = new UUID(new Uint8Array(UUID_SIZE));
-    return instance.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): UUID {
-    const cbor = decodeCbor(data);
-    return UUID.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): UUID {
-    const cbor = decodeCbor(data);
-    const bytes = expectBytes(cbor);
-    return UUID.fromDataRef(bytes);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the UUID.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    return UR.from("uuid", this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a UUID from a UR.
-   */
-  static fromUR(ur: UR): UUID {
-    ur.expectType("uuid");
-    const instance = new UUID(new Uint8Array(UUID_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a UUID from a UR string.
-   */
-  static fromURString(urString: string): UUID {
-    const ur = UR.parse(urString);
-    return UUID.fromUR(ur);
-  }
 }

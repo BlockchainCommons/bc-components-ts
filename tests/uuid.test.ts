@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from "vitest";
 import { UUID } from "../src/id/uuid.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("UUID", () => {
   // Test UUID string (standard format with dashes)
@@ -188,14 +190,14 @@ describe("UUID", () => {
 
     it("should serialize to tagged CBOR", () => {
       const uuid = UUID.new();
-      const tagged = uuid.taggedCbor();
+      const tagged = uuid.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const uuid = UUID.new();
-      const data = uuid.taggedCborData();
+      const data = uuid.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -203,8 +205,8 @@ describe("UUID", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const uuid = UUID.new();
-      const data = uuid.taggedCborData();
-      const restored = UUID.fromTaggedCborData(data);
+      const data = uuid.toCbor().toData();
+      const restored = UUID.fromCbor(decodeCbor(data));
 
       expect(restored.equals(uuid)).toBe(true);
     });
@@ -212,7 +214,7 @@ describe("UUID", () => {
     it("should roundtrip through untagged CBOR", () => {
       const uuid = UUID.new();
       const data = uuid.untaggedCbor().toData();
-      const restored = UUID.fromUntaggedCborData(data);
+      const restored = UUID.fromCbor(decodeCbor(data));
 
       expect(restored.equals(uuid)).toBe(true);
     });
@@ -221,22 +223,22 @@ describe("UUID", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const uuid = UUID.new();
-      const ur = uuid.ur();
+      const ur = uuid.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
       const uuid = UUID.new();
-      const urString = uuid.urString();
+      const urString = uuid.toUR().toString();
 
       expect(urString.startsWith("ur:uuid/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
       const uuid = UUID.new();
-      const urString = uuid.urString();
-      const restored = UUID.fromURString(urString);
+      const urString = uuid.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), UUID.codec);
 
       expect(restored.equals(uuid)).toBe(true);
     });
@@ -244,7 +246,7 @@ describe("UUID", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_uuid/invalid";
 
-      expect(() => UUID.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), UUID.codec)).toThrow();
     });
   });
 });

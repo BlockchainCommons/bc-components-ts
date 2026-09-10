@@ -26,6 +26,8 @@ import {
   EncapsulationPrivateKey,
   EncapsulationPublicKey,
 } from "../src/index.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 beforeAll(() => {
   registerTags();
@@ -157,14 +159,14 @@ describe("PrivateKeyBase", () => {
 
     it("should serialize to tagged CBOR", () => {
       const pkb = PrivateKeyBase.new();
-      const cbor = pkb.taggedCbor();
+      const cbor = pkb.toCbor();
       expect(cbor).toBeDefined();
     });
 
     it("should roundtrip through tagged CBOR", () => {
       const pkb = PrivateKeyBase.new();
-      const cborData = pkb.taggedCborData();
-      const recovered = PrivateKeyBase.fromTaggedCborData(cborData);
+      const cborData = pkb.toCbor().toData();
+      const recovered = PrivateKeyBase.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(pkb)).toBe(true);
     });
   });
@@ -172,20 +174,20 @@ describe("PrivateKeyBase", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const pkb = PrivateKeyBase.new();
-      const ur = pkb.ur();
+      const ur = pkb.toUR();
       expect(ur.type.name).toBe("crypto-prvkey-base");
     });
 
     it("should serialize to UR string", () => {
       const pkb = PrivateKeyBase.new();
-      const urString = pkb.urString();
+      const urString = pkb.toUR().toString();
       expect(urString).toMatch(/^ur:crypto-prvkey-base\//);
     });
 
     it("should roundtrip through UR string", () => {
       const pkb = PrivateKeyBase.new();
-      const urString = pkb.urString();
-      const recovered = PrivateKeyBase.fromURString(urString);
+      const urString = pkb.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), PrivateKeyBase.codec);
       expect(recovered.equals(pkb)).toBe(true);
     });
   });
@@ -337,8 +339,8 @@ describe("PrivateKeys", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const pk = PrivateKeys.new();
-      const cborData = pk.taggedCborData();
-      const recovered = PrivateKeys.fromTaggedCborData(cborData);
+      const cborData = pk.toCbor().toData();
+      const recovered = PrivateKeys.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(pk)).toBe(true);
     });
   });
@@ -346,14 +348,14 @@ describe("PrivateKeys", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const pk = PrivateKeys.new();
-      const ur = pk.ur();
+      const ur = pk.toUR();
       expect(ur.type.name).toBe("crypto-prvkeys");
     });
 
     it("should roundtrip through UR string", () => {
       const pk = PrivateKeys.new();
-      const urString = pk.urString();
-      const recovered = PrivateKeys.fromURString(urString);
+      const urString = pk.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), PrivateKeys.codec);
       expect(recovered.equals(pk)).toBe(true);
     });
   });
@@ -498,8 +500,8 @@ describe("PublicKeys", () => {
     it("should roundtrip through tagged CBOR", () => {
       const pk = PrivateKeys.new();
       const pubKeys = pk.publicKeys();
-      const cborData = pubKeys.taggedCborData();
-      const recovered = PublicKeys.fromTaggedCborData(cborData);
+      const cborData = pubKeys.toCbor().toData();
+      const recovered = PublicKeys.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(pubKeys)).toBe(true);
     });
   });
@@ -508,15 +510,15 @@ describe("PublicKeys", () => {
     it("should serialize to UR", () => {
       const pk = PrivateKeys.new();
       const pubKeys = pk.publicKeys();
-      const ur = pubKeys.ur();
+      const ur = pubKeys.toUR();
       expect(ur.type.name).toBe("crypto-pubkeys");
     });
 
     it("should roundtrip through UR string", () => {
       const pk = PrivateKeys.new();
       const pubKeys = pk.publicKeys();
-      const urString = pubKeys.urString();
-      const recovered = PublicKeys.fromURString(urString);
+      const urString = pubKeys.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), PublicKeys.codec);
       expect(recovered.equals(pubKeys)).toBe(true);
     });
   });
@@ -633,8 +635,8 @@ describe("SSKRShareCbor", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const share = SSKRShareCbor.fromData(testShareData);
-      const cborData = share.taggedCborData();
-      const recovered = SSKRShareCbor.fromTaggedCborData(cborData);
+      const cborData = share.toCbor().toData();
+      const recovered = SSKRShareCbor.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(share)).toBe(true);
     });
   });
@@ -724,8 +726,8 @@ describe("SSKR Integration", () => {
 
       // Serialize all shares to CBOR and back
       const recoveredShares = groups[0].map((share) => {
-        const cborData = share.taggedCborData();
-        return SSKRShareCbor.fromTaggedCborData(cborData);
+        const cborData = share.toCbor().toData();
+        return SSKRShareCbor.fromCbor(decodeCbor(cborData));
       });
 
       // Should still recover the secret

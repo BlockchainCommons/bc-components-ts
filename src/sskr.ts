@@ -8,10 +8,8 @@ import {
   type Tag,
   cbor,
   expectBytes,
-  extractTaggedContent,
   decodeCbor,
-  tagsForValues,
-  tagValue,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
 import { SSKR_SHARE as TAG_SSKR_SHARE, LEGACY_TAGS } from "@blockchaincommons/tags";
 import {
@@ -24,14 +22,15 @@ import {
 } from "@blockchaincommons/sskr";
 import type { RandomNumberGenerator } from "@blockchaincommons/rand";
 import { bytesToHex, hexToBytes } from "./utils.js";
-import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { ComponentsError } from "./error.js";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 
 const TAG_SSKR_SHARE_V1 = LEGACY_TAGS.SSKR_SHARE_V1;
 export { SSKRSecret, SSKRGroupSpec, SSKRSpec };
 const METADATA_SIZE_BYTES = 5;
 
-export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<SSKRShareCbor> {
+export class SSKRShareCbor implements ToCbor {
   private readonly _data: Uint8Array;
   private constructor(data: Uint8Array) {
     if (data.length < METADATA_SIZE_BYTES) {
@@ -90,50 +89,45 @@ export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<S
   toString(): string {
     return `SSKRShare(${this.identifierHex()}, group ${this.groupIndex() + 1}/${this.groupCount()}, member ${this.memberIndex() + 1}/${this.memberThreshold()})`;
   }
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<SSKRShareCbor> = defineCodec({
+    tags: [TAG_SSKR_SHARE, TAG_SSKR_SHARE_V1],
+    decodeUntagged: (cborValue) => {
+      return SSKRShareCbor.fromData(expectBytes(cborValue));
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_SSKR_SHARE.value, TAG_SSKR_SHARE_V1.value]);
+    return [...SSKRShareCbor.codec.tags];
   }
   untaggedCbor(): Cbor {
     return cbor(this._data);
   }
-  taggedCbor(): Cbor {
+
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
   }
-  fromUntaggedCbor(cborValue: Cbor): SSKRShareCbor {
-    return SSKRShareCbor.fromData(expectBytes(cborValue));
-  }
-  fromTaggedCbor(cborValue: Cbor): SSKRShareCbor {
-    const tag = tagValue(cborValue);
-    if (tag !== TAG_SSKR_SHARE.value && tag !== TAG_SSKR_SHARE_V1.value) {
-      throw ComponentsError.sskr(
-        `Invalid SSKRShare tag: expected ${TAG_SSKR_SHARE.value} or ${TAG_SSKR_SHARE_V1.value}, got ${tag}`,
-      );
-    }
-    return this.fromUntaggedCbor(extractTaggedContent(cborValue));
-  }
-  static fromTaggedCbor(cborValue: Cbor): SSKRShareCbor {
-    const dummy = new SSKRShareCbor(new Uint8Array(METADATA_SIZE_BYTES + 16));
-    return dummy.fromTaggedCbor(cborValue);
-  }
-  static fromTaggedCborData(data: Uint8Array): SSKRShareCbor {
-    return SSKRShareCbor.fromTaggedCbor(decodeCbor(data));
-  }
-  static fromUntaggedCborData(data: Uint8Array): SSKRShareCbor {
-    const dummy = new SSKRShareCbor(new Uint8Array(METADATA_SIZE_BYTES + 16));
-    return dummy.fromUntaggedCbor(decodeCbor(data));
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): SSKRShareCbor {
+    return SSKRShareCbor.codec.decode(cborValue);
   }
 }
 export type SSKRShare = SSKRShareCbor;
 export const SSKRShare = {
   fromData: (data: Uint8Array): SSKRShareCbor => SSKRShareCbor.fromData(data),
   fromHex: (hex: string): SSKRShareCbor => SSKRShareCbor.fromHex(hex),
-  fromTaggedCbor: (cborValue: Cbor): SSKRShareCbor => SSKRShareCbor.fromTaggedCbor(cborValue),
-  fromTaggedCborData: (data: Uint8Array): SSKRShareCbor => SSKRShareCbor.fromTaggedCborData(data),
+  fromTaggedCbor: (cborValue: Cbor): SSKRShareCbor => SSKRShareCbor.fromCbor(cborValue),
+  fromTaggedCborData: (data: Uint8Array): SSKRShareCbor => SSKRShareCbor.fromCbor(decodeCbor(data)),
   fromUntaggedCborData: (data: Uint8Array): SSKRShareCbor =>
-    SSKRShareCbor.fromUntaggedCborData(data),
+    SSKRShareCbor.fromCbor(decodeCbor(data)),
 };
 
 /** Raw share bytes per group, as sskr's `generateShares` + `shareBytes`. */

@@ -35,6 +35,6 @@
   {
     "name": "sskr subpath, minified + gzipped",
     "path": "dist/sskr.mjs",
-    "limit": "14 kB"
+    "limit": "18 kB"
   }
 ]

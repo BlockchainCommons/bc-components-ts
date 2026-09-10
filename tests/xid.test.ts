@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from "vitest";
 import { XID } from "../src/id/xid.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("XID", () => {
   // Test XID hex string (32 bytes = 64 hex characters)
@@ -161,14 +163,14 @@ describe("XID", () => {
 
     it("should serialize to tagged CBOR", () => {
       const xid = XID.random();
-      const tagged = xid.taggedCbor();
+      const tagged = xid.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const xid = XID.random();
-      const data = xid.taggedCborData();
+      const data = xid.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -176,8 +178,8 @@ describe("XID", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const xid = XID.random();
-      const data = xid.taggedCborData();
-      const restored = XID.fromTaggedCborData(data);
+      const data = xid.toCbor().toData();
+      const restored = XID.fromCbor(decodeCbor(data));
 
       expect(restored.equals(xid)).toBe(true);
     });
@@ -185,7 +187,7 @@ describe("XID", () => {
     it("should roundtrip through untagged CBOR", () => {
       const xid = XID.random();
       const data = xid.untaggedCbor().toData();
-      const restored = XID.fromUntaggedCborData(data);
+      const restored = XID.fromCbor(decodeCbor(data));
 
       expect(restored.equals(xid)).toBe(true);
     });
@@ -194,29 +196,29 @@ describe("XID", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const xid = XID.random();
-      const ur = xid.ur();
+      const ur = xid.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
       const xid = XID.random();
-      const urString = xid.urString();
+      const urString = xid.toUR().toString();
 
       expect(urString.startsWith("ur:xid/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
       const xid = XID.random();
-      const urString = xid.urString();
-      const restored = XID.fromURString(urString);
+      const urString = xid.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), XID.codec);
 
       expect(restored.equals(xid)).toBe(true);
     });
 
     it("should match known UR string from Rust implementation", () => {
       const xid = XID.fromHex(TEST_HEX);
-      const urString = xid.urString();
+      const urString = xid.toUR().toString();
 
       // Expected from Rust test: ur:xid/hdcxuedeguisgevwhdaxnbluenutlbglhfiygamsamadmojkdydtneteeowffhwprtemcaatledk
       expect(urString).toBe(
@@ -227,7 +229,7 @@ describe("XID", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_xid/invalid";
 
-      expect(() => XID.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), XID.codec)).toThrow();
     });
   });
 

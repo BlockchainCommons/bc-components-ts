@@ -43,31 +43,15 @@
  */
 
 import { sha256, SHA256_SIZE } from "@blockchaincommons/crypto";
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "./codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { DIGEST as TAG_DIGEST } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { DigestProvider } from "./digest-provider.js";
 
-export class Digest
-  implements DigestProvider, CborTaggedEncodable, CborTaggedDecodable<Digest>, UREncodable
-{
+export class Digest implements DigestProvider, ToCbor, ToUR {
   static readonly DIGEST_SIZE: number = SHA256_SIZE;
 
   private readonly _data: Uint8Array;
@@ -267,14 +251,21 @@ export class Digest
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with Digest.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<Digest> = defineCodec({
+    tags: [TAG_DIGEST],
+    decodeUntagged: (cbor) => {
+      const data = expectBytes(cbor);
+      return Digest.fromData(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_DIGEST.value]);
+    return [...Digest.codec.tags];
   }
 
   /**
@@ -284,101 +275,28 @@ export class Digest
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): Digest {
+    return Digest.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a Digest by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cbor: Cbor): Digest {
-    const data = expectBytes(cbor);
-    return Digest.fromData(data);
-  }
-
-  /**
-   * Creates a Digest by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): Digest {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cbor: Cbor): Digest {
-    const instance = new Digest(new Uint8Array(Digest.DIGEST_SIZE));
-    return instance.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): Digest {
-    const cbor = decodeCbor(data);
-    return Digest.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): Digest {
-    const cbor = decodeCbor(data);
-    const bytes = expectBytes(cbor);
-    return Digest.fromData(bytes);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the Digest.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    return UR.from("digest", this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a Digest from a UR.
-   */
-  static fromUR(ur: UR): Digest {
-    ur.expectType("digest");
-    const instance = new Digest(new Uint8Array(Digest.DIGEST_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a Digest from a UR string.
-   */
-  static fromURString(urString: string): Digest {
-    const ur = UR.parse(urString);
-    return Digest.fromUR(ur);
-  }
 
   // ============================================================================
   // Static Utility Methods

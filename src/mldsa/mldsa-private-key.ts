@@ -29,18 +29,10 @@ import {
   expectArray,
   expectInteger,
   expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { MLDSA_PRIVATE_KEY as TAG_MLDSA_PRIVATE_KEY } from "@blockchaincommons/tags";
 import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
 
@@ -60,9 +52,7 @@ import { ComponentsError } from "../error.js";
 /**
  * MLDSAPrivateKey - Post-quantum signing private key using ML-DSA.
  */
-export class MLDSAPrivateKey
-  implements CborTaggedEncodable, CborTaggedDecodable<MLDSAPrivateKey>, UREncodable
-{
+export class MLDSAPrivateKey implements ToCbor, ToUR {
   private readonly _level: MLDSALevel;
   private readonly _data: Uint8Array;
 
@@ -248,14 +238,29 @@ export class MLDSAPrivateKey
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with MLDSAPrivateKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<MLDSAPrivateKey> = defineCodec({
+    tags: [TAG_MLDSA_PRIVATE_KEY],
+    decodeUntagged: (cborValue) => {
+      const elements = expectArray(cborValue);
+      if (elements.length !== 2) {
+        throw ComponentsError.postQuantum(
+          `MLDSAPrivateKey CBOR must have 2 elements, got ${elements.length}`,
+        );
+      }
+      const levelValue = Number(expectInteger(elements[0]));
+      const level = mldsaLevelFromValue(levelValue);
+      const data = expectBytes(elements[1]);
+      return MLDSAPrivateKey.fromBytes(level, data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_MLDSA_PRIVATE_KEY.value]);
+    return [...MLDSAPrivateKey.codec.tags];
   }
 
   /**
@@ -267,118 +272,26 @@ export class MLDSAPrivateKey
     return cbor([this._level, this._data]);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): MLDSAPrivateKey {
+    return MLDSAPrivateKey.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an MLDSAPrivateKey by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): MLDSAPrivateKey {
-    const elements = expectArray(cborValue);
-    if (elements.length !== 2) {
-      throw ComponentsError.postQuantum(
-        `MLDSAPrivateKey CBOR must have 2 elements, got ${elements.length}`,
-      );
-    }
-    const levelValue = Number(expectInteger(elements[0]));
-    const level = mldsaLevelFromValue(levelValue);
-    const data = expectBytes(elements[1]);
-    return MLDSAPrivateKey.fromBytes(level, data);
-  }
-
-  /**
-   * Creates an MLDSAPrivateKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): MLDSAPrivateKey {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): MLDSAPrivateKey {
-    // Create a minimal dummy instance for decoding
-    const dummyData = new Uint8Array(mldsaPrivateKeySize(MLDSALevel.MLDSA44));
-    const dummy = new MLDSAPrivateKey(MLDSALevel.MLDSA44, dummyData);
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): MLDSAPrivateKey {
-    const cborValue = decodeCbor(data);
-    return MLDSAPrivateKey.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): MLDSAPrivateKey {
-    const cborValue = decodeCbor(data);
-    const dummyData = new Uint8Array(mldsaPrivateKeySize(MLDSALevel.MLDSA44));
-    const dummy = new MLDSAPrivateKey(MLDSALevel.MLDSA44, dummyData);
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    const name = TAG_MLDSA_PRIVATE_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.postQuantum("MLDSA_PRIVATE_KEY tag name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an MLDSAPrivateKey from a UR.
-   */
-  static fromUR(ur: UR): MLDSAPrivateKey {
-    if (ur.type.name !== TAG_MLDSA_PRIVATE_KEY.name) {
-      throw ComponentsError.postQuantum(
-        `Expected UR type ${TAG_MLDSA_PRIVATE_KEY.name}, got ${ur.type.name}`,
-      );
-    }
-    const dummyData = new Uint8Array(mldsaPrivateKeySize(MLDSALevel.MLDSA44));
-    const dummy = new MLDSAPrivateKey(MLDSALevel.MLDSA44, dummyData);
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates an MLDSAPrivateKey from a UR string.
-   */
-  static fromURString(urString: string): MLDSAPrivateKey {
-    const ur = UR.parse(urString);
-    return MLDSAPrivateKey.fromUR(ur);
-  }
 }

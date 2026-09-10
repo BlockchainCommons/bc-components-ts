@@ -49,28 +49,19 @@ import {
   cbor,
   expectArray,
   expectBytes,
-  validateTag,
-  extractTaggedContent,
   decodeCbor,
-  tagsForValues,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { ENCRYPTED as TAG_ENCRYPTED } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { Nonce } from "../nonce.js";
 import { Digest } from "../digest.js";
 import { AuthenticationTag } from "./authentication-tag.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
 
-export class EncryptedMessage
-  implements CborTaggedEncodable, CborTaggedDecodable<EncryptedMessage>, UREncodable
-{
+export class EncryptedMessage implements ToCbor, ToUR {
   private readonly _ciphertext: Uint8Array;
   private readonly _aad: Uint8Array;
   private readonly _nonce: Nonce;
@@ -172,7 +163,7 @@ export class EncryptedMessage
       return null;
     }
     try {
-      return Digest.fromTaggedCbor(aadCbor);
+      return Digest.fromCbor(aadCbor);
     } catch {
       return null;
     }
@@ -208,14 +199,33 @@ export class EncryptedMessage
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with EncryptedMessage.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<EncryptedMessage> = defineCodec({
+    tags: [TAG_ENCRYPTED],
+    decodeUntagged: (cborValue) => {
+      const elements = expectArray(cborValue);
+
+      if (elements.length < 3) {
+        throw ComponentsError.invalidData("EncryptedMessage must have at least 3 elements");
+      }
+
+      const ciphertext = expectBytes(elements[0]);
+      const nonceData = expectBytes(elements[1]);
+      const nonce = Nonce.fromDataRef(nonceData);
+      const authData = expectBytes(elements[2]);
+      const auth = AuthenticationTag.fromDataRef(authData);
+      const aad = elements.length > 3 ? expectBytes(elements[3]) : new Uint8Array(0);
+
+      return EncryptedMessage.new(ciphertext, aad, nonce, auth);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_ENCRYPTED.value]);
+    return [...EncryptedMessage.codec.tags];
   }
 
   /**
@@ -236,127 +246,26 @@ export class EncryptedMessage
     return cbor(elements);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): EncryptedMessage {
+    return EncryptedMessage.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an EncryptedMessage by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): EncryptedMessage {
-    const elements = expectArray(cborValue);
-
-    if (elements.length < 3) {
-      throw ComponentsError.invalidData("EncryptedMessage must have at least 3 elements");
-    }
-
-    const ciphertext = expectBytes(elements[0]);
-    const nonceData = expectBytes(elements[1]);
-    const nonce = Nonce.fromDataRef(nonceData);
-    const authData = expectBytes(elements[2]);
-    const auth = AuthenticationTag.fromDataRef(authData);
-    const aad = elements.length > 3 ? expectBytes(elements[3]) : new Uint8Array(0);
-
-    return EncryptedMessage.new(ciphertext, aad, nonce, auth);
-  }
-
-  /**
-   * Creates an EncryptedMessage by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): EncryptedMessage {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): EncryptedMessage {
-    // Create a dummy instance for accessing instance methods
-    const dummy = new EncryptedMessage(
-      new Uint8Array(0),
-      new Uint8Array(0),
-      Nonce.new(),
-      AuthenticationTag.fromData(new Uint8Array(16)),
-    );
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): EncryptedMessage {
-    const cborValue = decodeCbor(data);
-    return EncryptedMessage.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): EncryptedMessage {
-    const cborValue = decodeCbor(data);
-    const dummy = new EncryptedMessage(
-      new Uint8Array(0),
-      new Uint8Array(0),
-      Nonce.new(),
-      AuthenticationTag.fromData(new Uint8Array(16)),
-    );
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the EncryptedMessage.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    return UR.from("encrypted", this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an EncryptedMessage from a UR.
-   */
-  static fromUR(ur: UR): EncryptedMessage {
-    ur.expectType("encrypted");
-    const dummy = new EncryptedMessage(
-      new Uint8Array(0),
-      new Uint8Array(0),
-      Nonce.new(),
-      AuthenticationTag.fromData(new Uint8Array(16)),
-    );
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates an EncryptedMessage from a UR string.
-   */
-  static fromURString(urString: string): EncryptedMessage {
-    const ur = UR.parse(urString);
-    return EncryptedMessage.fromUR(ur);
-  }
 }

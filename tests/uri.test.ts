@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from "vitest";
 import { URI } from "../src/id/uri.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("URI", () => {
   const TEST_URI = "https://example.com/path/to/resource";
@@ -126,14 +128,14 @@ describe("URI", () => {
 
     it("should serialize to tagged CBOR", () => {
       const uri = URI.new(TEST_URI);
-      const tagged = uri.taggedCbor();
+      const tagged = uri.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const uri = URI.new(TEST_URI);
-      const data = uri.taggedCborData();
+      const data = uri.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -141,8 +143,8 @@ describe("URI", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const uri = URI.new(TEST_URI);
-      const data = uri.taggedCborData();
-      const restored = URI.fromTaggedCborData(data);
+      const data = uri.toCbor().toData();
+      const restored = URI.fromCbor(decodeCbor(data));
 
       expect(restored.equals(uri)).toBe(true);
     });
@@ -150,7 +152,7 @@ describe("URI", () => {
     it("should roundtrip through untagged CBOR", () => {
       const uri = URI.new(TEST_URI);
       const data = uri.untaggedCbor().toData();
-      const restored = URI.fromUntaggedCborData(data);
+      const restored = URI.fromCbor(decodeCbor(data));
 
       expect(restored.equals(uri)).toBe(true);
     });
@@ -159,30 +161,30 @@ describe("URI", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const uri = URI.new(TEST_URI);
-      const ur = uri.ur();
+      const ur = uri.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
       const uri = URI.new(TEST_URI);
-      const urString = uri.urString();
+      const urString = uri.toUR().toString();
 
       expect(urString.startsWith("ur:url/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
       const uri = URI.new(TEST_URI);
-      const urString = uri.urString();
-      const restored = URI.fromURString(urString);
+      const urString = uri.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), URI.codec);
 
       expect(restored.equals(uri)).toBe(true);
     });
 
     it("should roundtrip URI with query parameters", () => {
       const uri = URI.new(TEST_URI_WITH_QUERY);
-      const urString = uri.urString();
-      const restored = URI.fromURString(urString);
+      const urString = uri.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), URI.codec);
 
       expect(restored.equals(uri)).toBe(true);
       expect(restored.toString()).toBe(TEST_URI_WITH_QUERY);
@@ -191,7 +193,7 @@ describe("URI", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_url/invalid";
 
-      expect(() => URI.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), URI.codec)).toThrow();
     });
   });
 });

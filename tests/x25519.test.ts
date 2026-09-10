@@ -9,6 +9,8 @@
 
 import { X25519PrivateKey, X25519PublicKey, SymmetricKey, hexToBytes, bytesToHex } from "../src";
 import { SecureRng } from "@blockchaincommons/rand";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // Test vectors
 const TEST_PRIVATE_KEY_HEX = "7d68fb6fce4c86fc4527d27c7c50fbee5f9e5dc5c4e6c1d8e5f4e3d2c1b0a090";
@@ -217,27 +219,27 @@ describe("X25519PrivateKey", () => {
 
     it("should serialize to tagged CBOR", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const cbor = key.taggedCbor();
+      const cbor = key.toCbor();
       expect(cbor).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const data = key.taggedCborData();
+      const data = key.toCbor().toData();
       expect(data).toBeInstanceOf(Uint8Array);
     });
 
     it("should roundtrip through tagged CBOR", () => {
       const original = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const data = original.taggedCborData();
-      const restored = X25519PrivateKey.fromTaggedCborData(data);
+      const data = original.toCbor().toData();
+      const restored = X25519PrivateKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should roundtrip through untagged CBOR", () => {
       const original = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const data = original.untaggedCbor().toData();
-      const restored = X25519PrivateKey.fromUntaggedCborData(data);
+      const restored = X25519PrivateKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -245,27 +247,27 @@ describe("X25519PrivateKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const ur = key.ur();
+      const ur = key.toUR();
       expect(ur.type.name).toBe("agreement-private-key");
     });
 
     it("should serialize to UR string", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const urString = key.urString();
+      const urString = key.toUR().toString();
       expect(urString).toContain("ur:agreement-private-key");
     });
 
     it("should roundtrip through UR string", () => {
       const original = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const urString = original.urString();
-      const restored = X25519PrivateKey.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), X25519PrivateKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should throw on invalid UR type", () => {
       const key = X25519PrivateKey.random();
-      const urString = key.urString().replace("agreement-private-key", "invalid-type");
-      expect(() => X25519PrivateKey.fromURString(urString)).toThrow();
+      const urString = key.toUR().toString().replace("agreement-private-key", "invalid-type");
+      expect(() => decodeURWith(UR.parse(urString), X25519PrivateKey.codec)).toThrow();
     });
   });
 });
@@ -382,22 +384,22 @@ describe("X25519PublicKey", () => {
     it("should serialize to tagged CBOR", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const cbor = publicKey.taggedCbor();
+      const cbor = publicKey.toCbor();
       expect(cbor).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const data = publicKey.taggedCborData();
+      const data = publicKey.toCbor().toData();
       expect(data).toBeInstanceOf(Uint8Array);
     });
 
     it("should roundtrip through tagged CBOR", () => {
       const privateKey = X25519PrivateKey.random();
       const original = privateKey.publicKey();
-      const data = original.taggedCborData();
-      const restored = X25519PublicKey.fromTaggedCborData(data);
+      const data = original.toCbor().toData();
+      const restored = X25519PublicKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
 
@@ -405,7 +407,7 @@ describe("X25519PublicKey", () => {
       const privateKey = X25519PrivateKey.random();
       const original = privateKey.publicKey();
       const data = original.untaggedCbor().toData();
-      const restored = X25519PublicKey.fromUntaggedCborData(data);
+      const restored = X25519PublicKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -414,30 +416,30 @@ describe("X25519PublicKey", () => {
     it("should serialize to UR", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const ur = publicKey.ur();
+      const ur = publicKey.toUR();
       expect(ur.type.name).toBe("agreement-public-key");
     });
 
     it("should serialize to UR string", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const urString = publicKey.urString();
+      const urString = publicKey.toUR().toString();
       expect(urString).toContain("ur:agreement-public-key");
     });
 
     it("should roundtrip through UR string", () => {
       const privateKey = X25519PrivateKey.random();
       const original = privateKey.publicKey();
-      const urString = original.urString();
-      const restored = X25519PublicKey.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), X25519PublicKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should throw on invalid UR type", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const urString = publicKey.urString().replace("agreement-public-key", "invalid-type");
-      expect(() => X25519PublicKey.fromURString(urString)).toThrow();
+      const urString = publicKey.toUR().toString().replace("agreement-public-key", "invalid-type");
+      expect(() => decodeURWith(UR.parse(urString), X25519PublicKey.codec)).toThrow();
     });
   });
 });
@@ -466,18 +468,18 @@ describe("X25519 key agreement integration", () => {
   it("should work with serialized keys", () => {
     // Alice generates keypair and serializes public key
     const [alicePrivate, alicePublic] = X25519PrivateKey.keypair();
-    const alicePublicUR = alicePublic.urString();
+    const alicePublicUR = alicePublic.toUR().toString();
 
     // Bob generates keypair and serializes public key
     const [bobPrivate, bobPublic] = X25519PrivateKey.keypair();
-    const bobPublicUR = bobPublic.urString();
+    const bobPublicUR = bobPublic.toUR().toString();
 
     // Alice deserializes Bob's public key and computes shared secret
-    const bobPublicRestored = X25519PublicKey.fromURString(bobPublicUR);
+    const bobPublicRestored = decodeURWith(UR.parse(bobPublicUR), X25519PublicKey.codec);
     const aliceShared = alicePrivate.sharedKeyWith(bobPublicRestored);
 
     // Bob deserializes Alice's public key and computes shared secret
-    const alicePublicRestored = X25519PublicKey.fromURString(alicePublicUR);
+    const alicePublicRestored = decodeURWith(UR.parse(alicePublicUR), X25519PublicKey.codec);
     const bobShared = bobPrivate.sharedKeyWith(alicePublicRestored);
 
     // Both should arrive at the same shared secret

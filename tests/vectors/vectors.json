@@ -322,7 +322,7 @@
      "text": "{\"a\":1,\"b\":[true,null],\"c\":\"x\"}"
     }
    },
-   "expect": "d90106581f7b2261223a312c2262223a5b747275652c6e756c6c5d2c2263223a2278227d|-"
+   "expect": "d90106581f7b2261223a312c2262223a5b747275652c6e756c6c5d2c2263223a2278227d|ur:json/hdctkgcphscpftehdwcpidcpfthpjyjpkpihdwjtkpjzjzhldwcpiacpftcpkscpkiytsedikk"
   },
   {
    "name": "value json text:[] (2B)",
@@ -333,7 +333,7 @@
      "text": "[]"
     }
    },
-   "expect": "d90106425b5d|-"
+   "expect": "d90106425b5d|ur:json/fwhphlrtsgdtim"
   },
   {
    "name": "value uri text:https://exam (33B)",
@@ -367,7 +367,7 @@
      "start": 0
     }
    },
-   "expect": "50000102030405060708090a0b0c0d0e0f"
+   "expect": "50000102030405060708090a0b0c0d0e0f|-"
   },
   {
    "name": "value authTag cyc:15 (15B)",
@@ -722,7 +722,7 @@
      "hex": "001100020000112233445566778899aabbccddeeff"
     }
    },
-   "expect": "d99d7555001100020000112233445566778899aabbccddeeff|-|17,1,1,0,3,0"
+   "expect": "d99d7555001100020000112233445566778899aabbccddeeff|ur:sskr/goaebyaeaoaeaebycpeofygoiyktlonlpkrksfutwyzmistiwdlo|17,1,1,0,3,0"
   },
   {
    "name": "value sskrShare hex:0011110100ce (37B)",
@@ -733,7 +733,7 @@
      "hex": "0011110100ce5cce1ad9fe9cefa4707449576e8eadfc7d107c5a9e812b21f80aeca635cacd"
     }
    },
-   "expect": "d99d7558250011110100ce5cce1ad9fe9cefa4707449576e8eadfc7d107c5a9e812b21f80aeca635cacd|-|17,2,2,0,2,0"
+   "expect": "d99d7558250011110100ce5cce1ad9fe9cefa4707449576e8eadfc7d107c5a9e812b21f80aeca635cacd|ur:sskr/hddaaebybyadaetohhtocytazenswsoxjojygahgjtmnpmztkibekehtnnlydnclyabkwpolecsgsnhhfwurey|17,2,2,0,2,0"
   },
   {
    "name": "value sskrShare cyc:4 (4B)",
@@ -3597,7 +3597,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c5482035840c023f67db3639c09346f48b93ea0d37528d46ce53def2fd315974d8b6417d629929425f7b7d82a0737b1fbc33a7f2a302703a1345c107da519d0f050e0bc9481|ur:signature/lfaxhdfzrtcnynkiqdiansaseejlfdrhfmnbtekpdetyjzvwfswsdltebzmsgtluiechtbdtmomwdaylrltpdratempazosrftlbdrdydiaxoyeehhbekioncftiwtgdvtrfmwlyltssbgpr|verified"
+   "expect": "d99c54820358401c2b36aa6b18dc50de04718e3247a098878f8d4daff6c411157975fff6c24008fb73ed332f030b144f0ec31c82d0a5b5ef5591606fbdb27e2b304c0da5d3bc82|ur:signature/lfaxhdfzcednenpkjecsuogdueaajsmneyflnbmkltmylggtpeynssbybzkkkpzmynsafzayzojkweeodlaxbdbbgwbasrcelftionrewsgomehnjlryprkbdndygsbtonterflfmwtauota|verified"
   },
   {
    "name": "sign sr25519 hex:322b5c1dd5a1 msg=cyc:0",
@@ -3612,7 +3612,7 @@
      "start": 0
     }
    },
-   "expect": "d99c54820358406014871efadec387bcd18e74026fac042b5dfba7711a7914eb72e54e3451d83930aac53cbae477ae33a956998b110919e691dcfec281b5aff817a8681fc18d87|ur:signature/lfaxhdfzhnbbltckzsuesrltrfttmnjyaojlpsaadnhlzoosjscykkbbwmjpvwgleegytpesdypkskfnrdvektpleopthfnllubyascfvameuozesalyrepeyachpdisctselgltatmyftpt|verified"
+   "expect": "d99c54820358401674b34d1cb0ba2797b6ca2eb37468724d49a552e3af8f0b9abb2cba669b2e7773e3c68ad8e1f4a6d42236e822813c590aff2c9923c72678aaff9bdccdc5b484|ur:signature/lfaxhdfzcmjyqdgtcepfrddimsrpsgdmqdjyisjpgtgaongmvlpemybdnyrkdwrdiynddmktjkvlswletpvywkoltycpenvscplyfnhkbkzmdwnlcnstdskspkzmnduosnskqzlrurchaykt|verified"
   },
   {
    "name": "sign sr25519 hex:322b5c1dd5a1 msg=cyc:100",
@@ -3627,7 +3627,7 @@
      "start": 7
     }
    },
-   "expect": "d99c548203584072341ef4612d90e7cddf88f8f88e00708055a4dfbb4c5c0239ff5f375c0f7a5fe3568de8d710a7471777aae5075bf19ec653eada8df699c32de3d5bc782e9889|ur:signature/lfaxhdfzjpeeckwkhsdpmhvdsnurloyayamnaejolagooxurrkgshhaoeszmheemhhbsknhevlhflgvstsbeosflchktpkvwathpwnnnswguwdtnlgynnlsrdpvltlrfksdmmkldatttpegs|verified"
+   "expect": "d99c54820358406cad03f4eb09b74c261230946bfe49fef97b265a16e170d766b112236a5aa74a68806415d1c73567f2dd01de739f54602ae85d1b6a817017e47d7120100a378e|ur:signature/lfaxhdfzjzpmaxwkwmasrlgsdsbgdymwjezegazeytkgdshtcmvyjotsiypabgcnimhtosgeislaiebzttsteciowzutaduejkneghhndrvshlcwimlyjochvekijscxbebkemmnmkspfsyn|verified"
   },
   {
    "name": "signingKeys sr25519 cyc:32",
@@ -3654,7 +3654,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c548203584008ae3f9a1a5d7018d041dc7e7dbda310ef164eed729ddc1946970d0611308363898d69c70675b46806c778652f4e74e107c7217ae3ebde67b893289260348a86|ur:signature/lfaxhdfzayplfhnycyhljocstifpuokbkiryotbewscmglwejpntuocffgmsbtambydylsialdlginstamkpqzisamstksihdlgljyvyatstclknvlwmueioromudemohneelelnhebwfwhy|verified"
+   "expect": "d99c5482035840f2adb3f8205496e0fa4858abb53e003e6599f964afd9a05a75996945b41d097d1c5fbad2524941316310a2edc3c0b2f1cca7e67a48fe0b1a0596f459a6502381|ur:signature/lfaxhdfzwzpmqdyacxghmtvtzsfdhdpyrefmaefmihnlytiepetanbhtkpnlinfeqzcaaskiceherdtdgmgafpehiabeoewesrrtprwnsfosvaknfdzebdcyahmtwkhkolgdcnlyvlrkhyjl|verified"
   },
   {
    "name": "sign sr25519 cyc:32 msg=cyc:0",
@@ -3670,7 +3670,7 @@
      "start": 0
     }
    },
-   "expect": "d99c5482035840347c06ddd7f337a124b79725a5f23d20e21376b1cfd99de6ac92a845485d796058400966c822118c8528d2e535da37a9b0fb2c5873e8ed1ac1d80b7a55fb0a8b|ur:signature/lfaxhdfzeekeamuttswfemoydkrlmsdaonwzfscxvobwkopatktantvapsmopdfefdhlkkhnhdfzasiyspcpbylklpdetdvwectnemptpfzodwhdjkvswecysetpbdkngozobklulponrkmt|verified"
+   "expect": "d99c5482035840d25873987de7824221d7597413128d193dfa50116a997ab719b6e0763b12b0708d4d33fbe4f9bdca1a040a8b37b7cb7727bcda90378c0a41ae532fbd1e1e7288|ur:signature/lfaxhdfztdhdjkmkkivdlffwcltshkjybwbglgcffszsgdbyimnlknrlcfrpvtkofrbgpfjolggteozoveytrysgcyaabkluemrlsbktdirftnmhemlkbkfpplgudlryckckjplodyndtpgo|verified"
   },
   {
    "name": "sign sr25519 cyc:32 msg=cyc:100",
@@ -3686,7 +3686,7 @@
      "start": 7
     }
    },
-   "expect": "d99c54820358400a21d3a18baed307d885376f4a1bad970c18ec28246d84c2c73ec708177397773f0f6a7129a1a1df88896ac2fc7ffe21aa51e603331612ef58f565f33945888b|ur:signature/lfaxhdfzbkclteoyluplteattplpemjlgecwpmmsbncswpdedkjnlrsastfmstaychjkmsktfhbsimjsdtoyoyurloldimsaztlbzeclpkgyvaaxeocmbgwshdykihwfesfelolundwyislp|verified"
+   "expect": "d99c54820358403aa8212083d1927357f2d0cde624f7f8132d4bdc3f42e377947e13e179551210087be0544e87f4e96a1077c416ca62790a0fcbdf8398c8e458050d181123b986|ur:signature/lfaxhdfzftpdclcxlsttmojkhgwztisnvadkylyabwdpgruofhfwvlktmwkbbwvykkgobgbeaykgvtghglltwkwlimbektsscmsgidkkbkbssburlsmkspvehdahbtcsbycnrhlnrljegrhd|verified"
   },
   {
    "name": "signingKeys sr25519 hex:59f2293a5bce",
@@ -3711,7 +3711,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c54820358408eae36590745896cc607cda35c7e20d82a3dc52d3da3c72416a26d819f58f97c17546e37b28e20ebab5ec8363285ad098b38eea829c75791f3c464ddaafa778d|ur:signature/lfaxhdfzmnplenhkatfeldjzswatsnothhkbcxtpdrfsskdpfsotstdkcmoejnlynehdytkechghjtemprmncxwmpyhyspeneylppmasluetwypddtsthgmewfssieutpkzsktlgrhvoeedm|verified"
+   "expect": "d99c548203584050f18dbbe00849b8e662c5240f17989f609f35dad19f2d3fc7bbdf008e9a7766de73c928acc6ba75152cc15f8ef20840d17e04f2e5d994a436ad68871e728089|ur:signature/lfaxhdfzgdwnlgrkvtaygarovaidskdkbschmknehnneectnttnedpfhstrkuraemnnyktiyuejksodepsswrdkpbzdwsehemnwzayfzttkbaawzvwtamwoxenpmisltckjplaldtbtnflrl|verified"
   },
   {
    "name": "sign sr25519 hex:59f2293a5bce msg=cyc:0",
@@ -3726,7 +3726,7 @@
      "start": 0
     }
    },
-   "expect": "d99c5482035840900d1a87f010ac789ae409d175a8d07bb76faff92c44859c4b3674a7148d3920a733614f4a122fec7ae8d69a0a98b763e6dd676f0e59388062c7d9be99922689|ur:signature/lfaxhdfzmhbtcyltwtbepsksnyveasttkppdtikgrljlpeytdwfylpnsgrenjyosbblgescxoseohsgwgebgdlwpknvstbnybkmkrliavautiojlbahketlaidsttarnnlmodsldiykofxws|verified"
+   "expect": "d99c5482035840247039a011468fe604677fb29eb8abc78054db153cd1aa585cb2ece333a1d8465b42455005e4ab24d52c9618cd9ce98e32d8abc885f67a48192eda5ce4170c8e|ur:signature/lfaxhdfzdkjoesnbbyfgmyvaaaiolbprnnropystlaghuybzfnttpkhdhhprwpvleooytpfghpfwfegdahvepydktldwmtcssnnswlmneytppysplpynknfdcfdmtnhhvechbnmnbdhhjtzm|verified"
   },
   {
    "name": "sign sr25519 hex:59f2293a5bce msg=cyc:100",
@@ -3741,7 +3741,7 @@
      "start": 7
     }
    },
-   "expect": "d99c548203584098e00f41c2ebc0872c6b69da758ff5f933c2b3ce07d0e345c7422938e5b2b63e7447713c51c47fa82aa543fb1363def671659c1e8f2a35adb1478be3c2cbd28c|ur:signature/lfaxhdfzmkvtbsfpsawmrtltdwjeintnkpmyykyteosaqdtoattivlfestfwdtetvwprrpfmjyfljsfngysslbpddronfxzobwiaueynjsihnsckmydrecpmpaflluvlsasbtdlkhknesbeo|verified"
+   "expect": "d99c54820358400ed5ae1977cc9570c06443225dfa93d2970f9b9f8420277559718032ed182b30844b11c35bb8ae409a4a02e1650a721576edfc555f28174b1171d9596798108d|ur:signature/lfaxhdfzbatlplcfktsfmdjortiefxcphlzsmutdmsbsndnelrcxdikphkjslaeywecsdndylrgrbysrhproplfznygeaovyihbkjpbzkoweztgohedechgrbyjstahkiomkbelgecimfndl|verified"
   },
   {
    "name": "sshFromSeed ed25519 hex:59f2293a5bce \"Key comment.\"",
@@ -4936,7 +4936,7 @@
     "type": "json",
     "hex": "d90106427b7d"
    },
-   "expect": "d90106427b7d|-"
+   "expect": "d90106427b7d|ur:json/fwkgkijtcxdpae"
   },
   {
    "name": "decode uri d82068687474703a2f2f… (11B)",
@@ -5017,7 +5017,7 @@
     "type": "sskrShare",
     "hex": "d99d6555001100020000112233445566778899aabbccddeeff"
    },
-   "expect": "throw:Sskr"
+   "expect": "throw:CborError"
   },
   {
    "name": "decode sskrShare d9013555001100020000… (25B)",
@@ -5026,7 +5026,7 @@
     "type": "sskrShare",
     "hex": "d9013555001100020000112233445566778899aabbccddeeff"
    },
-   "expect": "d99d7555001100020000112233445566778899aabbccddeeff|-"
+   "expect": "d99d7555001100020000112233445566778899aabbccddeeff|ur:sskr/goaebyaeaoaeaebycpeofygoiyktlonlpkrksfutwyzmistiwdlo"
   },
   {
    "name": "decode seed d99d6ca1015000000000… (22B)",
@@ -5188,7 +5188,7 @@
     "type": "encapCiphertext",
     "hex": "d99c4b58200000000000000000000000000000000000000000000000000000000000000000"
    },
-   "expect": "d99c4b58200000000000000000000000000000000000000000000000000000000000000000|-"
+   "expect": "d99c4b58200000000000000000000000000000000000000000000000000000000000000000|ur:agreement-public-key/hdcxaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeaeihndnttt"
   },
   {
    "name": "decode mldsaPriv d99ca7820340… (6B)",

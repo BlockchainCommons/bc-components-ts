@@ -39,6 +39,8 @@ import { SecureRng, randomBytes } from "@blockchaincommons/rand";
 import { bytesToHex } from "../src/utils.js";
 import { ECPrivateKey } from "../src/ec-key/index.js";
 import { registerTags } from "@blockchaincommons/tags";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 beforeAll(() => {
   // Side-effect: globally register every BC tag so `decodeCbor` /
@@ -56,11 +58,13 @@ describe("Digest — Rust fixture", () => {
 
   it("matches the UR string fixture from Rust", () => {
     const digest = Digest.fromImage(new TextEncoder().encode("hello world"));
-    expect(digest.urString()).toBe(
+    expect(digest.toUR().toString()).toBe(
       "ur:digest/hdcxrhgtdirhmugtfmayondmgmtstnkipyzssslrwsvlkngulawymhloylpsvowssnwlamnlatrs",
     );
     // Round-trip
-    expect(Digest.fromURString(digest.urString()).equals(digest)).toBe(true);
+    expect(decodeURWith(UR.parse(digest.toUR().toString()), Digest.codec).equals(digest)).toBe(
+      true,
+    );
   });
 });
 
@@ -69,10 +73,10 @@ describe("XID — Rust fixture", () => {
 
   it("matches the UR string fixture", () => {
     const xid = XID.fromHex(RAW);
-    expect(xid.urString()).toBe(
+    expect(xid.toUR().toString()).toBe(
       "ur:xid/hdcxuedeguisgevwhdaxnbluenutlbglhfiygamsamadmojkdydtneteeowffhwprtemcaatledk",
     );
-    expect(XID.fromURString(xid.urString()).equals(xid)).toBe(true);
+    expect(decodeURWith(UR.parse(xid.toUR().toString()), XID.codec).equals(xid)).toBe(true);
   });
 
   it("produces the documented bytewords/bytemojis identifiers", () => {
@@ -100,10 +104,10 @@ describe("Reference — Rust fixture", () => {
     const ref = Reference.fromHex(
       "d40e0602674df1b732f5e025d04c45f2e74ed1652c5ae1740f6a5502dbbdcd47",
     );
-    const tagged = ref.taggedCborData();
+    const tagged = ref.toCbor().toData();
     // Tag 40025 → 0xd9 0x9c 0x59 prefix (CBOR major-6 + 2-byte tag).
     expect(tagged.subarray(0, 3)).toEqual(new Uint8Array([0xd9, 0x9c, 0x59]));
-    const decoded = Reference.fromTaggedCborData(tagged);
+    const decoded = Reference.fromCbor(decodeCbor(tagged));
     expect(decoded.equals(ref)).toBe(true);
   });
 });
@@ -125,8 +129,8 @@ describe("Compressed — raw DEFLATE (no zlib header)", () => {
 
   it("round-trips through tagged CBOR", () => {
     const c = Compressed.fromDecompressedData(SAMPLE);
-    const tagged = c.taggedCborData();
-    const decoded = Compressed.fromTaggedCborData(tagged);
+    const tagged = c.toCbor().toData();
+    const decoded = Compressed.fromCbor(decodeCbor(tagged));
     expect(decoded.decompress()).toEqual(SAMPLE);
   });
 });
@@ -199,28 +203,28 @@ describe("KDF params — salt is CBOR-tagged 40018 (matches Rust)", () => {
 });
 
 describe("UR conventions — payload is untagged CBOR (matches Rust)", () => {
-  it("Signature.ur() does NOT double-tag the payload", () => {
+  it("Signature.toUR() does NOT double-tag the payload", () => {
     const ec = ECPrivateKey.fromHex(
       "322b5c1dd5a17c3481c2297990c85c232ed3c17b52ce9905c6ec5193ad132c36",
     );
     const sig = Signature.schnorrFromData(ec.schnorrSign(new TextEncoder().encode("hi")));
-    const ur = sig.ur();
+    const ur = sig.toUR();
     // The UR payload should be untagged: a bare byte string, not #6.40020(...).
     const cborBytes = ur.cbor.toData();
     // CBOR major-2 byte string with 64 bytes (Schnorr): 0x58 0x40 + bytes.
     expect(cborBytes[0]).toBe(0x58);
     expect(cborBytes[1]).toBe(0x40);
-    expect(Signature.fromUR(ur).equals(sig)).toBe(true);
+    expect(decodeURWith(ur, Signature.codec).equals(sig)).toBe(true);
   });
 
-  it("SymmetricKey.ur() does NOT double-tag the payload", () => {
+  it("SymmetricKey.toUR() does NOT double-tag the payload", () => {
     const rng = new SecureRng();
     const key = SymmetricKey.fromData(randomBytes(32, { rng }));
-    const ur = key.ur();
+    const ur = key.toUR();
     const cborBytes = ur.cbor.toData();
     // 32-byte byte string: 0x58 0x20 + bytes.
     expect(cborBytes[0]).toBe(0x58);
     expect(cborBytes[1]).toBe(0x20);
-    expect(SymmetricKey.fromUR(ur).equals(key)).toBe(true);
+    expect(decodeURWith(ur, SymmetricKey.codec).equals(key)).toBe(true);
   });
 });

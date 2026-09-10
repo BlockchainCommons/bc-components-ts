@@ -17,7 +17,7 @@ import { MLDSALevel } from "../mldsa/mldsa-level.js";
 import { PrivateKeyBase } from "../private-key-base.js";
 import type { SshAlgorithm } from "../ssh/ssh-algorithm.js";
 import { SigningPrivateKey } from "./signing-private-key.js";
-import type { SigningPublicKey } from "./signing-public-key.js";
+import { SigningPublicKey } from "./signing-public-key.js";
 import { ComponentsError } from "../error.js";
 import { SignatureScheme } from "./signature-scheme.js";
 
@@ -85,22 +85,16 @@ export function createKeypair(
       return [privateKey, publicKey];
     }
     case SignatureScheme.MLDSA44: {
-      const mldsaKey = MLDSAPrivateKey.new(MLDSALevel.MLDSA44);
-      const privateKey = SigningPrivateKey.newMldsa(mldsaKey);
-      const publicKey = privateKey.publicKey();
-      return [privateKey, publicKey];
+      const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA44);
+      return [SigningPrivateKey.newMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
     }
     case SignatureScheme.MLDSA65: {
-      const mldsaKey = MLDSAPrivateKey.new(MLDSALevel.MLDSA65);
-      const privateKey = SigningPrivateKey.newMldsa(mldsaKey);
-      const publicKey = privateKey.publicKey();
-      return [privateKey, publicKey];
+      const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
+      return [SigningPrivateKey.newMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
     }
     case SignatureScheme.MLDSA87: {
-      const mldsaKey = MLDSAPrivateKey.new(MLDSALevel.MLDSA87);
-      const privateKey = SigningPrivateKey.newMldsa(mldsaKey);
-      const publicKey = privateKey.publicKey();
-      return [privateKey, publicKey];
+      const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA87);
+      return [SigningPrivateKey.newMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
     }
     case SignatureScheme.SshEd25519:
     case SignatureScheme.SshDsa:

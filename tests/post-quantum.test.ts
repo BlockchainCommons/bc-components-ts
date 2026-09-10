@@ -32,6 +32,8 @@ import {
   MLKEMPublicKey,
   MLKEMCiphertext,
 } from "../src/index.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // ============================================================================
 // ML-DSA Tests
@@ -214,8 +216,8 @@ describe("MLDSAPrivateKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA44);
-      const cborData = privateKey.taggedCborData();
-      const recovered = MLDSAPrivateKey.fromTaggedCborData(cborData);
+      const cborData = privateKey.toCbor().toData();
+      const recovered = MLDSAPrivateKey.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(privateKey)).toBe(true);
       expect(recovered.level()).toBe(privateKey.level());
     });
@@ -223,8 +225,8 @@ describe("MLDSAPrivateKey", () => {
     it("should preserve security level through CBOR", () => {
       for (const level of [MLDSALevel.MLDSA44, MLDSALevel.MLDSA65, MLDSALevel.MLDSA87]) {
         const [privateKey] = MLDSAPrivateKey.keypair(level);
-        const cborData = privateKey.taggedCborData();
-        const recovered = MLDSAPrivateKey.fromTaggedCborData(cborData);
+        const cborData = privateKey.toCbor().toData();
+        const recovered = MLDSAPrivateKey.fromCbor(decodeCbor(cborData));
         expect(recovered.level()).toBe(level);
       }
     });
@@ -233,14 +235,14 @@ describe("MLDSAPrivateKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA44);
-      const ur = privateKey.ur();
+      const ur = privateKey.toUR();
       expect(ur.type.name).toBe("mldsa-private-key");
     });
 
     it("should roundtrip through UR string", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA44);
-      const urString = privateKey.urString();
-      const recovered = MLDSAPrivateKey.fromURString(urString);
+      const urString = privateKey.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), MLDSAPrivateKey.codec);
       expect(recovered.equals(privateKey)).toBe(true);
     });
   });
@@ -257,8 +259,8 @@ describe("MLDSAPublicKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const [, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
-      const cborData = publicKey.taggedCborData();
-      const recovered = MLDSAPublicKey.fromTaggedCborData(cborData);
+      const cborData = publicKey.toCbor().toData();
+      const recovered = MLDSAPublicKey.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(publicKey)).toBe(true);
     });
   });
@@ -266,14 +268,14 @@ describe("MLDSAPublicKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const [, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
-      const ur = publicKey.ur();
+      const ur = publicKey.toUR();
       expect(ur.type.name).toBe("mldsa-public-key");
     });
 
     it("should roundtrip through UR string", () => {
       const [, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
-      const urString = publicKey.urString();
-      const recovered = MLDSAPublicKey.fromURString(urString);
+      const urString = publicKey.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), MLDSAPublicKey.codec);
       expect(recovered.equals(publicKey)).toBe(true);
     });
   });
@@ -292,8 +294,8 @@ describe("MLDSASignature", () => {
     it("should roundtrip through tagged CBOR", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
       const signature = privateKey.sign(new Uint8Array([1, 2, 3]));
-      const cborData = signature.taggedCborData();
-      const recovered = MLDSASignature.fromTaggedCborData(cborData);
+      const cborData = signature.toCbor().toData();
+      const recovered = MLDSASignature.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(signature)).toBe(true);
     });
   });
@@ -302,15 +304,15 @@ describe("MLDSASignature", () => {
     it("should serialize to UR", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
       const signature = privateKey.sign(new Uint8Array([1, 2, 3]));
-      const ur = signature.ur();
+      const ur = signature.toUR();
       expect(ur.type.name).toBe("mldsa-signature");
     });
 
     it("should roundtrip through UR string", () => {
       const [privateKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
       const signature = privateKey.sign(new Uint8Array([1, 2, 3]));
-      const urString = signature.urString();
-      const recovered = MLDSASignature.fromURString(urString);
+      const urString = signature.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), MLDSASignature.codec);
       expect(recovered.equals(signature)).toBe(true);
     });
   });
@@ -503,8 +505,8 @@ describe("MLKEMPrivateKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const [privateKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM512);
-      const cborData = privateKey.taggedCborData();
-      const recovered = MLKEMPrivateKey.fromTaggedCborData(cborData);
+      const cborData = privateKey.toCbor().toData();
+      const recovered = MLKEMPrivateKey.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(privateKey)).toBe(true);
       expect(recovered.level()).toBe(privateKey.level());
     });
@@ -512,8 +514,8 @@ describe("MLKEMPrivateKey", () => {
     it("should preserve security level through CBOR", () => {
       for (const level of [MLKEMLevel.MLKEM512, MLKEMLevel.MLKEM768, MLKEMLevel.MLKEM1024]) {
         const [privateKey] = MLKEMPrivateKey.keypair(level);
-        const cborData = privateKey.taggedCborData();
-        const recovered = MLKEMPrivateKey.fromTaggedCborData(cborData);
+        const cborData = privateKey.toCbor().toData();
+        const recovered = MLKEMPrivateKey.fromCbor(decodeCbor(cborData));
         expect(recovered.level()).toBe(level);
       }
     });
@@ -522,14 +524,14 @@ describe("MLKEMPrivateKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const [privateKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM512);
-      const ur = privateKey.ur();
+      const ur = privateKey.toUR();
       expect(ur.type.name).toBe("mlkem-private-key");
     });
 
     it("should roundtrip through UR string", () => {
       const [privateKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM512);
-      const urString = privateKey.urString();
-      const recovered = MLKEMPrivateKey.fromURString(urString);
+      const urString = privateKey.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), MLKEMPrivateKey.codec);
       expect(recovered.equals(privateKey)).toBe(true);
     });
   });
@@ -546,8 +548,8 @@ describe("MLKEMPublicKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
-      const cborData = publicKey.taggedCborData();
-      const recovered = MLKEMPublicKey.fromTaggedCborData(cborData);
+      const cborData = publicKey.toCbor().toData();
+      const recovered = MLKEMPublicKey.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(publicKey)).toBe(true);
     });
   });
@@ -555,14 +557,14 @@ describe("MLKEMPublicKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
-      const ur = publicKey.ur();
+      const ur = publicKey.toUR();
       expect(ur.type.name).toBe("mlkem-public-key");
     });
 
     it("should roundtrip through UR string", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
-      const urString = publicKey.urString();
-      const recovered = MLKEMPublicKey.fromURString(urString);
+      const urString = publicKey.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), MLKEMPublicKey.codec);
       expect(recovered.equals(publicKey)).toBe(true);
     });
   });
@@ -581,8 +583,8 @@ describe("MLKEMCiphertext", () => {
     it("should roundtrip through tagged CBOR", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
       const { ciphertext } = publicKey.encapsulate();
-      const cborData = ciphertext.taggedCborData();
-      const recovered = MLKEMCiphertext.fromTaggedCborData(cborData);
+      const cborData = ciphertext.toCbor().toData();
+      const recovered = MLKEMCiphertext.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(ciphertext)).toBe(true);
     });
   });
@@ -591,15 +593,15 @@ describe("MLKEMCiphertext", () => {
     it("should serialize to UR", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
       const { ciphertext } = publicKey.encapsulate();
-      const ur = ciphertext.ur();
+      const ur = ciphertext.toUR();
       expect(ur.type.name).toBe("mlkem-ciphertext");
     });
 
     it("should roundtrip through UR string", () => {
       const [, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
       const { ciphertext } = publicKey.encapsulate();
-      const urString = ciphertext.urString();
-      const recovered = MLKEMCiphertext.fromURString(urString);
+      const urString = ciphertext.toUR().toString();
+      const recovered = decodeURWith(UR.parse(urString), MLKEMCiphertext.codec);
       expect(recovered.equals(ciphertext)).toBe(true);
     });
   });
@@ -642,14 +644,14 @@ describe("Post-Quantum Integration", () => {
     const { sharedSecret: original, ciphertext } = kemPublic.encapsulate();
 
     // Serialize everything
-    const privateKeyUr = kemPrivate.urString();
-    const publicKeyUr = kemPublic.urString();
-    const ciphertextUr = ciphertext.urString();
+    const privateKeyUr = kemPrivate.toUR().toString();
+    const publicKeyUr = kemPublic.toUR().toString();
+    const ciphertextUr = ciphertext.toUR().toString();
 
     // Deserialize
-    const recoveredPrivate = MLKEMPrivateKey.fromURString(privateKeyUr);
-    const recoveredPublic = MLKEMPublicKey.fromURString(publicKeyUr);
-    const recoveredCiphertext = MLKEMCiphertext.fromURString(ciphertextUr);
+    const recoveredPrivate = decodeURWith(UR.parse(privateKeyUr), MLKEMPrivateKey.codec);
+    const recoveredPublic = decodeURWith(UR.parse(publicKeyUr), MLKEMPublicKey.codec);
+    const recoveredCiphertext = decodeURWith(UR.parse(ciphertextUr), MLKEMCiphertext.codec);
 
     // Verify keys match
     expect(recoveredPrivate.equals(kemPrivate)).toBe(true);

@@ -25,23 +25,9 @@
  * Ported from bc-components-rust/src/encapsulation/encapsulation_public_key.rs
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-  tagValue,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import {
   X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY,
   MLKEM_PUBLIC_KEY as TAG_MLKEM_PUBLIC_KEY,
@@ -87,13 +73,7 @@ function isMlkemScheme(scheme: EncapsulationScheme): boolean {
  *
  * Use this to encapsulate a shared secret for a recipient.
  */
-export class EncapsulationPublicKey
-  implements
-    ReferenceProvider,
-    CborTaggedEncodable,
-    CborTaggedDecodable<EncapsulationPublicKey>,
-    UREncodable
-{
+export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
   private readonly _scheme: EncapsulationScheme;
   private readonly _x25519PublicKey: X25519PublicKey | undefined;
   private readonly _mlkemPublicKey: MLKEMPublicKey | undefined;
@@ -320,22 +300,37 @@ export class EncapsulationPublicKey
    * representation, providing a unique, content-addressable identifier.
    */
   reference(): Reference {
-    const digest = Digest.fromImage(this.taggedCborData());
+    const digest = Digest.fromImage(this.toCbor().toData());
     return Reference.from(digest);
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
+
+  /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+  static readonly codec: ComponentCodec<EncapsulationPublicKey> = defineCodec({
+    tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_PUBLIC_KEY],
+    decodeUntagged: (cborValue) =>
+      EncapsulationPublicKey.fromX25519PublicKey(
+        X25519PublicKey.fromDataRef(expectBytes(cborValue)),
+      ),
+    decodeTagged: (tag, content, whole) =>
+      tag.value === TAG_MLKEM_PUBLIC_KEY.value
+        ? EncapsulationPublicKey.fromMlkem(MLKEMPublicKey.fromCbor(whole))
+        : EncapsulationPublicKey.codec.decodeUntagged(content),
+    encodeUntagged: (value) => value.untaggedCbor(),
+    encode: (value) => value.toCbor(),
+  });
 
   /**
    * Returns the CBOR tags associated with this public key.
    */
   cborTags(): Tag[] {
     if (this._scheme === EncapsulationScheme.X25519) {
-      return tagsForValues([TAG_X25519_PUBLIC_KEY.value]);
+      return [TAG_X25519_PUBLIC_KEY];
     } else if (isMlkemScheme(this._scheme)) {
-      return tagsForValues([TAG_MLKEM_PUBLIC_KEY.value]);
+      return [TAG_MLKEM_PUBLIC_KEY];
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -356,139 +351,26 @@ export class EncapsulationPublicKey
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form; the tag follows the scheme. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the scheme's tag name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
+  static fromCbor(cborValue: Cbor): EncapsulationPublicKey {
+    return EncapsulationPublicKey.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an EncapsulationPublicKey by decoding it from untagged CBOR.
-   * Note: Without tags, we assume X25519 scheme.
-   */
-  fromUntaggedCbor(cborValue: Cbor): EncapsulationPublicKey {
-    const data = expectBytes(cborValue);
-    const publicKey = X25519PublicKey.fromDataRef(data);
-    return EncapsulationPublicKey.fromX25519PublicKey(publicKey);
-  }
-
-  /**
-   * Creates an EncapsulationPublicKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): EncapsulationPublicKey {
-    const tag = tagValue(cborValue);
-
-    if (tag === TAG_X25519_PUBLIC_KEY.value) {
-      const content = extractTaggedContent(cborValue);
-      const data = expectBytes(content);
-      const publicKey = X25519PublicKey.fromDataRef(data);
-      return EncapsulationPublicKey.fromX25519PublicKey(publicKey);
-    }
-
-    if (tag === TAG_MLKEM_PUBLIC_KEY.value) {
-      const mlkemPublic = MLKEMPublicKey.fromTaggedCbor(cborValue);
-      return EncapsulationPublicKey.fromMlkem(mlkemPublic);
-    }
-
-    throw ComponentsError.invalidData(`Unknown public key tag: ${tag}`);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): EncapsulationPublicKey {
-    const dummy = EncapsulationPublicKey.fromX25519PublicKey(
-      X25519PublicKey.fromData(new Uint8Array(32)),
-    );
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): EncapsulationPublicKey {
-    const cborValue = decodeCbor(data);
-    return EncapsulationPublicKey.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): EncapsulationPublicKey {
-    const cborValue = decodeCbor(data);
-    const dummy = EncapsulationPublicKey.fromX25519PublicKey(
-      X25519PublicKey.fromData(new Uint8Array(32)),
-    );
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    if (this._scheme === EncapsulationScheme.X25519) {
-      const name = TAG_X25519_PUBLIC_KEY.name;
-      if (name === undefined)
-        throw ComponentsError.invalidData("TAG_X25519_PUBLIC_KEY.name is undefined");
-      return UR.from(name, this.untaggedCbor());
-    } else if (isMlkemScheme(this._scheme)) {
-      const pk = this._mlkemPublicKey;
-      if (pk === undefined) throw ComponentsError.invalidData("MLKEM public key not set");
-      return pk.ur();
-    }
-    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an EncapsulationPublicKey from a UR.
-   */
-  static fromUR(ur: UR): EncapsulationPublicKey {
-    // Check for known UR types
-    if (ur.type.name === TAG_X25519_PUBLIC_KEY.name) {
-      const dummy = EncapsulationPublicKey.fromX25519PublicKey(
-        X25519PublicKey.fromData(new Uint8Array(32)),
-      );
-      return dummy.fromUntaggedCbor(ur.cbor);
-    }
-
-    if (ur.type.name === TAG_MLKEM_PUBLIC_KEY.name) {
-      const mlkemPublic = MLKEMPublicKey.fromUR(ur);
-      return EncapsulationPublicKey.fromMlkem(mlkemPublic);
-    }
-
-    throw ComponentsError.invalidData(
-      `Unknown UR type for EncapsulationPublicKey: ${ur.type.name}`,
-    );
-  }
-
-  /**
-   * Creates an EncapsulationPublicKey from a UR string.
-   */
-  static fromURString(urString: string): EncapsulationPublicKey {
-    const ur = UR.parse(urString);
-    return EncapsulationPublicKey.fromUR(ur);
-  }
 }

@@ -139,7 +139,7 @@ export class HKDFParams implements KeyDerivation {
    * Format: [0, Salt, HashType]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
    */
   toCbor(): Cbor {
-    return cbor([cbor(HKDFParams.INDEX), this._salt.taggedCbor(), hashTypeToCbor(this._hashType)]);
+    return cbor([cbor(HKDFParams.INDEX), this._salt.toCbor(), hashTypeToCbor(this._hashType)]);
   }
 
   /**
@@ -168,7 +168,7 @@ export class HKDFParams implements KeyDerivation {
       );
     }
 
-    const salt = Salt.fromTaggedCbor(array[1]);
+    const salt = Salt.fromCbor(array[1]);
     const hashType = hashTypeFromCbor(array[2]);
 
     return new HKDFParams(salt, hashType);

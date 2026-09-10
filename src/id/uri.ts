@@ -25,28 +25,14 @@
  * type "url".
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectText,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
+import { type Cbor, type Tag, cbor, expectText, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { URI as TAG_URI } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 import { toBase64 } from "../utils.js";
 
-export class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREncodable {
+export class URI implements ToCbor, ToUR {
   private readonly _uri: string;
 
   private constructor(uri: string) {
@@ -181,14 +167,21 @@ export class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREnc
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with URI.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<URI> = defineCodec({
+    tags: [TAG_URI],
+    decodeUntagged: (cborValue) => {
+      const text = expectText(cborValue);
+      return URI.new(text);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_URI.value]);
+    return [...URI.codec.tags];
   }
 
   /**
@@ -198,99 +191,26 @@ export class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREnc
     return cbor(this._uri);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): URI {
+    return URI.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a URI by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): URI {
-    const text = expectText(cborValue);
-    return URI.new(text);
-  }
-
-  /**
-   * Creates a URI by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): URI {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): URI {
-    const instance = new URI("https://placeholder.invalid");
-    return instance.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): URI {
-    const cborValue = decodeCbor(data);
-    return URI.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): URI {
-    const cborValue = decodeCbor(data);
-    const text = expectText(cborValue);
-    return URI.new(text);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the URI.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    return UR.from("url", this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a URI from a UR.
-   */
-  static fromUR(ur: UR): URI {
-    ur.expectType("url");
-    const instance = new URI("https://placeholder.invalid");
-    return instance.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a URI from a UR string.
-   */
-  static fromURString(urString: string): URI {
-    const ur = UR.parse(urString);
-    return URI.fromUR(ur);
-  }
 }

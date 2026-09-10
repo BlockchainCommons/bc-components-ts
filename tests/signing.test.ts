@@ -23,6 +23,7 @@ import {
   ECPrivateKey,
 } from "../src";
 import { SecureRng } from "@blockchaincommons/rand";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // Test vectors from the Rust implementation
 const TEST_PRIVATE_KEY_HEX = "322b5c1dd5a17c3481c2297990c85c232ed3c17b52ce9905c6ec5193ad132c36";
@@ -257,7 +258,7 @@ describe("SigningPrivateKey", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
 
-      const cbor = privateKey.taggedCbor();
+      const cbor = privateKey.toCbor();
       expect(cbor).toBeTruthy();
     });
 
@@ -265,7 +266,7 @@ describe("SigningPrivateKey", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
 
-      const data = privateKey.taggedCborData();
+      const data = privateKey.toCbor().toData();
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
     });
@@ -274,8 +275,8 @@ describe("SigningPrivateKey", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
 
-      const data = privateKey.taggedCborData();
-      const recovered = SigningPrivateKey.fromTaggedCborData(data);
+      const data = privateKey.toCbor().toData();
+      const recovered = SigningPrivateKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(privateKey)).toBe(true);
     });
@@ -286,7 +287,7 @@ describe("SigningPrivateKey", () => {
 
       const cbor = privateKey.untaggedCbor();
       const data = cbor.toData();
-      const recovered = SigningPrivateKey.fromUntaggedCborData(data);
+      const recovered = SigningPrivateKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(privateKey)).toBe(true);
     });
@@ -387,7 +388,7 @@ describe("SigningPublicKey", () => {
       const privateKey = SigningPrivateKey.random();
       const publicKey = privateKey.publicKey();
 
-      const data = publicKey.taggedCborData();
+      const data = publicKey.toCbor().toData();
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
     });
@@ -397,8 +398,8 @@ describe("SigningPublicKey", () => {
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
-      const data = publicKey.taggedCborData();
-      const recovered = SigningPublicKey.fromTaggedCborData(data);
+      const data = publicKey.toCbor().toData();
+      const recovered = SigningPublicKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(publicKey)).toBe(true);
     });
@@ -410,7 +411,7 @@ describe("SigningPublicKey", () => {
 
       const cbor = publicKey.untaggedCbor();
       const data = cbor.toData();
-      const recovered = SigningPublicKey.fromUntaggedCborData(data);
+      const recovered = SigningPublicKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(publicKey)).toBe(true);
     });
@@ -475,7 +476,7 @@ describe("Signature", () => {
       const privateKey = SigningPrivateKey.random();
       const signature = privateKey.sign(TEST_MESSAGE);
 
-      const data = signature.taggedCborData();
+      const data = signature.toCbor().toData();
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
     });
@@ -485,8 +486,8 @@ describe("Signature", () => {
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
-      const data = signature.taggedCborData();
-      const recovered = Signature.fromTaggedCborData(data);
+      const data = signature.toCbor().toData();
+      const recovered = Signature.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(signature)).toBe(true);
     });
@@ -498,7 +499,7 @@ describe("Signature", () => {
 
       const cbor = signature.untaggedCbor();
       const data = cbor.toData();
-      const recovered = Signature.fromUntaggedCborData(data);
+      const recovered = Signature.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(signature)).toBe(true);
     });
@@ -542,13 +543,13 @@ describe("Ed25519 signing integration", () => {
     const signature = privateKey.sign(message);
 
     // Serialize and deserialize keys
-    const privateKeyData = privateKey.taggedCborData();
-    const publicKeyData = publicKey.taggedCborData();
-    const signatureData = signature.taggedCborData();
+    const privateKeyData = privateKey.toCbor().toData();
+    const publicKeyData = publicKey.toCbor().toData();
+    const signatureData = signature.toCbor().toData();
 
-    const recoveredPrivateKey = SigningPrivateKey.fromTaggedCborData(privateKeyData);
-    const recoveredPublicKey = SigningPublicKey.fromTaggedCborData(publicKeyData);
-    const recoveredSignature = Signature.fromTaggedCborData(signatureData);
+    const recoveredPrivateKey = SigningPrivateKey.fromCbor(decodeCbor(privateKeyData));
+    const recoveredPublicKey = SigningPublicKey.fromCbor(decodeCbor(publicKeyData));
+    const recoveredSignature = Signature.fromCbor(decodeCbor(signatureData));
 
     // Verify with recovered keys
     expect(recoveredPublicKey.verify(recoveredSignature, message)).toBe(true);
@@ -625,8 +626,8 @@ describe("Schnorr signing (secp256k1)", () => {
       const ecKey = ECPrivateKey.random();
       const privateKey = SigningPrivateKey.newSchnorr(ecKey);
 
-      const data = privateKey.taggedCborData();
-      const recovered = SigningPrivateKey.fromTaggedCborData(data);
+      const data = privateKey.toCbor().toData();
+      const recovered = SigningPrivateKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(privateKey)).toBe(true);
       expect(recovered.scheme()).toBe(SignatureScheme.Schnorr);
@@ -636,8 +637,8 @@ describe("Schnorr signing (secp256k1)", () => {
       const [privateKey] = createKeypair(SignatureScheme.Schnorr);
       const publicKey = privateKey.publicKey();
 
-      const data = publicKey.taggedCborData();
-      const recovered = SigningPublicKey.fromTaggedCborData(data);
+      const data = publicKey.toCbor().toData();
+      const recovered = SigningPublicKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(publicKey)).toBe(true);
       expect(recovered.scheme()).toBe(SignatureScheme.Schnorr);
@@ -648,8 +649,8 @@ describe("Schnorr signing (secp256k1)", () => {
       const message = new TextEncoder().encode("Test");
       const signature = privateKey.sign(message);
 
-      const data = signature.taggedCborData();
-      const recovered = Signature.fromTaggedCborData(data);
+      const data = signature.toCbor().toData();
+      const recovered = Signature.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(signature)).toBe(true);
       expect(recovered.scheme()).toBe(SignatureScheme.Schnorr);
@@ -723,8 +724,8 @@ describe("ECDSA signing (secp256k1)", () => {
       const ecKey = ECPrivateKey.random();
       const privateKey = SigningPrivateKey.newEcdsa(ecKey);
 
-      const data = privateKey.taggedCborData();
-      const recovered = SigningPrivateKey.fromTaggedCborData(data);
+      const data = privateKey.toCbor().toData();
+      const recovered = SigningPrivateKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(privateKey)).toBe(true);
       expect(recovered.scheme()).toBe(SignatureScheme.Ecdsa);
@@ -734,8 +735,8 @@ describe("ECDSA signing (secp256k1)", () => {
       const [privateKey] = createKeypair(SignatureScheme.Ecdsa);
       const publicKey = privateKey.publicKey();
 
-      const data = publicKey.taggedCborData();
-      const recovered = SigningPublicKey.fromTaggedCborData(data);
+      const data = publicKey.toCbor().toData();
+      const recovered = SigningPublicKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(publicKey)).toBe(true);
       expect(recovered.scheme()).toBe(SignatureScheme.Ecdsa);
@@ -746,8 +747,8 @@ describe("ECDSA signing (secp256k1)", () => {
       const message = new TextEncoder().encode("Test");
       const signature = privateKey.sign(message);
 
-      const data = signature.taggedCborData();
-      const recovered = Signature.fromTaggedCborData(data);
+      const data = signature.toCbor().toData();
+      const recovered = Signature.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(signature)).toBe(true);
       expect(recovered.scheme()).toBe(SignatureScheme.Ecdsa);

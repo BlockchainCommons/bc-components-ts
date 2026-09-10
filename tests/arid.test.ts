@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from "vitest";
 import { ARID } from "../src/id/arid.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("ARID", () => {
   // Test hex string (32 bytes = 64 hex chars)
@@ -178,14 +180,14 @@ describe("ARID", () => {
 
     it("should serialize to tagged CBOR", () => {
       const arid = ARID.new();
-      const tagged = arid.taggedCbor();
+      const tagged = arid.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const arid = ARID.new();
-      const data = arid.taggedCborData();
+      const data = arid.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -193,8 +195,8 @@ describe("ARID", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const arid = ARID.new();
-      const data = arid.taggedCborData();
-      const restored = ARID.fromTaggedCborData(data);
+      const data = arid.toCbor().toData();
+      const restored = ARID.fromCbor(decodeCbor(data));
 
       expect(restored.equals(arid)).toBe(true);
     });
@@ -202,7 +204,7 @@ describe("ARID", () => {
     it("should roundtrip through untagged CBOR", () => {
       const arid = ARID.new();
       const data = arid.untaggedCbor().toData();
-      const restored = ARID.fromUntaggedCborData(data);
+      const restored = ARID.fromCbor(decodeCbor(data));
 
       expect(restored.equals(arid)).toBe(true);
     });
@@ -211,22 +213,22 @@ describe("ARID", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const arid = ARID.new();
-      const ur = arid.ur();
+      const ur = arid.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
       const arid = ARID.new();
-      const urString = arid.urString();
+      const urString = arid.toUR().toString();
 
       expect(urString.startsWith("ur:arid/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
       const arid = ARID.new();
-      const urString = arid.urString();
-      const restored = ARID.fromURString(urString);
+      const urString = arid.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), ARID.codec);
 
       expect(restored.equals(arid)).toBe(true);
     });
@@ -234,7 +236,7 @@ describe("ARID", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_arid/invalid";
 
-      expect(() => ARID.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), ARID.codec)).toThrow();
     });
   });
 });

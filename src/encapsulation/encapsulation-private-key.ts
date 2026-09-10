@@ -24,23 +24,9 @@
  */
 
 import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-  tagValue,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import {
   X25519_PRIVATE_KEY as TAG_X25519_PRIVATE_KEY,
   MLKEM_PRIVATE_KEY as TAG_MLKEM_PRIVATE_KEY,
@@ -87,13 +73,7 @@ function isMlkemScheme(scheme: EncapsulationScheme): boolean {
  *
  * Use this to decapsulate a shared secret from ciphertext.
  */
-export class EncapsulationPrivateKey
-  implements
-    ReferenceProvider,
-    CborTaggedEncodable,
-    CborTaggedDecodable<EncapsulationPrivateKey>,
-    UREncodable
-{
+export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR {
   private readonly _scheme: EncapsulationScheme;
   private readonly _x25519PrivateKey: X25519PrivateKey | undefined;
   private readonly _mlkemPrivateKey: MLKEMPrivateKey | undefined;
@@ -398,22 +378,37 @@ export class EncapsulationPrivateKey
    * representation, providing a unique, content-addressable identifier.
    */
   reference(): Reference {
-    const digest = Digest.fromImage(this.taggedCborData());
+    const digest = Digest.fromImage(this.toCbor().toData());
     return Reference.from(digest);
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
+
+  /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+  static readonly codec: ComponentCodec<EncapsulationPrivateKey> = defineCodec({
+    tags: [TAG_X25519_PRIVATE_KEY, TAG_MLKEM_PRIVATE_KEY],
+    decodeUntagged: (cborValue) =>
+      EncapsulationPrivateKey.fromX25519PrivateKey(
+        X25519PrivateKey.fromDataRef(expectBytes(cborValue)),
+      ),
+    decodeTagged: (tag, content, whole) =>
+      tag.value === TAG_MLKEM_PRIVATE_KEY.value
+        ? EncapsulationPrivateKey.fromMlkem(MLKEMPrivateKey.fromCbor(whole))
+        : EncapsulationPrivateKey.codec.decodeUntagged(content),
+    encodeUntagged: (value) => value.untaggedCbor(),
+    encode: (value) => value.toCbor(),
+  });
 
   /**
    * Returns the CBOR tags associated with this private key.
    */
   cborTags(): Tag[] {
     if (this._scheme === EncapsulationScheme.X25519) {
-      return tagsForValues([TAG_X25519_PRIVATE_KEY.value]);
+      return [TAG_X25519_PRIVATE_KEY];
     } else if (isMlkemScheme(this._scheme)) {
-      return tagsForValues([TAG_MLKEM_PRIVATE_KEY.value]);
+      return [TAG_MLKEM_PRIVATE_KEY];
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -434,139 +429,26 @@ export class EncapsulationPrivateKey
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form; the tag follows the scheme. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the scheme's tag name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
+  static fromCbor(cborValue: Cbor): EncapsulationPrivateKey {
+    return EncapsulationPrivateKey.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an EncapsulationPrivateKey by decoding it from untagged CBOR.
-   * Note: Without tags, we assume X25519 scheme.
-   */
-  fromUntaggedCbor(cborValue: Cbor): EncapsulationPrivateKey {
-    const data = expectBytes(cborValue);
-    const privateKey = X25519PrivateKey.fromDataRef(data);
-    return EncapsulationPrivateKey.fromX25519PrivateKey(privateKey);
-  }
-
-  /**
-   * Creates an EncapsulationPrivateKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): EncapsulationPrivateKey {
-    const tag = tagValue(cborValue);
-
-    if (tag === TAG_X25519_PRIVATE_KEY.value) {
-      const content = extractTaggedContent(cborValue);
-      const data = expectBytes(content);
-      const privateKey = X25519PrivateKey.fromDataRef(data);
-      return EncapsulationPrivateKey.fromX25519PrivateKey(privateKey);
-    }
-
-    if (tag === TAG_MLKEM_PRIVATE_KEY.value) {
-      const mlkemPrivate = MLKEMPrivateKey.fromTaggedCbor(cborValue);
-      return EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
-    }
-
-    throw ComponentsError.invalidData(`Unknown private key tag: ${tag}`);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): EncapsulationPrivateKey {
-    const dummy = EncapsulationPrivateKey.fromX25519PrivateKey(
-      X25519PrivateKey.fromData(new Uint8Array(32)),
-    );
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): EncapsulationPrivateKey {
-    const cborValue = decodeCbor(data);
-    return EncapsulationPrivateKey.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): EncapsulationPrivateKey {
-    const cborValue = decodeCbor(data);
-    const dummy = EncapsulationPrivateKey.fromX25519PrivateKey(
-      X25519PrivateKey.fromData(new Uint8Array(32)),
-    );
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    if (this._scheme === EncapsulationScheme.X25519) {
-      const name = TAG_X25519_PRIVATE_KEY.name;
-      if (name === undefined)
-        throw ComponentsError.invalidData("TAG_X25519_PRIVATE_KEY.name is undefined");
-      return UR.from(name, this.untaggedCbor());
-    } else if (isMlkemScheme(this._scheme)) {
-      const pk = this._mlkemPrivateKey;
-      if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
-      return pk.ur();
-    }
-    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an EncapsulationPrivateKey from a UR.
-   */
-  static fromUR(ur: UR): EncapsulationPrivateKey {
-    // Check for known UR types
-    if (ur.type.name === TAG_X25519_PRIVATE_KEY.name) {
-      const dummy = EncapsulationPrivateKey.fromX25519PrivateKey(
-        X25519PrivateKey.fromData(new Uint8Array(32)),
-      );
-      return dummy.fromUntaggedCbor(ur.cbor);
-    }
-
-    if (ur.type.name === TAG_MLKEM_PRIVATE_KEY.name) {
-      const mlkemPrivate = MLKEMPrivateKey.fromUR(ur);
-      return EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
-    }
-
-    throw ComponentsError.invalidData(
-      `Unknown UR type for EncapsulationPrivateKey: ${ur.type.name}`,
-    );
-  }
-
-  /**
-   * Creates an EncapsulationPrivateKey from a UR string.
-   */
-  static fromURString(urString: string): EncapsulationPrivateKey {
-    const ur = UR.parse(urString);
-    return EncapsulationPrivateKey.fromUR(ur);
-  }
 }

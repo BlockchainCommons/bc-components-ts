@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { JSON } from "../src/index.js";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("JSON", () => {
   describe("creation", () => {
@@ -41,8 +42,8 @@ describe("JSON", () => {
   describe("CBOR serialization", () => {
     it("should roundtrip through tagged CBOR", () => {
       const json = JSON.fromString('{"name":"Alice","age":30}');
-      const cborData = json.taggedCborData();
-      const json2 = JSON.fromTaggedCborData(cborData);
+      const cborData = json.toCbor().toData();
+      const json2 = JSON.fromCbor(decodeCbor(cborData));
       expect(json.equals(json2)).toBe(true);
       expect(json2.asStr()).toBe('{"name":"Alice","age":30}');
     });
@@ -50,7 +51,7 @@ describe("JSON", () => {
     it("should roundtrip through untagged CBOR", () => {
       const json = JSON.fromString('["array", "data"]');
       const cborData = json.untaggedCbor().toData();
-      const json2 = JSON.fromUntaggedCborData(cborData);
+      const json2 = JSON.fromCbor(decodeCbor(cborData));
       expect(json.equals(json2)).toBe(true);
     });
   });
@@ -95,8 +96,8 @@ describe("JSON", () => {
       expect(complex.asStr()).toBe('{"outer":{"inner":"value","array":[1,2,3]}}');
 
       // Roundtrip through CBOR
-      const cborData = complex.taggedCborData();
-      const recovered = JSON.fromTaggedCborData(cborData);
+      const cborData = complex.toCbor().toData();
+      const recovered = JSON.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(complex)).toBe(true);
     });
 
@@ -105,8 +106,8 @@ describe("JSON", () => {
       expect(unicode.asStr()).toBe('{"emoji":"🎉","japanese":"日本語"}');
 
       // Roundtrip through CBOR
-      const cborData = unicode.taggedCborData();
-      const recovered = JSON.fromTaggedCborData(cborData);
+      const cborData = unicode.toCbor().toData();
+      const recovered = JSON.fromCbor(decodeCbor(cborData));
       expect(recovered.asStr()).toBe('{"emoji":"🎉","japanese":"日本語"}');
     });
   });

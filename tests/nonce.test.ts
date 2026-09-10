@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from "vitest";
 import { Nonce } from "../src/nonce.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("Nonce", () => {
   describe("creation", () => {
@@ -153,14 +155,14 @@ describe("Nonce", () => {
 
     it("should serialize to tagged CBOR", () => {
       const nonce = Nonce.new();
-      const tagged = nonce.taggedCbor();
+      const tagged = nonce.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const nonce = Nonce.new();
-      const data = nonce.taggedCborData();
+      const data = nonce.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -168,8 +170,8 @@ describe("Nonce", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const nonce = Nonce.new();
-      const data = nonce.taggedCborData();
-      const restored = Nonce.fromTaggedCborData(data);
+      const data = nonce.toCbor().toData();
+      const restored = Nonce.fromCbor(decodeCbor(data));
 
       expect(restored.equals(nonce)).toBe(true);
     });
@@ -177,7 +179,7 @@ describe("Nonce", () => {
     it("should roundtrip through untagged CBOR", () => {
       const nonce = Nonce.new();
       const data = nonce.untaggedCbor().toData();
-      const restored = Nonce.fromUntaggedCborData(data);
+      const restored = Nonce.fromCbor(decodeCbor(data));
 
       expect(restored.equals(nonce)).toBe(true);
     });
@@ -186,22 +188,22 @@ describe("Nonce", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const nonce = Nonce.new();
-      const ur = nonce.ur();
+      const ur = nonce.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
       const nonce = Nonce.new();
-      const urString = nonce.urString();
+      const urString = nonce.toUR().toString();
 
       expect(urString.startsWith("ur:nonce/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
       const nonce = Nonce.new();
-      const urString = nonce.urString();
-      const restored = Nonce.fromURString(urString);
+      const urString = nonce.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), Nonce.codec);
 
       expect(restored.equals(nonce)).toBe(true);
     });
@@ -209,7 +211,7 @@ describe("Nonce", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_nonce/invalid";
 
-      expect(() => Nonce.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), Nonce.codec)).toThrow();
     });
   });
 });

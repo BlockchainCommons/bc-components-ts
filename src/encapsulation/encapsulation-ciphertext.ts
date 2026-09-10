@@ -17,17 +17,8 @@
  * Ported from bc-components-rust/src/encapsulation/encapsulation_ciphertext.rs
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-  tagValue,
-} from "@blockchaincommons/dcbor";
-import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import {
   X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY,
   MLKEM_CIPHERTEXT as TAG_MLKEM_CIPHERTEXT,
@@ -38,6 +29,7 @@ import { MLKEMCiphertext } from "../mlkem/mlkem-ciphertext.js";
 import { MLKEMLevel } from "../mlkem/mlkem-level.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 
 /**
  * Convert MLKEMLevel to EncapsulationScheme
@@ -70,9 +62,7 @@ function isMlkemScheme(scheme: EncapsulationScheme): boolean {
  * For X25519, this wraps an ephemeral public key.
  * For MLKEM, this wraps an MLKEMCiphertext.
  */
-export class EncapsulationCiphertext
-  implements CborTaggedEncodable, CborTaggedDecodable<EncapsulationCiphertext>
-{
+export class EncapsulationCiphertext implements ToCbor {
   private readonly _scheme: EncapsulationScheme;
   private readonly _x25519PublicKey: X25519PublicKey | undefined;
   private readonly _mlkemCiphertext: MLKEMCiphertext | undefined;
@@ -231,17 +221,32 @@ export class EncapsulationCiphertext
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
+
+  /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+  static readonly codec: ComponentCodec<EncapsulationCiphertext> = defineCodec({
+    tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_CIPHERTEXT],
+    decodeUntagged: (cborValue) =>
+      EncapsulationCiphertext.fromX25519PublicKey(
+        X25519PublicKey.fromDataRef(expectBytes(cborValue)),
+      ),
+    decodeTagged: (tag, content, whole) =>
+      tag.value === TAG_MLKEM_CIPHERTEXT.value
+        ? EncapsulationCiphertext.fromMlkem(MLKEMCiphertext.fromCbor(whole))
+        : EncapsulationCiphertext.codec.decodeUntagged(content),
+    encodeUntagged: (value) => value.untaggedCbor(),
+    encode: (value) => value.toCbor(),
+  });
 
   /**
    * Returns the CBOR tags associated with this ciphertext.
    */
   cborTags(): Tag[] {
     if (this._scheme === EncapsulationScheme.X25519) {
-      return tagsForValues([TAG_X25519_PUBLIC_KEY.value]);
+      return [TAG_X25519_PUBLIC_KEY];
     } else if (isMlkemScheme(this._scheme)) {
-      return tagsForValues([TAG_MLKEM_CIPHERTEXT.value]);
+      return [TAG_MLKEM_CIPHERTEXT];
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -262,81 +267,22 @@ export class EncapsulationCiphertext
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form; the tag follows the scheme. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the scheme's tag name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
+  static fromCbor(cborValue: Cbor): EncapsulationCiphertext {
+    return EncapsulationCiphertext.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
-
-  /**
-   * Creates an EncapsulationCiphertext by decoding it from untagged CBOR.
-   * Note: Without tags, we assume X25519 scheme.
-   */
-  fromUntaggedCbor(cborValue: Cbor): EncapsulationCiphertext {
-    const data = expectBytes(cborValue);
-    const publicKey = X25519PublicKey.fromDataRef(data);
-    return EncapsulationCiphertext.fromX25519PublicKey(publicKey);
-  }
-
-  /**
-   * Creates an EncapsulationCiphertext by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): EncapsulationCiphertext {
-    const tag = tagValue(cborValue);
-
-    if (tag === TAG_X25519_PUBLIC_KEY.value) {
-      const content = extractTaggedContent(cborValue);
-      const data = expectBytes(content);
-      const publicKey = X25519PublicKey.fromDataRef(data);
-      return EncapsulationCiphertext.fromX25519PublicKey(publicKey);
-    }
-
-    if (tag === TAG_MLKEM_CIPHERTEXT.value) {
-      const mlkemCiphertext = MLKEMCiphertext.fromTaggedCbor(cborValue);
-      return EncapsulationCiphertext.fromMlkem(mlkemCiphertext);
-    }
-
-    throw ComponentsError.invalidData(`Unknown ciphertext tag: ${tag}`);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): EncapsulationCiphertext {
-    const dummy = EncapsulationCiphertext.fromX25519PublicKey(
-      X25519PublicKey.fromData(new Uint8Array(32)),
-    );
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): EncapsulationCiphertext {
-    const cborValue = decodeCbor(data);
-    return EncapsulationCiphertext.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): EncapsulationCiphertext {
-    const cborValue = decodeCbor(data);
-    const dummy = EncapsulationCiphertext.fromX25519PublicKey(
-      X25519PublicKey.fromData(new Uint8Array(32)),
-    );
-    return dummy.fromUntaggedCbor(cborValue);
-  }
 }

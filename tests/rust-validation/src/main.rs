@@ -421,6 +421,17 @@ fn expected_divergence(r: &J, got: &str, want: &str) -> Option<&'static str> {
     }
     let scheme = r.get("scheme").and_then(|x| x.as_str()).unwrap_or("");
     if ty.starts_with("sr25519") || scheme == "sr25519" || r.get("sigScheme").and_then(|x| x.as_str()) == Some("sr25519") { return Some("D2"); }
+    // D5: every TypeScript codable type has `toUR()`; the reference has no
+    // `UREncodable` for JSON, SSKRShare, EncapsulationCiphertext or
+    // AuthenticationTag, so its adapter prints `-` where TypeScript prints a UR.
+    {
+        let g: Vec<&str> = got.split('|').collect();
+        let w: Vec<&str> = want.split('|').collect();
+        let extra_ok = w.len() >= g.len() && w[g.len()..].iter().all(|b| b.starts_with("ur:") || *b == "-");
+        if extra_ok && g.iter().zip(&w).all(|(a, b)| a == b || ((*a == "-" || a.is_empty()) && (b.starts_with("ur:") || *b == "-"))) && g != w {
+            return Some("D5");
+        }
+    }
     if k == "params" || k == "encryptedKey" {
         let g: Vec<&str> = got.split('|').collect();
         let w: Vec<&str> = want.split('|').collect();

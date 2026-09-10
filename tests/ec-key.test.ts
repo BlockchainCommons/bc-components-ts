@@ -22,6 +22,8 @@ import {
 } from "../src";
 import type { ECKeyBase, ECKey, ECPublicKeyBase } from "../src";
 import { SecureRng } from "@blockchaincommons/rand";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // Test vectors
 const TEST_PRIVATE_KEY_HEX = "e8f32e723decf4051aefac8e2c93c9c5b214313817cdb01a1494b917c8436b35";
@@ -268,27 +270,27 @@ describe("ECPrivateKey", () => {
 
     it("should serialize to tagged CBOR", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const cbor = key.taggedCbor();
+      const cbor = key.toCbor();
       expect(cbor).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const data = key.taggedCborData();
+      const data = key.toCbor().toData();
       expect(data).toBeInstanceOf(Uint8Array);
     });
 
     it("should roundtrip through tagged CBOR", () => {
       const original = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const data = original.taggedCborData();
-      const restored = ECPrivateKey.fromTaggedCborData(data);
+      const data = original.toCbor().toData();
+      const restored = ECPrivateKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should roundtrip through untagged CBOR", () => {
       const original = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const data = original.untaggedCbor().toData();
-      const restored = ECPrivateKey.fromUntaggedCborData(data);
+      const restored = ECPrivateKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -296,27 +298,27 @@ describe("ECPrivateKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const ur = key.ur();
+      const ur = key.toUR();
       expect(ur.type.name).toBe("eckey");
     });
 
     it("should serialize to UR string", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const urString = key.urString();
+      const urString = key.toUR().toString();
       expect(urString).toContain("ur:eckey");
     });
 
     it("should roundtrip through UR string", () => {
       const original = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const urString = original.urString();
-      const restored = ECPrivateKey.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), ECPrivateKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should throw on invalid UR type", () => {
       const key = ECPrivateKey.random();
-      const urString = key.urString().replace("eckey", "invalid-type");
-      expect(() => ECPrivateKey.fromURString(urString)).toThrow();
+      const urString = key.toUR().toString().replace("eckey", "invalid-type");
+      expect(() => decodeURWith(UR.parse(urString), ECPrivateKey.codec)).toThrow();
     });
   });
 });
@@ -438,8 +440,8 @@ describe("ECPublicKey", () => {
     it("should roundtrip through tagged CBOR", () => {
       const privateKey = ECPrivateKey.random();
       const original = privateKey.publicKey();
-      const data = original.taggedCborData();
-      const restored = ECPublicKey.fromTaggedCborData(data);
+      const data = original.toCbor().toData();
+      const restored = ECPublicKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
 
@@ -447,7 +449,7 @@ describe("ECPublicKey", () => {
       const privateKey = ECPrivateKey.random();
       const original = privateKey.publicKey();
       const data = original.untaggedCbor().toData();
-      const restored = ECPublicKey.fromUntaggedCborData(data);
+      const restored = ECPublicKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -456,15 +458,15 @@ describe("ECPublicKey", () => {
     it("should serialize to UR", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const ur = publicKey.ur();
+      const ur = publicKey.toUR();
       expect(ur.type.name).toBe("eckey");
     });
 
     it("should roundtrip through UR string", () => {
       const privateKey = ECPrivateKey.random();
       const original = privateKey.publicKey();
-      const urString = original.urString();
-      const restored = ECPublicKey.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), ECPublicKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -550,8 +552,8 @@ describe("ECUncompressedPublicKey", () => {
     it("should roundtrip through tagged CBOR", () => {
       const privateKey = ECPrivateKey.random();
       const original = privateKey.publicKey().uncompressedPublicKey();
-      const data = original.taggedCborData();
-      const restored = ECUncompressedPublicKey.fromTaggedCborData(data);
+      const data = original.toCbor().toData();
+      const restored = ECUncompressedPublicKey.fromCbor(decodeCbor(data));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -560,8 +562,8 @@ describe("ECUncompressedPublicKey", () => {
     it("should roundtrip through UR string", () => {
       const privateKey = ECPrivateKey.random();
       const original = privateKey.publicKey().uncompressedPublicKey();
-      const urString = original.urString();
-      const restored = ECUncompressedPublicKey.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), ECUncompressedPublicKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -708,12 +710,12 @@ describe("EC key integration", () => {
   it("should work with serialized keys", () => {
     // Create and serialize private key
     const [privateKey, publicKey] = ECPrivateKey.keypair();
-    const privateKeyUR = privateKey.urString();
-    const publicKeyUR = publicKey.urString();
+    const privateKeyUR = privateKey.toUR().toString();
+    const publicKeyUR = publicKey.toUR().toString();
 
     // Deserialize and use
-    const restoredPrivate = ECPrivateKey.fromURString(privateKeyUR);
-    const restoredPublic = ECPublicKey.fromURString(publicKeyUR);
+    const restoredPrivate = decodeURWith(UR.parse(privateKeyUR), ECPrivateKey.codec);
+    const restoredPublic = decodeURWith(UR.parse(publicKeyUR), ECPublicKey.codec);
 
     // Sign with restored private key
     const message = new TextEncoder().encode("Test with serialized keys");

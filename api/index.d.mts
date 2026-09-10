@@ -1,6 +1,6 @@
 import { bytesToHex } from '@blockchaincommons/dcbor';
 import { Cbor } from '@blockchaincommons/dcbor';
-import { CborTagged } from '@blockchaincommons/dcbor';
+import { CborCodec } from '@blockchaincommons/dcbor';
 import { COMPRESSED } from '@blockchaincommons/tags';
 import { ENCRYPTED } from '@blockchaincommons/tags';
 import { ENVELOPE } from '@blockchaincommons/tags';
@@ -12,6 +12,8 @@ import { GroupSpec as SSKRGroupSpec } from '@blockchaincommons/sskr';
 import { Secret as SSKRSecret } from '@blockchaincommons/sskr';
 import { Spec as SSKRSpec } from '@blockchaincommons/sskr';
 import { Tag } from '@blockchaincommons/dcbor';
+import { ToCbor } from '@blockchaincommons/dcbor';
+import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
 
 /**
@@ -75,7 +77,7 @@ export declare class Argon2idParams implements KeyDerivation {
  */
 export declare function argon2idParams(params?: Argon2idParams): KeyDerivationParams;
 
-export declare class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, UREncodable {
+export declare class ARID implements ToCbor, ToUR {
     static readonly ARID_SIZE = 32;
     private readonly _data;
     private constructor();
@@ -145,63 +147,19 @@ export declare class ARID implements CborTaggedEncodable, CborTaggedDecodable<AR
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with ARID.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<ARID>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an ARID by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): ARID;
-    /**
-     * Creates an ARID by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): ARID;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): ARID;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): ARID;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): ARID;
-    /**
-     * Returns the UR representation of the ARID.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an ARID from a UR.
-     */
-    static fromUR(ur: UR): ARID;
-    /**
-     * Creates an ARID from a UR string.
-     */
-    static fromURString(urString: string): ARID;
-    /**
-     * Alias for fromURString for Rust API compatibility.
-     */
-    static fromUrString(urString: string): ARID;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): ARID;
 }
 
 export declare class AuthenticationTag {
@@ -302,20 +260,79 @@ export declare function bytesEqual(a: Uint8Array, b: Uint8Array): boolean;
 
 export { bytesToHex }
 
-/** Decodes from tagged or untagged CBOR. */
-declare interface CborTaggedDecodable<T> extends CborTagged {
-    fromUntaggedCbor(cbor: Cbor): T;
-    fromTaggedCbor(cbor: Cbor): T;
-    fromTaggedCborData?(data: Uint8Array): T;
-    fromUntaggedCborData?(data: Uint8Array): T;
+/** A codec over a tagged type; `decode` also accepts the untagged form. */
+declare interface ComponentCodec<T> extends CborCodec<T> {
+    /** The tags this type is written and read with; the first is written. */
+    readonly tags: readonly Tag[];
+    /** Decode tagged (any of `tags`) or untagged CBOR. */
+    decode: (cbor: Cbor) => T;
+    /** Encode to the tagged form. */
+    encode: (value: T) => Cbor;
+    /** Decode the content inside the tag. */
+    decodeUntagged: (cbor: Cbor) => T;
+    /** Encode the content inside the tag. */
+    encodeUntagged: (value: T) => Cbor;
 }
 
-/** Encodes to tagged CBOR; the first tag is the one written. */
-declare interface CborTaggedEncodable extends CborTagged {
-    untaggedCbor(): Cbor;
-    taggedCbor(): Cbor;
-    taggedCborData?(): Uint8Array;
+/** Every code, for exhaustive tables and tests. */
+export declare const COMPONENTS_ERROR_CODES: readonly ComponentsErrorCode[];
+
+/**
+ * Error raised by every component operation.
+ *
+ * ```ts
+ * try {
+ *   Digest.from(bytes);
+ * } catch (e) {
+ *   if (ComponentsError.isComponentsError(e) && e.code === "InvalidSize") {
+ *     console.log(e.details.expected, e.details.actual);
+ *   }
+ * }
+ * ```
+ */
+export declare class ComponentsError extends Error {
+    override readonly name = "ComponentsError";
+    readonly code: ComponentsErrorCode;
+    readonly details: ComponentsErrorDetails;
+    private constructor();
+    /** `true` for a `ComponentsError` from any copy of this package. */
+    static isComponentsError(value: unknown): value is ComponentsError;
+    /** `true` when this error carries `code`. */
+    is(code: ComponentsErrorCode): boolean;
+    static invalidSize(expected: number, actual: number): ComponentsError;
+    static invalidSizeForType(dataType: string, expected: number, actual: number): ComponentsError;
+    static invalidData(reason: string, cause?: unknown): ComponentsError;
+    static invalidDataForType(dataType: string, reason: string, cause?: unknown): ComponentsError;
+    static dataTooShort(dataType: string, minimum: number, actual: number): ComponentsError;
+    static invalidFormat(reason: string, cause?: unknown): ComponentsError;
+    static crypto(message: string, cause?: unknown): ComponentsError;
+    static cbor(message: string, cause?: unknown): ComponentsError;
+    static sskr(message: string, cause?: unknown): ComponentsError;
+    static ssh(message: string, cause?: unknown): ComponentsError;
+    static sshAgent(message: string, cause?: unknown): ComponentsError;
+    static uri(message: string, cause?: unknown): ComponentsError;
+    static compression(message: string, cause?: unknown): ComponentsError;
+    static postQuantum(message: string, cause?: unknown): ComponentsError;
+    static levelMismatch(): ComponentsError;
+    static general(message: string, cause?: unknown): ComponentsError;
+    private static of;
 }
+
+/**
+ * The one error type of this package.
+ *
+ * Every failure a component can raise is a `ComponentsError` with a `code`
+ * from a closed union, `details` discriminated by that code, and `cause`
+ * carrying the wrapped error when the failure came from a dependency
+ * (crypto, dcbor, sskr, an SSH parser).
+ *
+ * @module error
+ */
+/** The closed set of failure codes. */
+export declare type ComponentsErrorCode = "InvalidSize" | "InvalidData" | "DataTooShort" | "Crypto" | "Cbor" | "Sskr" | "Ssh" | "Uri" | "Compression" | "PostQuantum" | "LevelMismatch" | "SshAgent" | "General";
+
+/** `details` is discriminated by `code`. */
+export declare type ComponentsErrorDetails = InvalidSizeDetails | InvalidDataDetails | DataTooShortDetails | MessageDetails;
 
 export { COMPRESSED }
 
@@ -325,7 +342,7 @@ export { COMPRESSED }
  * Uses DEFLATE compression with CRC32 checksums for integrity verification.
  * Optionally includes a cryptographic digest for content identification.
  */
-export declare class Compressed implements CborTaggedEncodable, CborTaggedDecodable<Compressed>, DigestProvider {
+export declare class Compressed implements ToCbor, DigestProvider {
     /** CRC32 checksum of the decompressed data for integrity verification */
     private readonly _checksum;
     /** Size of the original decompressed data in bytes */
@@ -347,7 +364,7 @@ export declare class Compressed implements CborTaggedEncodable, CborTaggedDecoda
      * @param compressedData - The compressed data bytes
      * @param digest - Optional cryptographic digest of the content
      * @returns A new `Compressed` object
-     * @throws CryptoError if the compressed data is larger than the decompressed size
+     * @throws ComponentsError if the compressed data is larger than the decompressed size
      */
     static new(checksum: number, decompressedSize: number, compressedData: Uint8Array, digest?: Digest): Compressed;
     /**
@@ -373,7 +390,7 @@ export declare class Compressed implements CborTaggedEncodable, CborTaggedDecoda
      * stored checksum.
      *
      * @returns The decompressed data
-     * @throws CryptoError if the compressed data is corrupt or checksum doesn't match
+     * @throws ComponentsError if the compressed data is corrupt or checksum doesn't match
      */
     decompress(): Uint8Array;
     /**
@@ -425,9 +442,8 @@ export declare class Compressed implements CborTaggedEncodable, CborTaggedDecoda
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with Compressed.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<Compressed>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as an array).
@@ -443,34 +459,12 @@ export declare class Compressed implements CborTaggedEncodable, CborTaggedDecoda
      * ```
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a Compressed by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): Compressed;
-    /**
-     * Creates a Compressed by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): Compressed;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): Compressed;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): Compressed;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): Compressed;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): Compressed;
 }
 
 /**
@@ -514,291 +508,13 @@ export declare function createKeypair(scheme: SignatureScheme, comment?: string)
  *                  mirrors Rust `SignatureScheme::keypair_using(rng, comment)`
  *                  at `signature_scheme.rs:316`)
  * @returns A tuple containing a signing private key and its corresponding public key
- * @throws CryptoError for MLDSA (which doesn't support deterministic generation)
+ * @throws ComponentsError for MLDSA (which doesn't support deterministic generation)
  */
 export declare function createKeypairUsing(scheme: SignatureScheme, rng: RandomNumberGenerator, comment?: string): [SigningPrivateKey, SigningPublicKey];
 
-/**
- * Error type for cryptographic and component operations.
- *
- * This class provides full structural parity with the Rust Error enum,
- * including:
- * - An `errorKind` property for programmatic error type checking
- * - Structured `errorData` for accessing error-specific fields
- * - Factory methods matching Rust's impl block
- */
-export declare class CryptoError extends Error {
-    /** The error kind for programmatic type checking */
-    readonly errorKind: ErrorKind;
-    /** Structured error data matching Rust's error variants */
-    readonly errorData: ErrorData;
-    private constructor();
-    /**
-     * Create an invalid size error.
-     *
-     * Rust equivalent: `Error::InvalidSize { data_type, expected, actual }`
-     *
-     * @param expected - The expected size
-     * @param actual - The actual size received
-     */
-    static invalidSize(expected: number, actual: number): CryptoError;
-    /**
-     * Create an invalid size error with a data type name.
-     *
-     * Rust equivalent: `Error::invalid_size(data_type, expected, actual)`
-     *
-     * @param dataType - The name of the data type
-     * @param expected - The expected size
-     * @param actual - The actual size received
-     */
-    static invalidSizeForType(dataType: string, expected: number, actual: number): CryptoError;
-    /**
-     * Create an invalid data error.
-     *
-     * @param message - Description of what's invalid
-     */
-    static invalidData(message: string): CryptoError;
-    /**
-     * Create an invalid data error with a data type name.
-     *
-     * Rust equivalent: `Error::invalid_data(data_type, reason)`
-     *
-     * @param dataType - The name of the data type
-     * @param reason - The reason the data is invalid
-     */
-    static invalidDataForType(dataType: string, reason: string): CryptoError;
-    /**
-     * Create a data too short error.
-     *
-     * Rust equivalent: `Error::data_too_short(data_type, minimum, actual)`
-     *
-     * @param dataType - The name of the data type
-     * @param minimum - The minimum required size
-     * @param actual - The actual size received
-     */
-    static dataTooShort(dataType: string, minimum: number, actual: number): CryptoError;
-    /**
-     * Create an invalid format error.
-     *
-     * @param message - Description of the format error
-     */
-    static invalidFormat(message: string): CryptoError;
-    /**
-     * Create an invalid input error.
-     *
-     * @param message - Description of the invalid input
-     */
-    static invalidInput(message: string): CryptoError;
-    /**
-     * Create a cryptographic operation failed error.
-     *
-     * Rust equivalent: `Error::crypto(msg)`
-     *
-     * @param message - Description of the failure
-     */
-    static cryptoOperation(message: string): CryptoError;
-    /**
-     * Create a crypto error.
-     *
-     * Rust equivalent: `Error::Crypto(msg)`
-     *
-     * @param message - Description of the failure
-     */
-    static crypto(message: string): CryptoError;
-    /**
-     * Create a post-quantum cryptography error.
-     *
-     * Rust equivalent: `Error::post_quantum(msg)`
-     *
-     * @param message - Description of the failure
-     */
-    static postQuantum(message: string): CryptoError;
-    /**
-     * Create a signature level mismatch error.
-     *
-     * Rust equivalent: `Error::LevelMismatch`
-     */
-    static levelMismatch(): CryptoError;
-    /**
-     * Create a CBOR error.
-     *
-     * Rust equivalent: `Error::Cbor(err)`
-     *
-     * @param message - Description of the CBOR error
-     */
-    static cbor(message: string): CryptoError;
-    /**
-     * Create a hex decoding error.
-     *
-     * Rust equivalent: `Error::Hex(err)`
-     *
-     * @param message - Description of the hex error
-     */
-    static hex(message: string): CryptoError;
-    /**
-     * Create a UTF-8 conversion error.
-     *
-     * Rust equivalent: `Error::Utf8(err)`
-     *
-     * @param message - Description of the UTF-8 error
-     */
-    static utf8(message: string): CryptoError;
-    /**
-     * Create a compression error.
-     *
-     * Rust equivalent: `Error::compression(msg)`
-     *
-     * @param message - Description of the compression error
-     */
-    static compression(message: string): CryptoError;
-    /**
-     * Create a URI parsing error.
-     *
-     * Rust equivalent: `Error::Uri(err)`
-     *
-     * @param message - Description of the URI error
-     */
-    static uri(message: string): CryptoError;
-    /**
-     * Create an SSKR error.
-     *
-     * Rust equivalent: `Error::Sskr(err)`
-     *
-     * @param message - Description of the SSKR error
-     */
-    static sskr(message: string): CryptoError;
-    /**
-     * Create an SSH operation error.
-     *
-     * Rust equivalent: `Error::ssh(msg)`
-     *
-     * @param message - Description of the SSH error
-     */
-    static ssh(message: string): CryptoError;
-    /**
-     * Create an SSH agent error.
-     *
-     * Rust equivalent: `Error::ssh_agent(msg)`
-     *
-     * @param message - Description of the SSH agent error
-     */
-    static sshAgent(message: string): CryptoError;
-    /**
-     * Create an SSH agent client error.
-     *
-     * Rust equivalent: `Error::ssh_agent_client(msg)`
-     *
-     * @param message - Description of the SSH agent client error
-     */
-    static sshAgentClient(message: string): CryptoError;
-    /**
-     * Create an environment variable error.
-     *
-     * Rust equivalent: `Error::Env(err)`
-     *
-     * @param message - Description of the environment error
-     */
-    static env(message: string): CryptoError;
-    /**
-     * Create a general error with a custom message.
-     *
-     * Rust equivalent: `Error::general(msg)` / `Error::General(msg)`
-     *
-     * @param message - The error message
-     */
-    static general(message: string): CryptoError;
-    /**
-     * Check if this error is of a specific kind.
-     *
-     * @param kind - The error kind to check
-     */
-    isKind(kind: ErrorKind): boolean;
-    /**
-     * Check if this is an InvalidSize error.
-     */
-    isInvalidSize(): this is CryptoError & {
-        errorData: InvalidSizeData & {
-            kind: ErrorKind.InvalidSize;
-        };
-    };
-    /**
-     * Check if this is an InvalidData error.
-     */
-    isInvalidData(): this is CryptoError & {
-        errorData: InvalidDataData & {
-            kind: ErrorKind.InvalidData;
-        };
-    };
-    /**
-     * Check if this is a DataTooShort error.
-     */
-    isDataTooShort(): this is CryptoError & {
-        errorData: DataTooShortData & {
-            kind: ErrorKind.DataTooShort;
-        };
-    };
-    /**
-     * Check if this is a Crypto error.
-     */
-    isCrypto(): boolean;
-    /**
-     * Check if this is a Cbor error.
-     */
-    isCbor(): boolean;
-    /**
-     * Check if this is an Sskr error.
-     */
-    isSskr(): boolean;
-    /**
-     * Check if this is an Ssh error.
-     */
-    isSsh(): boolean;
-    /**
-     * Check if this is a Uri error.
-     */
-    isUri(): boolean;
-    /**
-     * Check if this is a Compression error.
-     */
-    isCompression(): boolean;
-    /**
-     * Check if this is a PostQuantum error.
-     */
-    isPostQuantum(): boolean;
-    /**
-     * Check if this is a LevelMismatch error.
-     */
-    isLevelMismatch(): boolean;
-    /**
-     * Check if this is an SshAgent error.
-     */
-    isSshAgent(): boolean;
-    /**
-     * Check if this is a Hex error.
-     */
-    isHex(): boolean;
-    /**
-     * Check if this is a Utf8 error.
-     */
-    isUtf8(): boolean;
-    /**
-     * Check if this is an Env error.
-     */
-    isEnv(): boolean;
-    /**
-     * Check if this is an SshAgentClient error.
-     */
-    isSshAgentClient(): boolean;
-    /**
-     * Check if this is a General error.
-     */
-    isGeneral(): boolean;
-}
-
-/**
- * Structured data for DataTooShort errors.
- */
-export declare interface DataTooShortData {
+/** Details of a `DataTooShort` failure. */
+export declare interface DataTooShortDetails {
+    code: "DataTooShort";
     dataType: string;
     minimum: number;
     actual: number;
@@ -888,7 +604,7 @@ export declare function defaultKeyDerivationParams(): KeyDerivationParams;
  */
 export declare function defaultSignatureScheme(): SignatureScheme;
 
-export declare class Digest implements DigestProvider, CborTaggedEncodable, CborTaggedDecodable<Digest>, UREncodable {
+export declare class Digest implements DigestProvider, ToCbor, ToUR {
     static readonly DIGEST_SIZE: number;
     private readonly _data;
     private constructor();
@@ -986,59 +702,19 @@ export declare class Digest implements DigestProvider, CborTaggedEncodable, Cbor
      * A Digest is its own digest provider - returns itself.
      */
     digest(): Digest;
-    /**
-     * Returns the CBOR tags associated with Digest.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<Digest>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a Digest by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): Digest;
-    /**
-     * Creates a Digest by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): Digest;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): Digest;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): Digest;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): Digest;
-    /**
-     * Returns the UR representation of the Digest.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a Digest from a UR.
-     */
-    static fromUR(ur: UR): Digest;
-    /**
-     * Creates a Digest from a UR string.
-     */
-    static fromURString(urString: string): Digest;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): Digest;
     /**
      * Validate the given data against the digest, if any.
      *
@@ -1114,7 +790,7 @@ export declare interface ECKeyBase {
     hex(): string;
 }
 
-export declare class ECPrivateKey implements ECKey, CborTaggedEncodable, CborTaggedDecodable<ECPrivateKey>, UREncodable {
+export declare class ECPrivateKey implements ECKey, ToCbor, ToUR {
     static readonly KEY_SIZE: number;
     private readonly _data;
     private _publicKey?;
@@ -1223,9 +899,8 @@ export declare class ECPrivateKey implements ECKey, CborTaggedEncodable, CborTag
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with ECPrivateKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<ECPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -1233,56 +908,15 @@ export declare class ECPrivateKey implements ECKey, CborTaggedEncodable, CborTag
      * Format: { 2: true, 3: h'<32-byte-key>' }
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an ECPrivateKey by decoding it from untagged CBOR.
-     *
-     * Format: { 2: true, 3: h'<32-byte-key>' }
-     */
-    fromUntaggedCbor(cborValue: Cbor): ECPrivateKey;
-    /**
-     * Creates an ECPrivateKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): ECPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): ECPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): ECPrivateKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): ECPrivateKey;
-    /**
-     * Returns the UR representation of the ECPrivateKey.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an ECPrivateKey from a UR.
-     */
-    static fromUR(ur: UR): ECPrivateKey;
-    /**
-     * Creates an ECPrivateKey from a UR string.
-     */
-    static fromURString(urString: string): ECPrivateKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): ECPrivateKey;
 }
 
-export declare class ECPublicKey implements ECPublicKeyBase, CborTaggedEncodable, CborTaggedDecodable<ECPublicKey>, UREncodable {
+export declare class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
     static readonly KEY_SIZE: number;
     private readonly _data;
     private constructor();
@@ -1350,9 +984,8 @@ export declare class ECPublicKey implements ECPublicKeyBase, CborTaggedEncodable
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with ECPublicKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<ECPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -1361,53 +994,12 @@ export declare class ECPublicKey implements ECPublicKeyBase, CborTaggedEncodable
      * Note: No key 2 indicates this is a public key
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an ECPublicKey by decoding it from untagged CBOR.
-     *
-     * Format: { 3: h'<33-byte-key>' }
-     */
-    fromUntaggedCbor(cborValue: Cbor): ECPublicKey;
-    /**
-     * Creates an ECPublicKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): ECPublicKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): ECPublicKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): ECPublicKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): ECPublicKey;
-    /**
-     * Returns the UR representation of the ECPublicKey.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an ECPublicKey from a UR.
-     */
-    static fromUR(ur: UR): ECPublicKey;
-    /**
-     * Creates an ECPublicKey from a UR string.
-     */
-    static fromURString(urString: string): ECPublicKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): ECPublicKey;
 }
 
 /**
@@ -1436,7 +1028,7 @@ export declare interface ECPublicKeyBase extends ECKey {
     uncompressedPublicKey(): ECUncompressedPublicKey;
 }
 
-export declare class ECUncompressedPublicKey implements ECKeyBase, CborTaggedEncodable, CborTaggedDecodable<ECUncompressedPublicKey>, UREncodable {
+export declare class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR {
     static readonly KEY_SIZE: number;
     private readonly _data;
     private constructor();
@@ -1490,9 +1082,8 @@ export declare class ECUncompressedPublicKey implements ECKeyBase, CborTaggedEnc
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with ECUncompressedPublicKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<ECUncompressedPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -1500,53 +1091,12 @@ export declare class ECUncompressedPublicKey implements ECKeyBase, CborTaggedEnc
      * Format: { 3: h'<65-byte-key>' }
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an ECUncompressedPublicKey by decoding it from untagged CBOR.
-     *
-     * Format: { 3: h'<65-byte-key>' }
-     */
-    fromUntaggedCbor(cborValue: Cbor): ECUncompressedPublicKey;
-    /**
-     * Creates an ECUncompressedPublicKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): ECUncompressedPublicKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): ECUncompressedPublicKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): ECUncompressedPublicKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): ECUncompressedPublicKey;
-    /**
-     * Returns the UR representation of the ECUncompressedPublicKey.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an ECUncompressedPublicKey from a UR.
-     */
-    static fromUR(ur: UR): ECUncompressedPublicKey;
-    /**
-     * Creates an ECUncompressedPublicKey from a UR string.
-     */
-    static fromURString(urString: string): ECUncompressedPublicKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): ECUncompressedPublicKey;
 }
 
 export declare class Ed25519PrivateKey {
@@ -1668,7 +1218,7 @@ export declare class Ed25519PublicKey {
  * For X25519, this wraps an ephemeral public key.
  * For MLKEM, this wraps an MLKEMCiphertext.
  */
-export declare class EncapsulationCiphertext implements CborTaggedEncodable, CborTaggedDecodable<EncapsulationCiphertext> {
+export declare class EncapsulationCiphertext implements ToCbor {
     private readonly _scheme;
     private readonly _x25519PublicKey;
     private readonly _mlkemCiphertext;
@@ -1731,6 +1281,8 @@ export declare class EncapsulationCiphertext implements CborTaggedEncodable, Cbo
      * Get string representation.
      */
     toString(): string;
+    /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+    static readonly codec: ComponentCodec<EncapsulationCiphertext>;
     /**
      * Returns the CBOR tags associated with this ciphertext.
      */
@@ -1739,35 +1291,12 @@ export declare class EncapsulationCiphertext implements CborTaggedEncodable, Cbo
      * Returns the untagged CBOR encoding.
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an EncapsulationCiphertext by decoding it from untagged CBOR.
-     * Note: Without tags, we assume X25519 scheme.
-     */
-    fromUntaggedCbor(cborValue: Cbor): EncapsulationCiphertext;
-    /**
-     * Creates an EncapsulationCiphertext by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): EncapsulationCiphertext;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): EncapsulationCiphertext;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): EncapsulationCiphertext;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): EncapsulationCiphertext;
+    /** The tagged CBOR form; the tag follows the scheme. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the scheme's tag name. */
+    toUR(): UR;
+    /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
+    static fromCbor(cborValue: Cbor): EncapsulationCiphertext;
 }
 
 /**
@@ -1775,7 +1304,7 @@ export declare class EncapsulationCiphertext implements CborTaggedEncodable, Cbo
  *
  * Use this to decapsulate a shared secret from ciphertext.
  */
-export declare class EncapsulationPrivateKey implements ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<EncapsulationPrivateKey>, UREncodable {
+export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR {
     private readonly _scheme;
     private readonly _x25519PrivateKey;
     private readonly _mlkemPrivateKey;
@@ -1875,7 +1404,7 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, CborT
      *
      * @param ciphertext - The ciphertext from encapsulation
      * @returns The decapsulated shared secret
-     * @throws CryptoError if the scheme doesn't match
+     * @throws ComponentsError if the scheme doesn't match
      */
     decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey;
     /**
@@ -1893,6 +1422,8 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, CborT
      * representation, providing a unique, content-addressable identifier.
      */
     reference(): Reference;
+    /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+    static readonly codec: ComponentCodec<EncapsulationPrivateKey>;
     /**
      * Returns the CBOR tags associated with this private key.
      */
@@ -1901,51 +1432,12 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, CborT
      * Returns the untagged CBOR encoding.
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an EncapsulationPrivateKey by decoding it from untagged CBOR.
-     * Note: Without tags, we assume X25519 scheme.
-     */
-    fromUntaggedCbor(cborValue: Cbor): EncapsulationPrivateKey;
-    /**
-     * Creates an EncapsulationPrivateKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): EncapsulationPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): EncapsulationPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): EncapsulationPrivateKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): EncapsulationPrivateKey;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an EncapsulationPrivateKey from a UR.
-     */
-    static fromUR(ur: UR): EncapsulationPrivateKey;
-    /**
-     * Creates an EncapsulationPrivateKey from a UR string.
-     */
-    static fromURString(urString: string): EncapsulationPrivateKey;
+    /** The tagged CBOR form; the tag follows the scheme. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the scheme's tag name. */
+    toUR(): UR;
+    /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
+    static fromCbor(cborValue: Cbor): EncapsulationPrivateKey;
 }
 
 /**
@@ -1953,7 +1445,7 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, CborT
  *
  * Use this to encapsulate a shared secret for a recipient.
  */
-export declare class EncapsulationPublicKey implements ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<EncapsulationPublicKey>, UREncodable {
+export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
     private readonly _scheme;
     private readonly _x25519PublicKey;
     private readonly _mlkemPublicKey;
@@ -2046,6 +1538,8 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, CborTa
      * representation, providing a unique, content-addressable identifier.
      */
     reference(): Reference;
+    /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+    static readonly codec: ComponentCodec<EncapsulationPublicKey>;
     /**
      * Returns the CBOR tags associated with this public key.
      */
@@ -2054,51 +1548,12 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, CborTa
      * Returns the untagged CBOR encoding.
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an EncapsulationPublicKey by decoding it from untagged CBOR.
-     * Note: Without tags, we assume X25519 scheme.
-     */
-    fromUntaggedCbor(cborValue: Cbor): EncapsulationPublicKey;
-    /**
-     * Creates an EncapsulationPublicKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): EncapsulationPublicKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): EncapsulationPublicKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): EncapsulationPublicKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): EncapsulationPublicKey;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an EncapsulationPublicKey from a UR.
-     */
-    static fromUR(ur: UR): EncapsulationPublicKey;
-    /**
-     * Creates an EncapsulationPublicKey from a UR string.
-     */
-    static fromURString(urString: string): EncapsulationPublicKey;
+    /** The tagged CBOR form; the tag follows the scheme. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the scheme's tag name. */
+    toUR(): UR;
+    /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
+    static fromCbor(cborValue: Cbor): EncapsulationPublicKey;
 }
 
 /**
@@ -2132,7 +1587,7 @@ export { ENCRYPTED }
  * Use `lock()` to encrypt a content key with a password or secret,
  * and `unlock()` to decrypt it.
  */
-export declare class EncryptedKey implements CborTaggedEncodable, CborTaggedDecodable<EncryptedKey>, UREncodable {
+export declare class EncryptedKey implements ToCbor, ToUR {
     private readonly _params;
     private readonly _encryptedMessage;
     private constructor();
@@ -2183,7 +1638,7 @@ export declare class EncryptedKey implements CborTaggedEncodable, CborTaggedDeco
      *
      * @param secret - The secret (password or key material) used to lock
      * @returns The decrypted symmetric key
-     * @throws CryptoError if decryption fails (wrong password, tampered data, etc.)
+     * @throws ComponentsError if decryption fails (wrong password, tampered data, etc.)
      */
     unlock(secret: Uint8Array): SymmetricKey;
     /**
@@ -2194,62 +1649,23 @@ export declare class EncryptedKey implements CborTaggedEncodable, CborTaggedDeco
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with EncryptedKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<EncryptedKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
      * The EncryptedMessage is encoded with its own tag (40002).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an EncryptedKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): EncryptedKey;
-    /**
-     * Creates an EncryptedKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): EncryptedKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): EncryptedKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): EncryptedKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): EncryptedKey;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an EncryptedKey from a UR.
-     */
-    static fromUR(ur: UR): EncryptedKey;
-    /**
-     * Creates an EncryptedKey from a UR string.
-     */
-    static fromURString(urString: string): EncryptedKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): EncryptedKey;
 }
 
-export declare class EncryptedMessage implements CborTaggedEncodable, CborTaggedDecodable<EncryptedMessage>, UREncodable {
+export declare class EncryptedMessage implements ToCbor, ToUR {
     private readonly _ciphertext;
     private readonly _aad;
     private readonly _nonce;
@@ -2299,60 +1715,20 @@ export declare class EncryptedMessage implements CborTaggedEncodable, CborTagged
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with EncryptedMessage.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<EncryptedMessage>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as an array).
      * Array format: [ciphertext, nonce, auth, ?aad]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an EncryptedMessage by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): EncryptedMessage;
-    /**
-     * Creates an EncryptedMessage by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): EncryptedMessage;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): EncryptedMessage;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): EncryptedMessage;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): EncryptedMessage;
-    /**
-     * Returns the UR representation of the EncryptedMessage.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an EncryptedMessage from a UR.
-     */
-    static fromUR(ur: UR): EncryptedMessage;
-    /**
-     * Creates an EncryptedMessage from a UR string.
-     */
-    static fromURString(urString: string): EncryptedMessage;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): EncryptedMessage;
 }
 
 /**
@@ -2403,131 +1779,6 @@ export declare interface Encrypter {
 }
 
 export { ENVELOPE }
-
-/**
- * Union type for all possible error data.
- */
-export declare type ErrorData = ({
-    kind: ErrorKind.InvalidSize;
-} & InvalidSizeData) | ({
-    kind: ErrorKind.InvalidData;
-} & InvalidDataData) | ({
-    kind: ErrorKind.DataTooShort;
-} & DataTooShortData) | {
-    kind: ErrorKind.Crypto;
-    message: string;
-} | {
-    kind: ErrorKind.Cbor;
-    message: string;
-} | {
-    kind: ErrorKind.Sskr;
-    message: string;
-} | {
-    kind: ErrorKind.Ssh;
-    message: string;
-} | {
-    kind: ErrorKind.Uri;
-    message: string;
-} | {
-    kind: ErrorKind.Compression;
-    message: string;
-} | {
-    kind: ErrorKind.PostQuantum;
-    message: string;
-} | {
-    kind: ErrorKind.LevelMismatch;
-} | {
-    kind: ErrorKind.SshAgent;
-    message: string;
-} | {
-    kind: ErrorKind.Hex;
-    message: string;
-} | {
-    kind: ErrorKind.Utf8;
-    message: string;
-} | {
-    kind: ErrorKind.Env;
-    message: string;
-} | {
-    kind: ErrorKind.SshAgentClient;
-    message: string;
-} | {
-    kind: ErrorKind.General;
-    message: string;
-};
-
-/**
- * Copyright © 2023-2026 Blockchain Commons, LLC
- * Copyright © 2025-2026 Parity Technologies
- *
- *
- * Error types for cryptographic and component operations
- *
- * Ported from bc-components-rust/src/error.rs
- *
- * This module provides a unified error handling system that matches the Rust
- * implementation's error variants with full structural parity:
- *
- * - InvalidSize: Invalid data size for the specified type
- * - InvalidData: Invalid data format or content
- * - DataTooShort: Data too short for the expected type
- * - Crypto: Cryptographic operation failed
- * - Cbor: CBOR encoding or decoding error
- * - Sskr: SSKR error
- * - Ssh: SSH key operation failed
- * - Uri: URI parsing failed
- * - Compression: Data compression/decompression failed
- * - PostQuantum: Post-quantum cryptography library error
- * - LevelMismatch: Signature level mismatch
- * - SshAgent: SSH agent operation failed
- * - Hex: Hex decoding error
- * - Utf8: UTF-8 conversion error
- * - Env: Environment variable error
- * - SshAgentClient: SSH agent client error
- * - General: General error with custom message
- */
-/**
- * Error kind enum matching Rust's Error variants.
- *
- * This enum allows programmatic checking of error types, matching the
- * Rust enum variants exactly.
- */
-export declare enum ErrorKind {
-    /** Invalid data size for the specified type */
-    InvalidSize = "InvalidSize",
-    /** Invalid data format or content */
-    InvalidData = "InvalidData",
-    /** Data too short for the expected type */
-    DataTooShort = "DataTooShort",
-    /** Cryptographic operation failed */
-    Crypto = "Crypto",
-    /** CBOR encoding or decoding error */
-    Cbor = "Cbor",
-    /** SSKR error */
-    Sskr = "Sskr",
-    /** SSH key operation failed */
-    Ssh = "Ssh",
-    /** URI parsing failed */
-    Uri = "Uri",
-    /** Data compression/decompression failed */
-    Compression = "Compression",
-    /** Post-quantum cryptography library error */
-    PostQuantum = "PostQuantum",
-    /** Signature level mismatch */
-    LevelMismatch = "LevelMismatch",
-    /** SSH agent operation failed */
-    SshAgent = "SshAgent",
-    /** Hex decoding error */
-    Hex = "Hex",
-    /** UTF-8 conversion error */
-    Utf8 = "Utf8",
-    /** Environment variable error */
-    Env = "Env",
-    /** SSH agent client error */
-    SshAgentClient = "SshAgentClient",
-    /** General error with custom message */
-    General = "General"
-}
 
 /**
  * Convert a base64-encoded string to a Uint8Array.
@@ -2746,32 +1997,21 @@ export declare class HKDFRng implements RandomNumberGenerator {
     getPageIndex(): number;
 }
 
-/**
- * Structured data for InvalidData errors.
- */
-export declare interface InvalidDataData {
+/** Details of an `InvalidData` failure. */
+export declare interface InvalidDataDetails {
+    code: "InvalidData";
     dataType: string;
     reason: string;
 }
 
-/**
- * Structured data for InvalidSize errors.
- */
-export declare interface InvalidSizeData {
+/** Details of an `InvalidSize` failure. */
+export declare interface InvalidSizeDetails {
+    code: "InvalidSize";
+    /** What was being constructed (`"data"`, `"Digest"`, …). */
     dataType: string;
     expected: number;
     actual: number;
 }
-
-/**
- * Type guard to check if a result is a CryptoError.
- */
-export declare function isCryptoError(result: unknown): result is CryptoError;
-
-/**
- * Type guard to check if an error is a CryptoError of a specific kind.
- */
-export declare function isCryptoErrorKind(result: unknown, kind: ErrorKind): result is CryptoError;
 
 /**
  * Type guard to check if an object implements the Decrypter interface.
@@ -2797,11 +2037,6 @@ export declare function isECPublicKeyBase(obj: unknown): obj is ECPublicKeyBase;
  * Type guard to check if an object implements the Encrypter interface.
  */
 export declare function isEncrypter(obj: unknown): obj is Encrypter;
-
-/**
- * Type guard to check if a result is an Error.
- */
-export declare function isError(result: unknown): result is Error;
 
 /**
  * Check if a signature scheme is a post-quantum ML-DSA scheme.
@@ -2857,7 +2092,7 @@ export declare function isXIDProvider(obj: unknown): obj is XIDProvider;
  * This allows JSON data to be embedded within CBOR structures while
  * maintaining type information through the tag.
  */
-declare class JSON_2 implements CborTaggedEncodable, CborTaggedDecodable<JSON_2> {
+declare class JSON_2 implements ToCbor {
     private readonly _data;
     private constructor();
     /**
@@ -2906,42 +2141,19 @@ declare class JSON_2 implements CborTaggedEncodable, CborTaggedDecodable<JSON_2>
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with JSON.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<JSON_2>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a JSON by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): JSON_2;
-    /**
-     * Creates a JSON by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): JSON_2;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): JSON_2;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): JSON_2;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): JSON_2;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): JSON_2;
 }
 export { JSON_2 as JSON }
 
@@ -3115,6 +2327,12 @@ export { LEAF }
  */
 export declare function lockWithParams(kdp: KeyDerivationParams, contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
 
+/** Details of every other failure: the unprefixed message. */
+export declare interface MessageDetails {
+    code: Exclude<ComponentsErrorCode, "InvalidSize" | "InvalidData" | "DataTooShort">;
+    message: string;
+}
+
 /**
  * Key sizes for each ML-DSA security level.
  */
@@ -3179,7 +2397,7 @@ export declare function mldsaLevelToString(level: MLDSALevel): string;
 /**
  * MLDSAPrivateKey - Post-quantum signing private key using ML-DSA.
  */
-export declare class MLDSAPrivateKey implements CborTaggedEncodable, CborTaggedDecodable<MLDSAPrivateKey>, UREncodable {
+export declare class MLDSAPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -3257,9 +2475,8 @@ export declare class MLDSAPrivateKey implements CborTaggedEncodable, CborTaggedD
      * Get string representation (truncated for security).
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with MLDSAPrivateKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<MLDSAPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3267,50 +2484,12 @@ export declare class MLDSAPrivateKey implements CborTaggedEncodable, CborTaggedD
      * Format: [level, key_bytes]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an MLDSAPrivateKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): MLDSAPrivateKey;
-    /**
-     * Creates an MLDSAPrivateKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): MLDSAPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): MLDSAPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): MLDSAPrivateKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): MLDSAPrivateKey;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an MLDSAPrivateKey from a UR.
-     */
-    static fromUR(ur: UR): MLDSAPrivateKey;
-    /**
-     * Creates an MLDSAPrivateKey from a UR string.
-     */
-    static fromURString(urString: string): MLDSAPrivateKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): MLDSAPrivateKey;
 }
 
 /**
@@ -3321,7 +2500,7 @@ export declare function mldsaPrivateKeySize(level: MLDSALevel): number;
 /**
  * MLDSAPublicKey - Post-quantum signature verification key using ML-DSA.
  */
-export declare class MLDSAPublicKey implements CborTaggedEncodable, CborTaggedDecodable<MLDSAPublicKey>, UREncodable {
+export declare class MLDSAPublicKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -3364,9 +2543,8 @@ export declare class MLDSAPublicKey implements CborTaggedEncodable, CborTaggedDe
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with MLDSAPublicKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<MLDSAPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3374,50 +2552,12 @@ export declare class MLDSAPublicKey implements CborTaggedEncodable, CborTaggedDe
      * Format: [level, key_bytes]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an MLDSAPublicKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): MLDSAPublicKey;
-    /**
-     * Creates an MLDSAPublicKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): MLDSAPublicKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): MLDSAPublicKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): MLDSAPublicKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): MLDSAPublicKey;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an MLDSAPublicKey from a UR.
-     */
-    static fromUR(ur: UR): MLDSAPublicKey;
-    /**
-     * Creates an MLDSAPublicKey from a UR string.
-     */
-    static fromURString(urString: string): MLDSAPublicKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): MLDSAPublicKey;
 }
 
 /**
@@ -3438,7 +2578,7 @@ export declare function mldsaSign(level: MLDSALevel, secretKey: Uint8Array, mess
 /**
  * MLDSASignature - Post-quantum digital signature using ML-DSA.
  */
-export declare class MLDSASignature implements CborTaggedEncodable, CborTaggedDecodable<MLDSASignature>, UREncodable {
+export declare class MLDSASignature implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -3473,9 +2613,8 @@ export declare class MLDSASignature implements CborTaggedEncodable, CborTaggedDe
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with MLDSASignature.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<MLDSASignature>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3483,50 +2622,12 @@ export declare class MLDSASignature implements CborTaggedEncodable, CborTaggedDe
      * Format: [level, signature_bytes]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an MLDSASignature by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): MLDSASignature;
-    /**
-     * Creates an MLDSASignature by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): MLDSASignature;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): MLDSASignature;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): MLDSASignature;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): MLDSASignature;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an MLDSASignature from a UR.
-     */
-    static fromUR(ur: UR): MLDSASignature;
-    /**
-     * Creates an MLDSASignature from a UR string.
-     */
-    static fromURString(urString: string): MLDSASignature;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): MLDSASignature;
 }
 
 /**
@@ -3558,7 +2659,7 @@ export declare const MLKEM_KEY_SIZES: Readonly<Record<MLKEMLevel, {
 /**
  * MLKEMCiphertext - Post-quantum key encapsulation ciphertext using ML-KEM.
  */
-export declare class MLKEMCiphertext implements CborTaggedEncodable, CborTaggedDecodable<MLKEMCiphertext>, UREncodable {
+export declare class MLKEMCiphertext implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -3593,9 +2694,8 @@ export declare class MLKEMCiphertext implements CborTaggedEncodable, CborTaggedD
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with MLKEMCiphertext.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<MLKEMCiphertext>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3603,50 +2703,12 @@ export declare class MLKEMCiphertext implements CborTaggedEncodable, CborTaggedD
      * Format: [level, ciphertext_bytes]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an MLKEMCiphertext by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): MLKEMCiphertext;
-    /**
-     * Creates an MLKEMCiphertext by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): MLKEMCiphertext;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): MLKEMCiphertext;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): MLKEMCiphertext;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): MLKEMCiphertext;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an MLKEMCiphertext from a UR.
-     */
-    static fromUR(ur: UR): MLKEMCiphertext;
-    /**
-     * Creates an MLKEMCiphertext from a UR string.
-     */
-    static fromURString(urString: string): MLKEMCiphertext;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): MLKEMCiphertext;
 }
 
 /**
@@ -3746,7 +2808,7 @@ export declare function mlkemLevelToString(level: MLKEMLevel): string;
 /**
  * MLKEMPrivateKey - Post-quantum key decapsulation private key using ML-KEM.
  */
-export declare class MLKEMPrivateKey implements CborTaggedEncodable, CborTaggedDecodable<MLKEMPrivateKey>, UREncodable {
+export declare class MLKEMPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -3825,9 +2887,8 @@ export declare class MLKEMPrivateKey implements CborTaggedEncodable, CborTaggedD
      * Get string representation (truncated for security).
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with MLKEMPrivateKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<MLKEMPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3835,50 +2896,12 @@ export declare class MLKEMPrivateKey implements CborTaggedEncodable, CborTaggedD
      * Format: [level, key_bytes]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an MLKEMPrivateKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): MLKEMPrivateKey;
-    /**
-     * Creates an MLKEMPrivateKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): MLKEMPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): MLKEMPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): MLKEMPrivateKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): MLKEMPrivateKey;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an MLKEMPrivateKey from a UR.
-     */
-    static fromUR(ur: UR): MLKEMPrivateKey;
-    /**
-     * Creates an MLKEMPrivateKey from a UR string.
-     */
-    static fromURString(urString: string): MLKEMPrivateKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): MLKEMPrivateKey;
 }
 
 /**
@@ -3889,7 +2912,7 @@ export declare function mlkemPrivateKeySize(level: MLKEMLevel): number;
 /**
  * MLKEMPublicKey - Post-quantum key encapsulation public key using ML-KEM.
  */
-export declare class MLKEMPublicKey implements CborTaggedEncodable, CborTaggedDecodable<MLKEMPublicKey>, UREncodable {
+export declare class MLKEMPublicKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -3934,9 +2957,8 @@ export declare class MLKEMPublicKey implements CborTaggedEncodable, CborTaggedDe
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with MLKEMPublicKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<MLKEMPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3944,50 +2966,12 @@ export declare class MLKEMPublicKey implements CborTaggedEncodable, CborTaggedDe
      * Format: [level, key_bytes]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an MLKEMPublicKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): MLKEMPublicKey;
-    /**
-     * Creates an MLKEMPublicKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): MLKEMPublicKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): MLKEMPublicKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): MLKEMPublicKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): MLKEMPublicKey;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an MLKEMPublicKey from a UR.
-     */
-    static fromUR(ur: UR): MLKEMPublicKey;
-    /**
-     * Creates an MLKEMPublicKey from a UR string.
-     */
-    static fromURString(urString: string): MLKEMPublicKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): MLKEMPublicKey;
 }
 
 /**
@@ -4001,7 +2985,7 @@ export declare function mlkemPublicKeySize(level: MLKEMLevel): number;
  */
 export declare function mlkemSharedSecretSize(level: MLKEMLevel): number;
 
-export declare class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, UREncodable {
+export declare class Nonce implements ToCbor, ToUR {
     static readonly NONCE_SIZE: number;
     private readonly _data;
     private constructor();
@@ -4067,59 +3051,19 @@ export declare class Nonce implements CborTaggedEncodable, CborTaggedDecodable<N
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with Nonce.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<Nonce>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a Nonce by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): Nonce;
-    /**
-     * Creates a Nonce by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): Nonce;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): Nonce;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): Nonce;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): Nonce;
-    /**
-     * Returns the UR representation of the Nonce.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a Nonce from a UR.
-     */
-    static fromUR(ur: UR): Nonce;
-    /**
-     * Creates a Nonce from a UR string.
-     */
-    static fromURString(urString: string): Nonce;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): Nonce;
 }
 
 export declare function parseSshAlgorithm(name: string): SshAlgorithm;
@@ -4193,7 +3137,7 @@ export declare function pbkdf2Params(params?: PBKDF2Params): KeyDerivationParams
  * This is the foundation from which signing keys and agreement keys can be
  * deterministically derived using HKDF.
  */
-export declare class PrivateKeyBase implements CborTaggedEncodable, CborTaggedDecodable<PrivateKeyBase>, UREncodable, Decrypter {
+export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     private readonly _data;
     private constructor();
     /**
@@ -4337,58 +3281,19 @@ export declare class PrivateKeyBase implements CborTaggedEncodable, CborTaggedDe
      * Get string representation (truncated for security).
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with PrivateKeyBase.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<PrivateKeyBase>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a PrivateKeyBase by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): PrivateKeyBase;
-    /**
-     * Creates a PrivateKeyBase by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): PrivateKeyBase;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): PrivateKeyBase;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): PrivateKeyBase;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): PrivateKeyBase;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a PrivateKeyBase from a UR.
-     */
-    static fromUR(ur: UR): PrivateKeyBase;
-    /**
-     * Creates a PrivateKeyBase from a UR string.
-     */
-    static fromURString(urString: string): PrivateKeyBase;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): PrivateKeyBase;
 }
 
 /**
@@ -4442,7 +3347,7 @@ export declare interface PrivateKeyDataProvider {
  * This type provides a convenient way to manage a pair of private keys
  * for both signing and encryption operations.
  */
-export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<PrivateKeys>, UREncodable {
+export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor, ToUR {
     private readonly _signingPrivateKey;
     private readonly _encapsulationPrivateKey;
     private constructor();
@@ -4507,9 +3412,8 @@ export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider
      * parity drift caught by the E1a summarizer audit.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with PrivateKeys.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<PrivateKeys>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -4517,50 +3421,12 @@ export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider
      * Format: [<SigningPrivateKey>, <EncapsulationPrivateKey>]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a PrivateKeys by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): PrivateKeys;
-    /**
-     * Creates a PrivateKeys by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): PrivateKeys;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): PrivateKeys;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): PrivateKeys;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): PrivateKeys;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a PrivateKeys from a UR.
-     */
-    static fromUR(ur: UR): PrivateKeys;
-    /**
-     * Creates a PrivateKeys from a UR string.
-     */
-    static fromURString(urString: string): PrivateKeys;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): PrivateKeys;
 }
 
 /**
@@ -4582,7 +3448,7 @@ export declare interface PrivateKeysProvider {
  * This type provides a convenient way to share public keys for both
  * signature verification and encryption operations.
  */
-export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<PublicKeys>, UREncodable {
+export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbor, ToUR {
     private readonly _signingPublicKey;
     private readonly _encapsulationPublicKey;
     private constructor();
@@ -4637,9 +3503,8 @@ export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvide
      * format-pin (G1 in `PARITY_OUTSTANDING.md`).
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with PublicKeys.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<PublicKeys>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -4647,50 +3512,12 @@ export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvide
      * Format: [<SigningPublicKey>, <EncapsulationPublicKey>]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a PublicKeys by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): PublicKeys;
-    /**
-     * Creates a PublicKeys by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): PublicKeys;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): PublicKeys;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): PublicKeys;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): PublicKeys;
-    /**
-     * Returns the UR representation.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a PublicKeys from a UR.
-     */
-    static fromUR(ur: UR): PublicKeys;
-    /**
-     * Creates a PublicKeys from a UR string.
-     */
-    static fromURString(urString: string): PublicKeys;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): PublicKeys;
 }
 
 /**
@@ -4714,7 +3541,7 @@ export declare interface PublicKeysProvider {
  * content-addressable types whose bytes _are_ the reference) construct
  * via `fromData` directly.
  */
-export declare class Reference implements CborTaggedEncodable, CborTaggedDecodable<Reference>, DigestProvider, ReferenceProvider {
+export declare class Reference implements ToCbor, DigestProvider, ReferenceProvider {
     /** Reference data size in bytes — matches Rust `Reference::REFERENCE_SIZE`. */
     static readonly REFERENCE_SIZE = 32;
     private readonly _data;
@@ -4783,22 +3610,18 @@ export declare class Reference implements CborTaggedEncodable, CborTaggedDecodab
      * `Digest::from_image(self.tagged_cbor().to_cbor_data())`.
      */
     digest(): Digest;
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<Reference>;
     cborTags(): Tag[];
     /** Untagged CBOR — a single byte string of the 32 raw bytes. */
     untaggedCbor(): Cbor;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
-    fromUntaggedCbor(cbor: Cbor): Reference;
-    fromTaggedCbor(cbor: Cbor): Reference;
-    static fromTaggedCbor(cbor: Cbor): Reference;
-    static fromTaggedCborData(data: Uint8Array): Reference;
-    static fromUntaggedCborData(data: Uint8Array): Reference;
-    static readonly UR_TYPE = "reference";
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): Reference;
     /** UR representation — `ur:reference/...`, untagged CBOR payload. */
-    ur(): UR;
-    urString(): string;
-    static fromUR(ur: UR): Reference;
-    static fromURString(s: string): Reference;
     equals(other: Reference): boolean;
     /** Debug-style representation: `Reference(<8-hex-prefix>)`. */
     toString(): string;
@@ -4819,12 +3642,7 @@ export declare interface ReferenceProvider {
     reference(): Reference;
 }
 
-/**
- * Result type that can be either a success value or an Error.
- */
-export declare type Result<T> = T | Error;
-
-export declare class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, UREncodable {
+export declare class Salt implements ToCbor, ToUR {
     private readonly _data;
     private constructor();
     /**
@@ -4926,59 +3744,19 @@ export declare class Salt implements CborTaggedEncodable, CborTaggedDecodable<Sa
      * Get string representation showing the salt's length.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with Salt.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<Salt>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a Salt by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): Salt;
-    /**
-     * Creates a Salt by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): Salt;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): Salt;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): Salt;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): Salt;
-    /**
-     * Returns the UR representation of the Salt.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a Salt from a UR.
-     */
-    static fromUR(ur: UR): Salt;
-    /**
-     * Creates a Salt from a UR string.
-     */
-    static fromURString(urString: string): Salt;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): Salt;
 }
 
 /** Default salt length for key derivation */
@@ -5124,7 +3902,7 @@ export declare function scryptParams(params?: ScryptParams): KeyDerivationParams
 /**
  * A sealed message providing anonymous authenticated encryption.
  */
-export declare class SealedMessage implements CborTaggedEncodable, CborTaggedDecodable<SealedMessage>, UREncodable {
+export declare class SealedMessage implements ToCbor, ToUR {
     private readonly _message;
     private readonly _encapsulatedKey;
     private constructor();
@@ -5187,63 +3965,23 @@ export declare class SealedMessage implements CborTaggedEncodable, CborTaggedDec
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with SealedMessage.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<SealedMessage>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
      * Format: [EncryptedMessage (tagged), EncapsulationCiphertext (tagged)]
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a SealedMessage by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): SealedMessage;
-    /**
-     * Creates a SealedMessage by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): SealedMessage;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): SealedMessage;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): SealedMessage;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): SealedMessage;
-    /**
-     * Returns the UR representation of the SealedMessage.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a SealedMessage from a UR.
-     */
-    static fromUR(ur: UR): SealedMessage;
-    /**
-     * Creates a SealedMessage from a UR string.
-     */
-    static fromURString(urString: string): SealedMessage;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): SealedMessage;
 }
 
-export declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Seed>, UREncodable, PrivateKeyDataProvider {
+export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     /**
      * Minimum seed length in bytes (matches Rust MIN_SEED_LENGTH).
      */
@@ -5265,7 +4003,7 @@ export declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Se
      * Rust equivalent: `Seed::new_with_len(count)`
      *
      * @param count - Number of bytes (must be >= 16)
-     * @throws CryptoError if count < 16
+     * @throws ComponentsError if count < 16
      */
     static newWithLen(count: number): Seed;
     /**
@@ -5275,7 +4013,7 @@ export declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Se
      *
      * @param count - Number of bytes (must be >= 16)
      * @param rng - Random number generator
-     * @throws CryptoError if count < 16
+     * @throws ComponentsError if count < 16
      */
     static newWithLenUsing(count: number, rng: RandomNumberGenerator): Seed;
     /**
@@ -5287,7 +4025,7 @@ export declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Se
      * @param name - Optional name for the seed
      * @param note - Optional note for the seed
      * @param creationDate - Optional creation date
-     * @throws CryptoError if data < 16 bytes
+     * @throws ComponentsError if data < 16 bytes
      */
     static newOpt(data: Uint8Array, name: string | undefined, note: string | undefined, creationDate: Date | undefined): Seed;
     /**
@@ -5422,10 +4160,8 @@ export declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Se
      * @returns A Uint8Array containing the seed data
      */
     privateKeyData(): Uint8Array;
-    /**
-     * Returns the CBOR tags associated with Seed.
-     * Includes TAG_SEED (40300) and TAG_SEED_V1 (300) for backward compatibility.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<Seed>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a map).
@@ -5436,51 +4172,12 @@ export declare class Seed implements CborTaggedEncodable, CborTaggedDecodable<Se
      * - 4: note (optional, omitted if empty)
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a Seed by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): Seed;
-    /**
-     * Creates a Seed by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): Seed;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): Seed;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): Seed;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): Seed;
-    /**
-     * Returns the UR representation of the Seed.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a Seed from a UR.
-     */
-    static fromUR(ur: UR): Seed;
-    /**
-     * Creates a Seed from a UR string.
-     */
-    static fromURString(urString: string): Seed;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): Seed;
 }
 
 export declare interface SeedMetadata {
@@ -5499,7 +4196,7 @@ export declare interface SeedMetadata {
  * - Sr25519 signatures (64 bytes) - discriminator 3
  * - MLDSA signatures (post-quantum) - tagged CBOR delegating to MLDSASignature
  */
-export declare class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signature> {
+export declare class Signature implements ToCbor {
     private readonly _type;
     private readonly _data;
     private readonly _mldsaSignature;
@@ -5669,9 +4366,8 @@ export declare class Signature implements CborTaggedEncodable, CborTaggedDecodab
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with Signature.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<Signature>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -5683,67 +4379,12 @@ export declare class Signature implements CborTaggedEncodable, CborTaggedDecodab
      * - Sr25519: [3, h'<64-byte-signature>']
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a Signature by decoding it from untagged CBOR.
-     *
-     * Format (matching Rust bc-components):
-     * - h'<64-byte-signature>' (bare byte string) for Schnorr
-     * - [1, h'<64-byte-signature>'] for ECDSA
-     * - [2, h'<64-byte-signature>'] for Ed25519
-     * - [3, h'<64-byte-signature>'] for Sr25519
-     */
-    fromUntaggedCbor(cborValue: Cbor): Signature;
-    /**
-     * Creates a Signature by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): Signature;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): Signature;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): Signature;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): Signature;
-    /**
-     * Get the UR type for signatures.
-     */
-    static readonly UR_TYPE = "signature";
-    /**
-     * Returns the UR representation of the signature.
-     *
-     * The UR type prefix (`ur:signature/...`) carries the CBOR tag, so the
-     * inner CBOR must be untagged — matches Rust's `UREncodable` blanket impl.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation of the signature.
-     */
-    urString(): string;
-    /**
-     * Creates a Signature from a UR.
-     */
-    static fromUR(ur: UR): Signature;
-    /**
-     * Creates a Signature from a UR string.
-     */
-    static fromURString(urString: string): Signature;
-    /**
-     * Alias for fromURString for Rust API compatibility.
-     */
-    static fromUrString(urString: string): Signature;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): Signature;
 }
 
 /**
@@ -5887,7 +4528,7 @@ export declare type SigningOptions = {
  * - SR25519 private keys (32-byte seed) - discriminator 3
  * - MLDSA private keys (post-quantum) - tagged CBOR delegating to MLDSAPrivateKey
  */
-export declare class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<SigningPrivateKey> {
+export declare class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, ToCbor {
     private readonly _type;
     private readonly _ecKey;
     private readonly _ed25519Key;
@@ -6159,9 +4800,8 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      * @throws Error if this is not an MLDSA key
      */
     mldsaSign(message: Uint8Array): Signature;
-    /**
-     * Returns the CBOR tags associated with SigningPrivateKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<SigningPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -6174,69 +4814,12 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      * - MLDSA:   delegates to MLDSAPrivateKey (tagged)
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a SigningPrivateKey by decoding it from untagged CBOR.
-     *
-     * Format (matching Rust bc-components):
-     * - h'<32-byte-key>' (bare byte string) for Schnorr
-     * - [1, h'<32-byte-key>'] for ECDSA
-     * - [2, h'<32-byte-key>'] for Ed25519
-     * - [3, h'<32-byte-seed>'] for Sr25519
-     * - tagged MLDSA private key for MLDSA variants
-     */
-    fromUntaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    /**
-     * Creates a SigningPrivateKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): SigningPrivateKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): SigningPrivateKey;
-    /**
-     * Static method to decode from untagged CBOR.
-     */
-    static fromUntaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    /**
-     * Get the UR type for signing private keys.
-     */
-    static readonly UR_TYPE = "signing-private-key";
-    /**
-     * Returns the UR representation of the signing private key.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation of the signing private key.
-     */
-    urString(): string;
-    /**
-     * Creates a SigningPrivateKey from a UR.
-     */
-    static fromUR(ur: UR): SigningPrivateKey;
-    /**
-     * Creates a SigningPrivateKey from a UR string.
-     */
-    static fromURString(urString: string): SigningPrivateKey;
-    /**
-     * Alias for fromURString for Rust API compatibility.
-     */
-    static fromUrString(urString: string): SigningPrivateKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): SigningPrivateKey;
     /**
      * Returns the canonical OpenSSH armored PEM for an SSH private key.
      *
@@ -6258,7 +4841,7 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
  * - Sr25519 public keys (32 bytes) - discriminator 3
  * - MLDSA public keys (post-quantum) - tagged CBOR delegating to MLDSAPublicKey
  */
-export declare class SigningPublicKey implements Verifier, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<SigningPublicKey> {
+export declare class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
     private readonly _type;
     private readonly _schnorrKey;
     private readonly _ecdsaKey;
@@ -6418,9 +5001,8 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, Cb
      * @returns `true` if the signature is valid, `false` otherwise
      */
     verify(signature: Signature, message: Uint8Array): boolean;
-    /**
-     * Returns the CBOR tags associated with SigningPublicKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<SigningPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -6432,68 +5014,12 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, Cb
      * - Sr25519: [3, h'<32-byte-public-key>']
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a SigningPublicKey by decoding it from untagged CBOR.
-     *
-     * Format (matching Rust bc-components):
-     * - h'<32-byte-key>' (bare byte string) for Schnorr
-     * - [1, h'<33-byte-key>'] for ECDSA
-     * - [2, h'<32-byte-key>'] for Ed25519
-     * - [3, h'<32-byte-key>'] for Sr25519
-     */
-    fromUntaggedCbor(cborValue: Cbor): SigningPublicKey;
-    /**
-     * Creates a SigningPublicKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): SigningPublicKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): SigningPublicKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): SigningPublicKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): SigningPublicKey;
-    /**
-     * Static method to decode from untagged CBOR.
-     */
-    static fromUntaggedCbor(cborValue: Cbor): SigningPublicKey;
-    /**
-     * Get the UR type for signing public keys.
-     */
-    static readonly UR_TYPE = "signing-public-key";
-    /**
-     * Returns the UR representation of the signing public key.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation of the signing public key.
-     */
-    urString(): string;
-    /**
-     * Creates a SigningPublicKey from a UR.
-     */
-    static fromUR(ur: UR): SigningPublicKey;
-    /**
-     * Creates a SigningPublicKey from a UR string.
-     */
-    static fromURString(urString: string): SigningPublicKey;
-    /**
-     * Alias for fromURString for Rust API compatibility.
-     */
-    static fromUrString(urString: string): SigningPublicKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): SigningPublicKey;
     /**
      * Returns the OpenSSH single-line public-key text for an SSH public key.
      *
@@ -6606,7 +5132,7 @@ export declare class Sr25519PrivateKey {
      * @param message - The message to sign
      * @param context - The signing context (must equal `SR25519_DEFAULT_CONTEXT`)
      * @returns 64-byte signature
-     * @throws CryptoError if `context` is not the substrate default
+     * @throws ComponentsError if `context` is not the substrate default
      */
     signWithContext(message: Uint8Array, context: Uint8Array): Uint8Array;
     /**
@@ -6667,7 +5193,7 @@ export declare class Sr25519PublicKey {
      * @param message - The message that was signed
      * @param context - The signing context (must equal `SR25519_DEFAULT_CONTEXT`)
      * @returns true if the signature is valid
-     * @throws CryptoError if `context` is not the substrate default
+     * @throws ComponentsError if `context` is not the substrate default
      */
     verifyWithContext(signature: Uint8Array, message: Uint8Array, context: Uint8Array): boolean;
     /**
@@ -6738,7 +5264,7 @@ export declare class SSHAgentParams implements KeyDerivation {
      * implemented in this TypeScript port. Use an alternative key derivation
      * method or implement SSH agent communication for your environment.
      *
-     * @throws CryptoError - SSH agent support is not available
+     * @throws ComponentsError - SSH agent support is not available
      */
     lock(_contentKey: SymmetricKey, _secret: Uint8Array): EncryptedMessage;
     /**
@@ -6748,7 +5274,7 @@ export declare class SSHAgentParams implements KeyDerivation {
      * implemented in this TypeScript port. Use an alternative key derivation
      * method or implement SSH agent communication for your environment.
      *
-     * @throws CryptoError - SSH agent support is not available
+     * @throws ComponentsError - SSH agent support is not available
      */
     unlock(_encryptedMessage: EncryptedMessage, _secret: Uint8Array): SymmetricKey;
     /**
@@ -7027,7 +5553,7 @@ export declare const SSKRShare: {
     fromUntaggedCborData: (data: Uint8Array) => SSKRShareCbor;
 };
 
-export declare class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<SSKRShareCbor> {
+export declare class SSKRShareCbor implements ToCbor {
     private readonly _data;
     private constructor();
     static fromData(data: Uint8Array): SSKRShareCbor;
@@ -7045,20 +5571,21 @@ export declare class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDec
     shareValue(): Uint8Array;
     equals(other: SSKRShareCbor): boolean;
     toString(): string;
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<SSKRShareCbor>;
     cborTags(): Tag[];
     untaggedCbor(): Cbor;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
-    fromUntaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    static fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    static fromTaggedCborData(data: Uint8Array): SSKRShareCbor;
-    static fromUntaggedCborData(data: Uint8Array): SSKRShareCbor;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): SSKRShareCbor;
 }
 
 export { SSKRSpec }
 
-export declare class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<SymmetricKey> {
+export declare class SymmetricKey implements ToCbor {
     static readonly SYMMETRIC_KEY_SIZE: number;
     private readonly _data;
     private constructor();
@@ -7131,69 +5658,19 @@ export declare class SymmetricKey implements CborTaggedEncodable, CborTaggedDeco
      * Decrypt the given encrypted message with this key.
      */
     decrypt(message: EncryptedMessage): Uint8Array;
-    /**
-     * Returns the CBOR tags associated with SymmetricKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<SymmetricKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a SymmetricKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): SymmetricKey;
-    /**
-     * Creates a SymmetricKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): SymmetricKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): SymmetricKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): SymmetricKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): SymmetricKey;
-    /**
-     * Get the UR type for symmetric keys.
-     */
-    static readonly UR_TYPE = "crypto-key";
-    /**
-     * Returns the UR representation of the symmetric key.
-     *
-     * The UR type prefix (`ur:crypto-key/...`) carries the CBOR tag, so the
-     * inner CBOR must be untagged — matches Rust's `UREncodable` blanket impl.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation of the symmetric key.
-     */
-    urString(): string;
-    /**
-     * Creates a SymmetricKey from a UR.
-     */
-    static fromUR(ur: UR): SymmetricKey;
-    /**
-     * Creates a SymmetricKey from a UR string.
-     */
-    static fromURString(urString: string): SymmetricKey;
-    /**
-     * Alias for fromURString for Rust API compatibility.
-     */
-    static fromUrString(urString: string): SymmetricKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): SymmetricKey;
 }
 
 /**
@@ -7213,13 +5690,7 @@ export declare class SymmetricKey implements CborTaggedEncodable, CborTaggedDeco
  */
 export declare function toBase64(data: Uint8Array): string;
 
-/** Presents itself as a UR. */
-declare interface UREncodable {
-    ur(): UR;
-    urString(): string;
-}
-
-export declare class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREncodable {
+export declare class URI implements ToCbor, ToUR {
     private readonly _uri;
     private constructor();
     /**
@@ -7282,62 +5753,22 @@ export declare class URI implements CborTaggedEncodable, CborTaggedDecodable<URI
      * Get the length of the URI string.
      */
     length(): number;
-    /**
-     * Returns the CBOR tags associated with URI.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<URI>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a text string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a URI by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cborValue: Cbor): URI;
-    /**
-     * Creates a URI by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cborValue: Cbor): URI;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cborValue: Cbor): URI;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): URI;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): URI;
-    /**
-     * Returns the UR representation of the URI.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a URI from a UR.
-     */
-    static fromUR(ur: UR): URI;
-    /**
-     * Creates a URI from a UR string.
-     */
-    static fromURString(urString: string): URI;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): URI;
 }
 
-export declare class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, UREncodable {
+export declare class UUID implements ToCbor, ToUR {
     static readonly UUID_SIZE: number;
     private readonly _data;
     private constructor();
@@ -7403,59 +5834,19 @@ export declare class UUID implements CborTaggedEncodable, CborTaggedDecodable<UU
      * Compare with another UUID.
      */
     equals(other: UUID): boolean;
-    /**
-     * Returns the CBOR tags associated with UUID.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<UUID>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a UUID by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): UUID;
-    /**
-     * Creates a UUID by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): UUID;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): UUID;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): UUID;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): UUID;
-    /**
-     * Returns the UR representation of the UUID.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a UUID from a UR.
-     */
-    static fromUR(ur: UR): UUID;
-    /**
-     * Creates a UUID from a UR string.
-     */
-    static fromURString(urString: string): UUID;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): UUID;
 }
 
 /**
@@ -7475,7 +5866,7 @@ export declare interface Verifier {
     verify(signature: Signature, message: Uint8Array): boolean;
 }
 
-export declare class X25519PrivateKey implements CborTaggedEncodable, CborTaggedDecodable<X25519PrivateKey>, UREncodable {
+export declare class X25519PrivateKey implements ToCbor, ToUR {
     static readonly KEY_SIZE: number;
     private readonly _data;
     private _publicKey?;
@@ -7571,62 +5962,22 @@ export declare class X25519PrivateKey implements CborTaggedEncodable, CborTagged
      * Get string representation.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with X25519PrivateKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<X25519PrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an X25519PrivateKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): X25519PrivateKey;
-    /**
-     * Creates an X25519PrivateKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): X25519PrivateKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): X25519PrivateKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): X25519PrivateKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): X25519PrivateKey;
-    /**
-     * Returns the UR representation of the X25519PrivateKey.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an X25519PrivateKey from a UR.
-     */
-    static fromUR(ur: UR): X25519PrivateKey;
-    /**
-     * Creates an X25519PrivateKey from a UR string.
-     */
-    static fromURString(urString: string): X25519PrivateKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): X25519PrivateKey;
 }
 
-export declare class X25519PublicKey implements CborTaggedEncodable, CborTaggedDecodable<X25519PublicKey>, UREncodable {
+export declare class X25519PublicKey implements ToCbor, ToUR {
     static readonly KEY_SIZE: number;
     private readonly _data;
     private constructor();
@@ -7680,62 +6031,22 @@ export declare class X25519PublicKey implements CborTaggedEncodable, CborTaggedD
      *   computed from the **tagged-CBOR** form of the key.
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with X25519PublicKey.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<X25519PublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates an X25519PublicKey by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): X25519PublicKey;
-    /**
-     * Creates an X25519PublicKey by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): X25519PublicKey;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): X25519PublicKey;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): X25519PublicKey;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): X25519PublicKey;
-    /**
-     * Returns the UR representation of the X25519PublicKey.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates an X25519PublicKey from a UR.
-     */
-    static fromUR(ur: UR): X25519PublicKey;
-    /**
-     * Creates an X25519PublicKey from a UR string.
-     */
-    static fromURString(urString: string): X25519PublicKey;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): X25519PublicKey;
 }
 
-export declare class XID implements CborTaggedEncodable, CborTaggedDecodable<XID>, UREncodable, XIDProvider, ReferenceProvider {
+export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
     static readonly XID_SIZE: number;
     private readonly _data;
     private constructor();
@@ -7864,59 +6175,19 @@ export declare class XID implements CborTaggedEncodable, CborTaggedDecodable<XID
      * Uses first 4 bytes of the XID as hex, e.g., "XID(71274df1)".
      */
     toString(): string;
-    /**
-     * Returns the CBOR tags associated with XID.
-     */
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<XID>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
      */
     untaggedCbor(): Cbor;
-    /**
-     * Returns the tagged CBOR encoding.
-     */
-    taggedCbor(): Cbor;
-    /**
-     * Returns the tagged value in CBOR binary representation.
-     */
-    taggedCborData(): Uint8Array;
-    /**
-     * Creates a XID by decoding it from untagged CBOR.
-     */
-    fromUntaggedCbor(cbor: Cbor): XID;
-    /**
-     * Creates a XID by decoding it from tagged CBOR.
-     */
-    fromTaggedCbor(cbor: Cbor): XID;
-    /**
-     * Static method to decode from tagged CBOR.
-     */
-    static fromTaggedCbor(cbor: Cbor): XID;
-    /**
-     * Static method to decode from tagged CBOR binary data.
-     */
-    static fromTaggedCborData(data: Uint8Array): XID;
-    /**
-     * Static method to decode from untagged CBOR binary data.
-     */
-    static fromUntaggedCborData(data: Uint8Array): XID;
-    /**
-     * Returns the UR representation of the XID.
-     * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-     */
-    ur(): UR;
-    /**
-     * Returns the UR string representation.
-     */
-    urString(): string;
-    /**
-     * Creates a XID from a UR.
-     */
-    static fromUR(ur: UR): XID;
-    /**
-     * Creates a XID from a UR string.
-     */
-    static fromURString(urString: string): XID;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cbor: Cbor): XID;
 }
 
 /**

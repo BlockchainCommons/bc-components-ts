@@ -173,7 +173,7 @@ export class ScryptParams implements KeyDerivation {
   toCbor(): Cbor {
     return cbor([
       cbor(ScryptParams.INDEX),
-      this._salt.taggedCbor(),
+      this._salt.toCbor(),
       cbor(this._logN),
       cbor(this._r),
       cbor(this._p),
@@ -206,7 +206,7 @@ export class ScryptParams implements KeyDerivation {
       );
     }
 
-    const salt = Salt.fromTaggedCbor(array[1]);
+    const salt = Salt.fromCbor(array[1]);
     const logN = Number(expectNumber(array[2]));
     const r = Number(expectNumber(array[3]));
     const p = Number(expectNumber(array[4]));

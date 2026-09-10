@@ -43,23 +43,9 @@
  * Ported from bc-components-rust/src/encapsulation/sealed_message.rs
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectArray,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { SEALED_MESSAGE as TAG_SEALED_MESSAGE } from "@blockchaincommons/tags";
 import { Nonce } from "../nonce.js";
 import { EncryptedMessage } from "../symmetric/encrypted-message.js";
@@ -67,16 +53,13 @@ import { type EncapsulationScheme } from "./encapsulation-scheme.js";
 import { EncapsulationCiphertext } from "./encapsulation-ciphertext.js";
 import { type EncapsulationPublicKey } from "./encapsulation-public-key.js";
 import { type EncapsulationPrivateKey } from "./encapsulation-private-key.js";
-import { X25519PublicKey } from "../x25519/x25519-public-key.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
 
 /**
  * A sealed message providing anonymous authenticated encryption.
  */
-export class SealedMessage
-  implements CborTaggedEncodable, CborTaggedDecodable<SealedMessage>, UREncodable
-{
+export class SealedMessage implements ToCbor, ToUR {
   private readonly _message: EncryptedMessage;
   private readonly _encapsulatedKey: EncapsulationCiphertext;
 
@@ -207,14 +190,34 @@ export class SealedMessage
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with SealedMessage.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<SealedMessage> = defineCodec({
+    tags: [TAG_SEALED_MESSAGE],
+    decodeUntagged: (cborValue) => {
+      const elements = expectArray(cborValue);
+
+      if (elements.length !== 2) {
+        throw ComponentsError.invalidData(
+          `SealedMessage must have 2 elements, got ${elements.length}`,
+        );
+      }
+
+      // Decode the encrypted message (tagged)
+      const message = EncryptedMessage.fromCbor(elements[0]);
+
+      // Decode the encapsulation ciphertext (tagged)
+      const encapsulatedKey = EncapsulationCiphertext.fromCbor(elements[1]);
+
+      return new SealedMessage(message, encapsulatedKey);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_SEALED_MESSAGE.value]);
+    return [...SealedMessage.codec.tags];
   }
 
   /**
@@ -222,141 +225,30 @@ export class SealedMessage
    * Format: [EncryptedMessage (tagged), EncapsulationCiphertext (tagged)]
    */
   untaggedCbor(): Cbor {
-    const elements: Cbor[] = [this._message.taggedCbor(), this._encapsulatedKey.taggedCbor()];
+    const elements: Cbor[] = [this._message.toCbor(), this._encapsulatedKey.toCbor()];
     return cbor(elements);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): SealedMessage {
+    return SealedMessage.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a SealedMessage by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): SealedMessage {
-    const elements = expectArray(cborValue);
-
-    if (elements.length !== 2) {
-      throw ComponentsError.invalidData(
-        `SealedMessage must have 2 elements, got ${elements.length}`,
-      );
-    }
-
-    // Decode the encrypted message (tagged)
-    const message = EncryptedMessage.fromTaggedCbor(elements[0]);
-
-    // Decode the encapsulation ciphertext (tagged)
-    const encapsulatedKey = EncapsulationCiphertext.fromTaggedCbor(elements[1]);
-
-    return new SealedMessage(message, encapsulatedKey);
-  }
-
-  /**
-   * Creates a SealedMessage by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): SealedMessage {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): SealedMessage {
-    const dummyMessage = EncryptedMessage.new(
-      new Uint8Array(0),
-      new Uint8Array(0),
-      Nonce.new(),
-      new Uint8Array(16),
-    );
-    const dummyCiphertext = EncapsulationCiphertext.fromX25519PublicKey(
-      X25519PublicKey.fromData(new Uint8Array(32)),
-    );
-    const dummy = new SealedMessage(dummyMessage, dummyCiphertext);
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): SealedMessage {
-    const cborValue = decodeCbor(data);
-    return SealedMessage.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): SealedMessage {
-    const cborValue = decodeCbor(data);
-    const dummyMessage = EncryptedMessage.new(
-      new Uint8Array(0),
-      new Uint8Array(0),
-      Nonce.new(),
-      new Uint8Array(16),
-    );
-    const dummyCiphertext = EncapsulationCiphertext.fromX25519PublicKey(
-      X25519PublicKey.fromData(new Uint8Array(32)),
-    );
-    const dummy = new SealedMessage(dummyMessage, dummyCiphertext);
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the SealedMessage.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    const name = TAG_SEALED_MESSAGE.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("TAG_SEALED_MESSAGE.name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a SealedMessage from a UR.
-   */
-  static fromUR(ur: UR): SealedMessage {
-    const name = TAG_SEALED_MESSAGE.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("TAG_SEALED_MESSAGE.name is undefined");
-    }
-    ur.expectType(name);
-    return SealedMessage.fromUntaggedCborData(ur.cbor.toData());
-  }
-
-  /**
-   * Creates a SealedMessage from a UR string.
-   */
-  static fromURString(urString: string): SealedMessage {
-    const ur = UR.parse(urString);
-    return SealedMessage.fromUR(ur);
-  }
 }

@@ -32,6 +32,9 @@ const BASELINE_SHA256 = "e586b600317b4e2acdd9853bea449e641fefabe6f6049e90cc0b108
  *    untyped `extract` produced an incidental `DataTooShort`.
  * T2 (landed with W1): every bare `Error` throw became a `ComponentsError`
  *    with a code; the baseline's `throw:Error` is any `throw:<code>` now.
+ * T3 (landed with W2): every codable type has `toUR()`; the adapter's `-`
+ *    placeholder for "no UR" became a UR string for JSON and SSKR shares,
+ *    and `AuthenticationTag` reports through `toCbor()` now.
  */
 const TOMBSTONES: {
   id: string;
@@ -42,6 +45,14 @@ const TOMBSTONES: {
     id: "T1",
     landed: true,
     matches: (r) => r.k === "decode" && r.type === "seed" && r.hex.includes("a10161"),
+  },
+  {
+    id: "T3",
+    landed: true,
+    matches: (_r, a, b) => {
+      const strip = (o: string): string => o.replace(/\|ur:[^|]*/g, "").replace(/\|-/g, "");
+      return strip(a) === strip(b);
+    },
   },
   {
     id: "T2",

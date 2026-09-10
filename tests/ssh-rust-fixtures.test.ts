@@ -31,6 +31,7 @@ import {
   SigningPublicKey,
   SSHPrivateKey,
 } from "../src";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // Mirror `bc-components-rust/src/lib.rs:268` — `SEED = hex!("59f2293a5bce7d4de59e71b4207ac5d2")`.
 const RUST_SEED = new Uint8Array([
@@ -213,8 +214,8 @@ describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
     it("Ed25519: SigningPrivateKey CBOR round-trip", () => {
       const base = PrivateKeyBase.fromData(RUST_SEED);
       const sk = base.sshSigningPrivateKey({ kind: "ed25519" }, RUST_COMMENT);
-      const data = sk.taggedCborData();
-      const decoded = SigningPrivateKey.fromTaggedCborData(data);
+      const data = sk.toCbor().toData();
+      const decoded = SigningPrivateKey.fromCbor(decodeCbor(data));
       expect(decoded.scheme()).toBe(SignatureScheme.SshEd25519);
       expect(decoded.toSshOpenssh()).toBe(sk.toSshOpenssh());
     });
@@ -223,8 +224,8 @@ describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
       const base = PrivateKeyBase.fromData(RUST_SEED);
       const sk = base.sshSigningPrivateKey({ kind: "ed25519" }, RUST_COMMENT);
       const pk = sk.publicKey();
-      const data = pk.taggedCborData();
-      const decoded = SigningPublicKey.fromTaggedCborData(data);
+      const data = pk.toCbor().toData();
+      const decoded = SigningPublicKey.fromCbor(decodeCbor(data));
       expect(decoded.scheme()).toBe(SignatureScheme.SshEd25519);
       expect(decoded.toSshOpenssh()).toBe(pk.toSshOpenssh());
     });

@@ -29,18 +29,10 @@ import {
   expectArray,
   expectInteger,
   expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { MLKEM_PRIVATE_KEY as TAG_MLKEM_PRIVATE_KEY } from "@blockchaincommons/tags";
 import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
 
@@ -62,9 +54,7 @@ import { ComponentsError } from "../error.js";
 /**
  * MLKEMPrivateKey - Post-quantum key decapsulation private key using ML-KEM.
  */
-export class MLKEMPrivateKey
-  implements CborTaggedEncodable, CborTaggedDecodable<MLKEMPrivateKey>, UREncodable
-{
+export class MLKEMPrivateKey implements ToCbor, ToUR {
   private readonly _level: MLKEMLevel;
   private readonly _data: Uint8Array;
 
@@ -228,14 +218,29 @@ export class MLKEMPrivateKey
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with MLKEMPrivateKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<MLKEMPrivateKey> = defineCodec({
+    tags: [TAG_MLKEM_PRIVATE_KEY],
+    decodeUntagged: (cborValue) => {
+      const elements = expectArray(cborValue);
+      if (elements.length !== 2) {
+        throw ComponentsError.postQuantum(
+          `MLKEMPrivateKey CBOR must have 2 elements, got ${elements.length}`,
+        );
+      }
+      const levelValue = Number(expectInteger(elements[0]));
+      const level = mlkemLevelFromValue(levelValue);
+      const data = expectBytes(elements[1]);
+      return MLKEMPrivateKey.fromBytes(level, data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_MLKEM_PRIVATE_KEY.value]);
+    return [...MLKEMPrivateKey.codec.tags];
   }
 
   /**
@@ -247,118 +252,26 @@ export class MLKEMPrivateKey
     return cbor([this._level, this._data]);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): MLKEMPrivateKey {
+    return MLKEMPrivateKey.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an MLKEMPrivateKey by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): MLKEMPrivateKey {
-    const elements = expectArray(cborValue);
-    if (elements.length !== 2) {
-      throw ComponentsError.postQuantum(
-        `MLKEMPrivateKey CBOR must have 2 elements, got ${elements.length}`,
-      );
-    }
-    const levelValue = Number(expectInteger(elements[0]));
-    const level = mlkemLevelFromValue(levelValue);
-    const data = expectBytes(elements[1]);
-    return MLKEMPrivateKey.fromBytes(level, data);
-  }
-
-  /**
-   * Creates an MLKEMPrivateKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): MLKEMPrivateKey {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): MLKEMPrivateKey {
-    // Create a minimal dummy instance for decoding
-    const dummyData = new Uint8Array(mlkemPrivateKeySize(MLKEMLevel.MLKEM512));
-    const dummy = new MLKEMPrivateKey(MLKEMLevel.MLKEM512, dummyData);
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): MLKEMPrivateKey {
-    const cborValue = decodeCbor(data);
-    return MLKEMPrivateKey.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): MLKEMPrivateKey {
-    const cborValue = decodeCbor(data);
-    const dummyData = new Uint8Array(mlkemPrivateKeySize(MLKEMLevel.MLKEM512));
-    const dummy = new MLKEMPrivateKey(MLKEMLevel.MLKEM512, dummyData);
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    const name = TAG_MLKEM_PRIVATE_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.postQuantum("MLKEM_PRIVATE_KEY tag name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an MLKEMPrivateKey from a UR.
-   */
-  static fromUR(ur: UR): MLKEMPrivateKey {
-    if (ur.type.name !== TAG_MLKEM_PRIVATE_KEY.name) {
-      throw ComponentsError.postQuantum(
-        `Expected UR type ${TAG_MLKEM_PRIVATE_KEY.name}, got ${ur.type.name}`,
-      );
-    }
-    const dummyData = new Uint8Array(mlkemPrivateKeySize(MLKEMLevel.MLKEM512));
-    const dummy = new MLKEMPrivateKey(MLKEMLevel.MLKEM512, dummyData);
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates an MLKEMPrivateKey from a UR string.
-   */
-  static fromURString(urString: string): MLKEMPrivateKey {
-    const ur = UR.parse(urString);
-    return MLKEMPrivateKey.fromUR(ur);
-  }
 }

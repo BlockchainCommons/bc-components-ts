@@ -18,19 +18,10 @@
  * ```
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  expectBytes,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { REFERENCE as TAG_REFERENCE } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 import { shortIdentifier } from "@blockchaincommons/uniform-resources/bytewords";
 
 import { Digest } from "./digest.js";
@@ -73,9 +64,7 @@ export function isReferenceProvider(obj: unknown): obj is ReferenceProvider {
  * content-addressable types whose bytes _are_ the reference) construct
  * via `fromData` directly.
  */
-export class Reference
-  implements CborTaggedEncodable, CborTaggedDecodable<Reference>, DigestProvider, ReferenceProvider
-{
+export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   /** Reference data size in bytes — matches Rust `Reference::REFERENCE_SIZE`. */
   static readonly REFERENCE_SIZE = 32;
 
@@ -238,15 +227,24 @@ export class Reference
    * `Digest::from_image(self.tagged_cbor().to_cbor_data())`.
    */
   digest(): Digest {
-    return Digest.fromImage(this.taggedCborData());
+    return Digest.fromImage(this.toCbor().toData());
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<Reference> = defineCodec({
+    tags: [TAG_REFERENCE],
+    decodeUntagged: (cbor) => {
+      return Reference.fromData(expectBytes(cbor));
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_REFERENCE.value]);
+    return [...Reference.codec.tags];
   }
 
   /** Untagged CBOR — a single byte string of the 32 raw bytes. */
@@ -254,66 +252,30 @@ export class Reference
     return cbor(this._data);
   }
 
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): Reference {
+    return Reference.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  fromUntaggedCbor(cbor: Cbor): Reference {
-    return Reference.fromData(expectBytes(cbor));
-  }
-
-  fromTaggedCbor(cbor: Cbor): Reference {
-    validateTag(cbor, this.cborTags());
-    return this.fromUntaggedCbor(extractTaggedContent(cbor));
-  }
-
-  static fromTaggedCbor(cbor: Cbor): Reference {
-    const dummy = new Reference(new Uint8Array(Reference.REFERENCE_SIZE));
-    return dummy.fromTaggedCbor(cbor);
-  }
-
-  static fromTaggedCborData(data: Uint8Array): Reference {
-    return Reference.fromTaggedCbor(decodeCbor(data));
-  }
-
-  static fromUntaggedCborData(data: Uint8Array): Reference {
-    const dummy = new Reference(new Uint8Array(Reference.REFERENCE_SIZE));
-    return dummy.fromUntaggedCbor(decodeCbor(data));
-  }
-
   // ============================================================================
   // UR
   // ============================================================================
 
-  static readonly UR_TYPE = "reference";
-
   /** UR representation — `ur:reference/...`, untagged CBOR payload. */
-  ur(): UR {
-    return UR.from(Reference.UR_TYPE, this.untaggedCbor());
-  }
-
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  static fromUR(ur: UR): Reference {
-    ur.expectType(Reference.UR_TYPE);
-    const dummy = new Reference(new Uint8Array(Reference.REFERENCE_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  static fromURString(s: string): Reference {
-    return Reference.fromUR(UR.parse(s));
-  }
-
   // ============================================================================
   // Equality / display
   // ============================================================================

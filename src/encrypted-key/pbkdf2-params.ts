@@ -159,7 +159,7 @@ export class PBKDF2Params implements KeyDerivation {
   toCbor(): Cbor {
     return cbor([
       cbor(PBKDF2Params.INDEX),
-      this._salt.taggedCbor(),
+      this._salt.toCbor(),
       cbor(this._iterations),
       hashTypeToCbor(this._hashType),
     ]);
@@ -191,7 +191,7 @@ export class PBKDF2Params implements KeyDerivation {
       );
     }
 
-    const salt = Salt.fromTaggedCbor(array[1]);
+    const salt = Salt.fromCbor(array[1]);
     const iterations = Number(expectNumber(array[2]));
     const hashType = hashTypeFromCbor(array[3]);
 

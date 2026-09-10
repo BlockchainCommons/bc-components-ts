@@ -34,24 +34,10 @@
  * type "xid".
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { XID as TAG_XID } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { shortIdentifier } from "@blockchaincommons/uniform-resources/bytewords";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
@@ -96,14 +82,7 @@ export function isXIDProvider(obj: unknown): obj is XIDProvider {
   );
 }
 
-export class XID
-  implements
-    CborTaggedEncodable,
-    CborTaggedDecodable<XID>,
-    UREncodable,
-    XIDProvider,
-    ReferenceProvider
-{
+export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   static readonly XID_SIZE: number = XID_SIZE;
 
   private readonly _data: Uint8Array;
@@ -186,7 +165,7 @@ export class XID
    * This matches Rust's `XID::new(genesis_key: impl AsRef<SigningPublicKey>)`.
    */
   static newFromSigningKey(signingPublicKey: SigningPublicKey): XID {
-    const keyCborData = signingPublicKey.taggedCborData();
+    const keyCborData = signingPublicKey.toCbor().toData();
     const digest = Digest.fromImage(keyCborData);
     return XID.fromData(digest.toData());
   }
@@ -234,7 +213,7 @@ export class XID
    * the XID data. This matches Rust's `XID::validate(&self, key: &SigningPublicKey)`.
    */
   validate(signingPublicKey: SigningPublicKey): boolean {
-    const keyData = signingPublicKey.taggedCborData();
+    const keyData = signingPublicKey.toCbor().toData();
     const digest = Digest.fromImage(keyData);
     return this.equals(XID.fromData(digest.toData()));
   }
@@ -351,14 +330,21 @@ export class XID
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with XID.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<XID> = defineCodec({
+    tags: [TAG_XID],
+    decodeUntagged: (cbor) => {
+      const data = expectBytes(cbor);
+      return XID.fromDataRef(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_XID.value]);
+    return [...XID.codec.tags];
   }
 
   /**
@@ -368,99 +354,26 @@ export class XID
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): XID {
+    return XID.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a XID by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cbor: Cbor): XID {
-    const data = expectBytes(cbor);
-    return XID.fromDataRef(data);
-  }
-
-  /**
-   * Creates a XID by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): XID {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cbor: Cbor): XID {
-    const instance = new XID(new Uint8Array(XID_SIZE));
-    return instance.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): XID {
-    const cbor = decodeCbor(data);
-    return XID.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): XID {
-    const cbor = decodeCbor(data);
-    const bytes = expectBytes(cbor);
-    return XID.fromDataRef(bytes);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the XID.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    return UR.from("xid", this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a XID from a UR.
-   */
-  static fromUR(ur: UR): XID {
-    ur.expectType("xid");
-    const instance = new XID(new Uint8Array(XID_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a XID from a UR string.
-   */
-  static fromURString(urString: string): XID {
-    const ur = UR.parse(urString);
-    return XID.fromUR(ur);
-  }
 }

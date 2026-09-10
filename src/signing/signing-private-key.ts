@@ -23,7 +23,6 @@
  * Ported from bc-components-rust/src/signing/signing_private_key.rs
  */
 
-import { ED25519_PRIVATE_KEY_SIZE } from "@blockchaincommons/crypto";
 import type { RandomNumberGenerator } from "@blockchaincommons/rand";
 import {
   type Cbor,
@@ -34,16 +33,13 @@ import {
   expectBytes,
   expectText,
   expectUnsigned,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
   isBytes,
   isArray,
   isTagged,
   asTaggedValue,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
-import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import {
   SIGNING_PRIVATE_KEY as TAG_SIGNING_PRIVATE_KEY,
   MLDSA_PRIVATE_KEY as TAG_MLDSA_PRIVATE_KEY,
@@ -61,7 +57,7 @@ import { SigningPublicKey } from "./signing-public-key.js";
 import type { Signer, Verifier } from "./signer.js";
 import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 
 /**
@@ -74,14 +70,7 @@ import { ComponentsError } from "../error.js";
  * - SR25519 private keys (32-byte seed) - discriminator 3
  * - MLDSA private keys (post-quantum) - tagged CBOR delegating to MLDSAPrivateKey
  */
-export class SigningPrivateKey
-  implements
-    Signer,
-    Verifier,
-    ReferenceProvider,
-    CborTaggedEncodable,
-    CborTaggedDecodable<SigningPrivateKey>
-{
+export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, ToCbor {
   private readonly _type: SignatureScheme;
   private readonly _ecKey: ECPrivateKey | undefined;
   private readonly _ed25519Key: Ed25519PrivateKey | undefined;
@@ -552,7 +541,7 @@ export class SigningPrivateKey
    * representation, providing a unique, content-addressable identifier.
    */
   reference(): Reference {
-    const digest = Digest.fromImage(this.taggedCborData());
+    const digest = Digest.fromImage(this.toCbor().toData());
     return Reference.from(digest);
   }
 
@@ -770,14 +759,67 @@ export class SigningPrivateKey
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with SigningPrivateKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<SigningPrivateKey> = defineCodec({
+    tags: [TAG_SIGNING_PRIVATE_KEY],
+    decodeUntagged: (cborValue) => {
+      // Rust format: Schnorr is a bare byte string
+      if (isBytes(cborValue)) {
+        const keyData = expectBytes(cborValue);
+        return SigningPrivateKey.newSchnorr(ECPrivateKey.from(keyData));
+      }
+
+      // Array format for ECDSA, Ed25519, Sr25519
+      if (isArray(cborValue)) {
+        const elements = expectArray(cborValue);
+
+        if (elements.length !== 2) {
+          throw ComponentsError.invalidData("SigningPrivateKey array must have 2 elements");
+        }
+
+        const discriminator = expectUnsigned(elements[0]);
+        const keyData = expectBytes(elements[1]);
+
+        switch (Number(discriminator)) {
+          case 1: // ECDSA
+            return SigningPrivateKey.newEcdsa(ECPrivateKey.from(keyData));
+          case 2: // Ed25519
+            return SigningPrivateKey.newEd25519(Ed25519PrivateKey.from(keyData));
+          case 3: // Sr25519
+            return SigningPrivateKey.newSr25519(Sr25519PrivateKey.from(keyData));
+          default:
+            throw ComponentsError.invalidData(
+              `Unknown SigningPrivateKey discriminator: ${discriminator}`,
+            );
+        }
+      }
+
+      // Tagged format for MLDSA / SSH
+      if (isTagged(cborValue)) {
+        const tagged = asTaggedValue(cborValue);
+        if (tagged?.[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
+          const mldsaKey = MLDSAPrivateKey.fromCbor(cborValue);
+          return SigningPrivateKey.newMldsa(mldsaKey);
+        }
+        if (tagged?.[0].value === TAG_SSH_TEXT_PRIVATE_KEY.value) {
+          const text = expectText(tagged[1]);
+          const sshKey = SSHPrivateKey.fromOpenssh(text);
+          return SigningPrivateKey.fromSsh(sshKey);
+        }
+      }
+
+      throw ComponentsError.invalidData(
+        "SigningPrivateKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
+      );
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_SIGNING_PRIVATE_KEY.value]);
+    return [...SigningPrivateKey.codec.tags];
   }
 
   /**
@@ -824,7 +866,7 @@ export class SigningPrivateKey
           throw ComponentsError.invalidData("MLDSA private key is missing");
         }
         // Rust: delegates to MLDSAPrivateKey (which produces tagged CBOR)
-        return this._mldsaKey.taggedCbor();
+        return this._mldsaKey.toCbor();
       }
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
@@ -840,187 +882,28 @@ export class SigningPrivateKey
     }
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): SigningPrivateKey {
+    return SigningPrivateKey.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a SigningPrivateKey by decoding it from untagged CBOR.
-   *
-   * Format (matching Rust bc-components):
-   * - h'<32-byte-key>' (bare byte string) for Schnorr
-   * - [1, h'<32-byte-key>'] for ECDSA
-   * - [2, h'<32-byte-key>'] for Ed25519
-   * - [3, h'<32-byte-seed>'] for Sr25519
-   * - tagged MLDSA private key for MLDSA variants
-   */
-  fromUntaggedCbor(cborValue: Cbor): SigningPrivateKey {
-    // Rust format: Schnorr is a bare byte string
-    if (isBytes(cborValue)) {
-      const keyData = expectBytes(cborValue);
-      return SigningPrivateKey.newSchnorr(ECPrivateKey.from(keyData));
-    }
-
-    // Array format for ECDSA, Ed25519, Sr25519
-    if (isArray(cborValue)) {
-      const elements = expectArray(cborValue);
-
-      if (elements.length !== 2) {
-        throw ComponentsError.invalidData("SigningPrivateKey array must have 2 elements");
-      }
-
-      const discriminator = expectUnsigned(elements[0]);
-      const keyData = expectBytes(elements[1]);
-
-      switch (Number(discriminator)) {
-        case 1: // ECDSA
-          return SigningPrivateKey.newEcdsa(ECPrivateKey.from(keyData));
-        case 2: // Ed25519
-          return SigningPrivateKey.newEd25519(Ed25519PrivateKey.from(keyData));
-        case 3: // Sr25519
-          return SigningPrivateKey.newSr25519(Sr25519PrivateKey.from(keyData));
-        default:
-          throw ComponentsError.invalidData(
-            `Unknown SigningPrivateKey discriminator: ${discriminator}`,
-          );
-      }
-    }
-
-    // Tagged format for MLDSA / SSH
-    if (isTagged(cborValue)) {
-      const tagged = asTaggedValue(cborValue);
-      if (tagged?.[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
-        const mldsaKey = MLDSAPrivateKey.fromTaggedCbor(cborValue);
-        return SigningPrivateKey.newMldsa(mldsaKey);
-      }
-      if (tagged?.[0].value === TAG_SSH_TEXT_PRIVATE_KEY.value) {
-        const text = expectText(tagged[1]);
-        const sshKey = SSHPrivateKey.fromOpenssh(text);
-        return SigningPrivateKey.fromSsh(sshKey);
-      }
-    }
-
-    throw ComponentsError.invalidData(
-      "SigningPrivateKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
-    );
-  }
-
-  /**
-   * Creates a SigningPrivateKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): SigningPrivateKey {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): SigningPrivateKey {
-    // Create a dummy instance for accessing instance methods
-    const dummy = new SigningPrivateKey(
-      SignatureScheme.Ed25519,
-      undefined, // ecKey
-      Ed25519PrivateKey.from(new Uint8Array(ED25519_PRIVATE_KEY_SIZE)), // ed25519Key
-    );
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): SigningPrivateKey {
-    const cborValue = decodeCbor(data);
-    return SigningPrivateKey.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): SigningPrivateKey {
-    const cborValue = decodeCbor(data);
-    return SigningPrivateKey.fromUntaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR.
-   */
-  static fromUntaggedCbor(cborValue: Cbor): SigningPrivateKey {
-    const dummy = new SigningPrivateKey(
-      SignatureScheme.Ed25519,
-      undefined, // ecKey
-      Ed25519PrivateKey.from(new Uint8Array(ED25519_PRIVATE_KEY_SIZE)), // ed25519Key
-    );
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
   // UR (Uniform Resource) Serialization
   // ============================================================================
-
-  /**
-   * Get the UR type for signing private keys.
-   */
-  static readonly UR_TYPE = "signing-private-key";
-
-  /**
-   * Returns the UR representation of the signing private key.
-   */
-  ur(): UR {
-    // A UR's content is the *untagged* CBOR; the `signing-private-key` type
-    // string already implies the tag. Using `taggedCbor()` here would
-    // double-tag the content, diverging from Rust and breaking interop.
-    // Mirrors the canonical `toUR` pattern (`ur-encodable.ts`).
-    return UR.from(SigningPrivateKey.UR_TYPE, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation of the signing private key.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a SigningPrivateKey from a UR.
-   */
-  static fromUR(ur: UR): SigningPrivateKey {
-    ur.expectType(SigningPrivateKey.UR_TYPE);
-    // The UR content is untagged (the type implies the tag), so decode it
-    // directly as untagged CBOR. Mirrors the canonical `fromUR` pattern
-    // (`ur-decodable.ts`).
-    return SigningPrivateKey.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a SigningPrivateKey from a UR string.
-   */
-  static fromURString(urString: string): SigningPrivateKey {
-    const ur = UR.parse(urString);
-    return SigningPrivateKey.fromUR(ur);
-  }
-
-  /**
-   * Alias for fromURString for Rust API compatibility.
-   */
-  static fromUrString(urString: string): SigningPrivateKey {
-    return SigningPrivateKey.fromURString(urString);
-  }
 
   // ============================================================================
   // SSH Format

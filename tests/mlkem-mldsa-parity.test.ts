@@ -15,6 +15,7 @@
 
 import { describe, it, expect } from "vitest";
 import { MLKEMPrivateKey, MLKEMLevel, MLDSAPrivateKey, MLDSALevel } from "../src/index.js";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // CBOR major-6 (tag) encoding helper for the 40100-range tags:
 //   tags 40100-40105 are 5-digit decimal numbers, encoded as 0xd9 (major-6
@@ -43,19 +44,19 @@ describe("ML-KEM CBOR layout (matches Rust pqcrypto-mlkem)", () => {
 
     it(`${String(level)} private key tagged CBOR begins with tag 40100`, () => {
       const priv = MLKEMPrivateKey.new(level);
-      expectTaggedAt(priv.taggedCborData(), 40100);
+      expectTaggedAt(priv.toCbor().toData(), 40100);
     });
 
     it(`${String(level)} public key tagged CBOR begins with tag 40101`, () => {
       const priv = MLKEMPrivateKey.new(level);
-      expectTaggedAt(priv.publicKey().taggedCborData(), 40101);
+      expectTaggedAt(priv.publicKey().toCbor().toData(), 40101);
     });
 
     it(`${String(level)} encapsulation: ciphertext tagged with 40102`, () => {
       const priv = MLKEMPrivateKey.new(level);
       const { sharedSecret, ciphertext } = priv.publicKey().encapsulate();
       expect(sharedSecret.data().length).toBe(32);
-      expectTaggedAt(ciphertext.taggedCborData(), 40102);
+      expectTaggedAt(ciphertext.toCbor().toData(), 40102);
 
       // Round-trip
       const recovered = priv.decapsulate(ciphertext);
@@ -64,7 +65,7 @@ describe("ML-KEM CBOR layout (matches Rust pqcrypto-mlkem)", () => {
 
     it(`${String(level)} private key roundtrips through tagged CBOR`, () => {
       const priv = MLKEMPrivateKey.new(level);
-      const decoded = MLKEMPrivateKey.fromTaggedCborData(priv.taggedCborData());
+      const decoded = MLKEMPrivateKey.fromCbor(decodeCbor(priv.toCbor().toData()));
       expect(decoded.data()).toEqual(priv.data());
     });
   }
@@ -85,18 +86,18 @@ describe("ML-DSA CBOR layout (matches Rust pqcrypto-mldsa)", () => {
 
     it(`${String(level)} private key tagged with 40103`, () => {
       const [priv] = MLDSAPrivateKey.keypair(level);
-      expectTaggedAt(priv.taggedCborData(), 40103);
+      expectTaggedAt(priv.toCbor().toData(), 40103);
     });
 
     it(`${String(level)} public key tagged with 40104`, () => {
       const [, pub] = MLDSAPrivateKey.keypair(level);
-      expectTaggedAt(pub.taggedCborData(), 40104);
+      expectTaggedAt(pub.toCbor().toData(), 40104);
     });
 
     it(`${String(level)} signature tagged with 40105`, () => {
       const [priv] = MLDSAPrivateKey.keypair(level);
       const sig = priv.sign(new TextEncoder().encode("data"));
-      expectTaggedAt(sig.taggedCborData(), 40105);
+      expectTaggedAt(sig.toCbor().toData(), 40105);
     });
   }
 });

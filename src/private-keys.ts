@@ -22,23 +22,9 @@
  * Ported from bc-components-rust/src/private_keys.rs
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectArray,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "./codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { PRIVATE_KEYS as TAG_PRIVATE_KEYS } from "@blockchaincommons/tags";
 
 import { SigningPrivateKey } from "./signing/signing-private-key.js";
@@ -73,15 +59,7 @@ export interface PrivateKeysProvider {
  * This type provides a convenient way to manage a pair of private keys
  * for both signing and encryption operations.
  */
-export class PrivateKeys
-  implements
-    Signer,
-    Decrypter,
-    ReferenceProvider,
-    CborTaggedEncodable,
-    CborTaggedDecodable<PrivateKeys>,
-    UREncodable
-{
+export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor, ToUR {
   private readonly _signingPrivateKey: SigningPrivateKey;
   private readonly _encapsulationPrivateKey: EncapsulationPrivateKey;
 
@@ -196,7 +174,7 @@ export class PrivateKeys
    * representation, providing a unique, content-addressable identifier.
    */
   reference(): Reference {
-    const digest = Digest.fromImage(this.taggedCborData());
+    const digest = Digest.fromImage(this.toCbor().toData());
     return Reference.from(digest);
   }
 
@@ -228,14 +206,31 @@ export class PrivateKeys
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with PrivateKeys.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<PrivateKeys> = defineCodec({
+    tags: [TAG_PRIVATE_KEYS],
+    decodeUntagged: (cborValue) => {
+      const elements = expectArray(cborValue);
+
+      if (elements.length !== 2) {
+        throw ComponentsError.invalidData(
+          `PrivateKeys must have 2 elements, got ${elements.length}`,
+        );
+      }
+
+      const signingPrivateKey = SigningPrivateKey.fromCbor(elements[0]);
+      const encapsulationPrivateKey = EncapsulationPrivateKey.fromCbor(elements[1]);
+
+      return new PrivateKeys(signingPrivateKey, encapsulationPrivateKey);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_PRIVATE_KEYS.value]);
+    return [...PrivateKeys.codec.tags];
   }
 
   /**
@@ -244,118 +239,29 @@ export class PrivateKeys
    * Format: [<SigningPrivateKey>, <EncapsulationPrivateKey>]
    */
   untaggedCbor(): Cbor {
-    return cbor([this._signingPrivateKey.taggedCbor(), this._encapsulationPrivateKey.taggedCbor()]);
+    return cbor([this._signingPrivateKey.toCbor(), this._encapsulationPrivateKey.toCbor()]);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): PrivateKeys {
+    return PrivateKeys.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a PrivateKeys by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): PrivateKeys {
-    const elements = expectArray(cborValue);
-
-    if (elements.length !== 2) {
-      throw ComponentsError.invalidData(`PrivateKeys must have 2 elements, got ${elements.length}`);
-    }
-
-    const signingPrivateKey = SigningPrivateKey.fromTaggedCbor(elements[0]);
-    const encapsulationPrivateKey = EncapsulationPrivateKey.fromTaggedCbor(elements[1]);
-
-    return new PrivateKeys(signingPrivateKey, encapsulationPrivateKey);
-  }
-
-  /**
-   * Creates a PrivateKeys by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): PrivateKeys {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): PrivateKeys {
-    // Create a dummy instance for accessing instance methods
-    const dummy = PrivateKeys.new();
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): PrivateKeys {
-    const cborValue = decodeCbor(data);
-    return PrivateKeys.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): PrivateKeys {
-    const cborValue = decodeCbor(data);
-    const dummy = PrivateKeys.new();
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    const name = TAG_PRIVATE_KEYS.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("PRIVATE_KEYS tag name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a PrivateKeys from a UR.
-   */
-  static fromUR(ur: UR): PrivateKeys {
-    if (ur.type.name !== TAG_PRIVATE_KEYS.name) {
-      throw ComponentsError.invalidData(
-        `Expected UR type ${TAG_PRIVATE_KEYS.name}, got ${ur.type.name}`,
-      );
-    }
-    const dummy = PrivateKeys.new();
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a PrivateKeys from a UR string.
-   */
-  static fromURString(urString: string): PrivateKeys {
-    const ur = UR.parse(urString);
-    return PrivateKeys.fromUR(ur);
-  }
 }

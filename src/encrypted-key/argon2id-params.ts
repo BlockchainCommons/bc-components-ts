@@ -127,7 +127,7 @@ export class Argon2idParams implements KeyDerivation {
    * Format: [3, Salt]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
    */
   toCbor(): Cbor {
-    return cbor([cbor(Argon2idParams.INDEX), this._salt.taggedCbor()]);
+    return cbor([cbor(Argon2idParams.INDEX), this._salt.toCbor()]);
   }
 
   /**
@@ -156,7 +156,7 @@ export class Argon2idParams implements KeyDerivation {
       );
     }
 
-    const salt = Salt.fromTaggedCbor(array[1]);
+    const salt = Salt.fromCbor(array[1]);
 
     return new Argon2idParams(salt);
   }

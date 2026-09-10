@@ -25,21 +25,9 @@
  * Ported from bc-components-rust/src/encrypted_key/encrypted_key_impl.rs
  */
 
-import {
-  type Cbor,
-  type Tag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-  validateTag,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, decodeCbor, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ENCRYPTED_KEY as TAG_ENCRYPTED_KEY } from "@blockchaincommons/tags";
 
 import { type SymmetricKey } from "../symmetric/symmetric-key.js";
@@ -66,9 +54,7 @@ import {
  * Use `lock()` to encrypt a content key with a password or secret,
  * and `unlock()` to decrypt it.
  */
-export class EncryptedKey
-  implements CborTaggedEncodable, CborTaggedDecodable<EncryptedKey>, UREncodable
-{
+export class EncryptedKey implements ToCbor, ToUR {
   private readonly _params: KeyDerivationParams;
   private readonly _encryptedMessage: EncryptedMessage;
 
@@ -226,14 +212,31 @@ export class EncryptedKey
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with EncryptedKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<EncryptedKey> = defineCodec({
+    tags: [TAG_ENCRYPTED_KEY],
+    decodeUntagged: (cborValue) => {
+      // The untagged content is a tagged EncryptedMessage
+      const encryptedMessage = EncryptedMessage.fromCbor(cborValue);
+
+      // Parse the derivation parameters from AAD
+      const aad = encryptedMessage.aad();
+      if (aad.length === 0) {
+        throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
+      }
+      const paramsCbor = decodeCbor(aad);
+      const params = keyDerivationParamsFromCbor(paramsCbor);
+
+      return new EncryptedKey(params, encryptedMessage);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_ENCRYPTED_KEY.value]);
+    return [...EncryptedKey.codec.tags];
   }
 
   /**
@@ -241,135 +244,29 @@ export class EncryptedKey
    * The EncryptedMessage is encoded with its own tag (40002).
    */
   untaggedCbor(): Cbor {
-    return this._encryptedMessage.taggedCbor();
+    return this._encryptedMessage.toCbor();
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): EncryptedKey {
+    return EncryptedKey.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an EncryptedKey by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): EncryptedKey {
-    // The untagged content is a tagged EncryptedMessage
-    const encryptedMessage = EncryptedMessage.fromTaggedCbor(cborValue);
-
-    // Parse the derivation parameters from AAD
-    const aad = encryptedMessage.aad();
-    if (aad.length === 0) {
-      throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
-    }
-    const paramsCbor = decodeCbor(aad);
-    const params = keyDerivationParamsFromCbor(paramsCbor);
-
-    return new EncryptedKey(params, encryptedMessage);
-  }
-
-  /**
-   * Creates an EncryptedKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): EncryptedKey {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): EncryptedKey {
-    // Create a dummy instance for the method
-    const dummyParams = hkdfParams();
-    const dummyMessage = EncryptedMessage.new(
-      new Uint8Array(32),
-      new Uint8Array(0),
-      // @ts-expect-error - Using internal method for dummy
-      { data: () => new Uint8Array(12) },
-      new Uint8Array(16),
-    );
-    const dummy = new EncryptedKey(dummyParams, dummyMessage);
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): EncryptedKey {
-    const cborValue = decodeCbor(data);
-    return EncryptedKey.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): EncryptedKey {
-    const cborValue = decodeCbor(data);
-    const dummyParams = hkdfParams();
-    const dummyMessage = EncryptedMessage.new(
-      new Uint8Array(32),
-      new Uint8Array(0),
-      // @ts-expect-error - Using internal method for dummy
-      { data: () => new Uint8Array(12) },
-      new Uint8Array(16),
-    );
-    const dummy = new EncryptedKey(dummyParams, dummyMessage);
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    const name = TAG_ENCRYPTED_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("TAG_ENCRYPTED_KEY.name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an EncryptedKey from a UR.
-   */
-  static fromUR(ur: UR): EncryptedKey {
-    const name = TAG_ENCRYPTED_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("TAG_ENCRYPTED_KEY.name is undefined");
-    }
-    ur.expectType(name);
-    return EncryptedKey.fromUntaggedCborData(ur.cbor.toData());
-  }
-
-  /**
-   * Creates an EncryptedKey from a UR string.
-   */
-  static fromURString(urString: string): EncryptedKey {
-    const ur = UR.parse(urString);
-    return EncryptedKey.fromUR(ur);
-  }
 }

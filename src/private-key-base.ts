@@ -23,23 +23,9 @@
  */
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "./codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { PRIVATE_KEY_BASE as TAG_PRIVATE_KEY_BASE } from "@blockchaincommons/tags";
 import { hkdfSha256 } from "@blockchaincommons/crypto";
 
@@ -78,9 +64,7 @@ const SALT_SIGNING = "signing";
  * This is the foundation from which signing keys and agreement keys can be
  * deterministically derived using HKDF.
  */
-export class PrivateKeyBase
-  implements CborTaggedEncodable, CborTaggedDecodable<PrivateKeyBase>, UREncodable, Decrypter
-{
+export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   private readonly _data: Uint8Array;
 
   private constructor(data: Uint8Array) {
@@ -386,14 +370,21 @@ export class PrivateKeyBase
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with PrivateKeyBase.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<PrivateKeyBase> = defineCodec({
+    tags: [TAG_PRIVATE_KEY_BASE],
+    decodeUntagged: (cborValue) => {
+      const data = expectBytes(cborValue);
+      return PrivateKeyBase.fromData(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_PRIVATE_KEY_BASE.value]);
+    return [...PrivateKeyBase.codec.tags];
   }
 
   /**
@@ -403,108 +394,28 @@ export class PrivateKeyBase
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): PrivateKeyBase {
+    return PrivateKeyBase.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a PrivateKeyBase by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): PrivateKeyBase {
-    const data = expectBytes(cborValue);
-    return PrivateKeyBase.fromData(data);
-  }
-
-  /**
-   * Creates a PrivateKeyBase by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): PrivateKeyBase {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): PrivateKeyBase {
-    const dummy = new PrivateKeyBase(new Uint8Array(PRIVATE_KEY_BASE_DEFAULT_SIZE));
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): PrivateKeyBase {
-    const cborValue = decodeCbor(data);
-    return PrivateKeyBase.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): PrivateKeyBase {
-    const cborValue = decodeCbor(data);
-    const dummy = new PrivateKeyBase(new Uint8Array(PRIVATE_KEY_BASE_DEFAULT_SIZE));
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    const name = TAG_PRIVATE_KEY_BASE.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("PRIVATE_KEY_BASE tag name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a PrivateKeyBase from a UR.
-   */
-  static fromUR(ur: UR): PrivateKeyBase {
-    if (ur.type.name !== TAG_PRIVATE_KEY_BASE.name) {
-      throw ComponentsError.invalidData(
-        `Expected UR type ${TAG_PRIVATE_KEY_BASE.name}, got ${ur.type.name}`,
-      );
-    }
-    const dummy = new PrivateKeyBase(new Uint8Array(PRIVATE_KEY_BASE_DEFAULT_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a PrivateKeyBase from a UR string.
-   */
-  static fromURString(urString: string): PrivateKeyBase {
-    const ur = UR.parse(urString);
-    return PrivateKeyBase.fromUR(ur);
-  }
 }
 
 /**

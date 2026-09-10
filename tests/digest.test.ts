@@ -7,6 +7,8 @@
 import { describe, it, expect } from "vitest";
 import { Digest } from "../src/digest.js";
 import { hexToBytes } from "../src/utils.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("Digest", () => {
   // Test data: SHA-256 hash of "hello world"
@@ -136,14 +138,14 @@ describe("Digest", () => {
 
     it("should serialize to tagged CBOR", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
-      const tagged = digest.taggedCbor();
+      const tagged = digest.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
-      const data = digest.taggedCborData();
+      const data = digest.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -151,8 +153,8 @@ describe("Digest", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
-      const data = digest.taggedCborData();
-      const restored = Digest.fromTaggedCborData(data);
+      const data = digest.toCbor().toData();
+      const restored = Digest.fromCbor(decodeCbor(data));
 
       expect(restored.equals(digest)).toBe(true);
     });
@@ -160,7 +162,7 @@ describe("Digest", () => {
     it("should roundtrip through untagged CBOR", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
       const data = digest.untaggedCbor().toData();
-      const restored = Digest.fromUntaggedCborData(data);
+      const restored = Digest.fromCbor(decodeCbor(data));
 
       expect(restored.equals(digest)).toBe(true);
     });
@@ -169,7 +171,7 @@ describe("Digest", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
-      const ur = digest.ur();
+      const ur = digest.toUR();
 
       expect(ur).toBeDefined();
     });
@@ -177,7 +179,7 @@ describe("Digest", () => {
     it("should serialize to UR string", () => {
       const data = new TextEncoder().encode("hello world");
       const digest = Digest.fromImage(data);
-      const urString = digest.urString();
+      const urString = digest.toUR().toString();
 
       expect(urString.startsWith("ur:digest/")).toBe(true);
     });
@@ -185,7 +187,7 @@ describe("Digest", () => {
     it("should match expected UR string for 'hello world'", () => {
       const data = new TextEncoder().encode("hello world");
       const digest = Digest.fromImage(data);
-      const urString = digest.urString();
+      const urString = digest.toUR().toString();
       const expectedUrString =
         "ur:digest/hdcxrhgtdirhmugtfmayondmgmtstnkipyzssslrwsvlkngulawymhloylpsvowssnwlamnlatrs";
 
@@ -194,8 +196,8 @@ describe("Digest", () => {
 
     it("should roundtrip through UR string", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
-      const urString = digest.urString();
-      const restored = Digest.fromURString(urString);
+      const urString = digest.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), Digest.codec);
 
       expect(restored.equals(digest)).toBe(true);
     });
@@ -203,7 +205,7 @@ describe("Digest", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_digest/invalid";
 
-      expect(() => Digest.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), Digest.codec)).toThrow();
     });
   });
 });

@@ -34,19 +34,11 @@
  * ```
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { JSON as TAG_JSON } from "@blockchaincommons/tags";
 import { bytesToHex, hexToBytes } from "./utils.js";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 
 /**
  * A CBOR-tagged container for UTF-8 JSON text.
@@ -55,7 +47,7 @@ import { bytesToHex, hexToBytes } from "./utils.js";
  * This allows JSON data to be embedded within CBOR structures while
  * maintaining type information through the tag.
  */
-export class JSON implements CborTaggedEncodable, CborTaggedDecodable<JSON> {
+export class JSON implements ToCbor {
   private readonly _data: Uint8Array;
 
   private constructor(data: Uint8Array) {
@@ -156,14 +148,21 @@ export class JSON implements CborTaggedEncodable, CborTaggedDecodable<JSON> {
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with JSON.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<JSON> = defineCodec({
+    tags: [TAG_JSON],
+    decodeUntagged: (cborValue) => {
+      const data = expectBytes(cborValue);
+      return JSON.fromData(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_JSON.value]);
+    return [...JSON.codec.tags];
   }
 
   /**
@@ -173,63 +172,22 @@ export class JSON implements CborTaggedEncodable, CborTaggedDecodable<JSON> {
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): JSON {
+    return JSON.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
-
-  /**
-   * Creates a JSON by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): JSON {
-    const data = expectBytes(cborValue);
-    return JSON.fromData(data);
-  }
-
-  /**
-   * Creates a JSON by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): JSON {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): JSON {
-    const instance = JSON.fromString("");
-    return instance.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): JSON {
-    const cborValue = decodeCbor(data);
-    return JSON.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): JSON {
-    const cborValue = decodeCbor(data);
-    const instance = JSON.fromString("");
-    return instance.fromUntaggedCbor(cborValue);
-  }
 }

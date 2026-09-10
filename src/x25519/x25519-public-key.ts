@@ -27,31 +27,15 @@
  */
 
 import { X25519_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY } from "@blockchaincommons/tags";
 import { Digest } from "../digest.js";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
-export class X25519PublicKey
-  implements CborTaggedEncodable, CborTaggedDecodable<X25519PublicKey>, UREncodable
-{
+export class X25519PublicKey implements ToCbor, ToUR {
   static readonly KEY_SIZE: number = X25519_PUBLIC_KEY_SIZE;
 
   private readonly _data: Uint8Array;
@@ -158,19 +142,26 @@ export class X25519PublicKey
    *   computed from the **tagged-CBOR** form of the key.
    */
   toString(): string {
-    const digest = Digest.fromImage(this.taggedCborData());
+    const digest = Digest.fromImage(this.toCbor().toData());
     return `X25519PublicKey(${digest.shortDescription()})`;
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with X25519PublicKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<X25519PublicKey> = defineCodec({
+    tags: [TAG_X25519_PUBLIC_KEY],
+    decodeUntagged: (cbor) => {
+      const data = expectBytes(cbor);
+      return X25519PublicKey.fromDataRef(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_X25519_PUBLIC_KEY.value]);
+    return [...X25519PublicKey.codec.tags];
   }
 
   /**
@@ -180,107 +171,26 @@ export class X25519PublicKey
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): X25519PublicKey {
+    return X25519PublicKey.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an X25519PublicKey by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cbor: Cbor): X25519PublicKey {
-    const data = expectBytes(cbor);
-    return X25519PublicKey.fromDataRef(data);
-  }
-
-  /**
-   * Creates an X25519PublicKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): X25519PublicKey {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cbor: Cbor): X25519PublicKey {
-    const dummy = new X25519PublicKey(new Uint8Array(X25519_PUBLIC_KEY_SIZE));
-    return dummy.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): X25519PublicKey {
-    const cbor = decodeCbor(data);
-    return X25519PublicKey.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): X25519PublicKey {
-    const cbor = decodeCbor(data);
-    const dummy = new X25519PublicKey(new Uint8Array(X25519_PUBLIC_KEY_SIZE));
-    return dummy.fromUntaggedCbor(cbor);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the X25519PublicKey.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    const name = TAG_X25519_PUBLIC_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("X25519_PUBLIC_KEY tag name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an X25519PublicKey from a UR.
-   */
-  static fromUR(ur: UR): X25519PublicKey {
-    const name = TAG_X25519_PUBLIC_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("X25519_PUBLIC_KEY tag name is undefined");
-    }
-    ur.expectType(name);
-    const dummy = new X25519PublicKey(new Uint8Array(X25519_PUBLIC_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates an X25519PublicKey from a UR string.
-   */
-  static fromURString(urString: string): X25519PublicKey {
-    const ur = UR.parse(urString);
-    return X25519PublicKey.fromUR(ur);
-  }
 }

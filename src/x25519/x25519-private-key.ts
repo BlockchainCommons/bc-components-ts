@@ -28,32 +28,16 @@
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
 import { x25519, X25519_PRIVATE_KEY_SIZE } from "@blockchaincommons/crypto";
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { X25519_PRIVATE_KEY as TAG_X25519_PRIVATE_KEY } from "@blockchaincommons/tags";
 import { ComponentsError } from "../error.js";
 import { X25519PublicKey } from "./x25519-public-key.js";
 import { SymmetricKey } from "../symmetric/symmetric-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
-export class X25519PrivateKey
-  implements CborTaggedEncodable, CborTaggedDecodable<X25519PrivateKey>, UREncodable
-{
+export class X25519PrivateKey implements ToCbor, ToUR {
   static readonly KEY_SIZE: number = X25519_PRIVATE_KEY_SIZE;
 
   private readonly _data: Uint8Array;
@@ -248,14 +232,21 @@ export class X25519PrivateKey
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with X25519PrivateKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<X25519PrivateKey> = defineCodec({
+    tags: [TAG_X25519_PRIVATE_KEY],
+    decodeUntagged: (cbor) => {
+      const data = expectBytes(cbor);
+      return X25519PrivateKey.fromDataRef(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_X25519_PRIVATE_KEY.value]);
+    return [...X25519PrivateKey.codec.tags];
   }
 
   /**
@@ -265,107 +256,26 @@ export class X25519PrivateKey
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): X25519PrivateKey {
+    return X25519PrivateKey.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an X25519PrivateKey by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cbor: Cbor): X25519PrivateKey {
-    const data = expectBytes(cbor);
-    return X25519PrivateKey.fromDataRef(data);
-  }
-
-  /**
-   * Creates an X25519PrivateKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): X25519PrivateKey {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cbor: Cbor): X25519PrivateKey {
-    const dummy = new X25519PrivateKey(new Uint8Array(X25519_PRIVATE_KEY_SIZE));
-    return dummy.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): X25519PrivateKey {
-    const cbor = decodeCbor(data);
-    return X25519PrivateKey.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): X25519PrivateKey {
-    const cbor = decodeCbor(data);
-    const dummy = new X25519PrivateKey(new Uint8Array(X25519_PRIVATE_KEY_SIZE));
-    return dummy.fromUntaggedCbor(cbor);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the X25519PrivateKey.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    const name = TAG_X25519_PRIVATE_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("X25519_PRIVATE_KEY tag name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an X25519PrivateKey from a UR.
-   */
-  static fromUR(ur: UR): X25519PrivateKey {
-    const name = TAG_X25519_PRIVATE_KEY.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("X25519_PRIVATE_KEY tag name is undefined");
-    }
-    ur.expectType(name);
-    const dummy = new X25519PrivateKey(new Uint8Array(X25519_PRIVATE_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates an X25519PrivateKey from a UR string.
-   */
-  static fromURString(urString: string): X25519PrivateKey {
-    const ur = UR.parse(urString);
-    return X25519PrivateKey.fromUR(ur);
-  }
 }

@@ -47,20 +47,18 @@ import {
   type Tag,
   type CborInput,
   cbor,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
   expectArray,
   expectInteger,
   expectBytes,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
-import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { COMPRESSED as TAG_COMPRESSED } from "@blockchaincommons/tags";
 import { Digest } from "./digest.js";
 import type { DigestProvider } from "./digest-provider.js";
 import { ComponentsError } from "./error.js";
 import { bytesToHex } from "./utils.js";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 
 /**
  * A compressed binary object with integrity verification.
@@ -68,9 +66,7 @@ import { bytesToHex } from "./utils.js";
  * Uses DEFLATE compression with CRC32 checksums for integrity verification.
  * Optionally includes a cryptographic digest for content identification.
  */
-export class Compressed
-  implements CborTaggedEncodable, CborTaggedDecodable<Compressed>, DigestProvider
-{
+export class Compressed implements ToCbor, DigestProvider {
   /** CRC32 checksum of the decompressed data for integrity verification */
   private readonly _checksum: number;
   /** Size of the original decompressed data in bytes */
@@ -293,14 +289,34 @@ export class Compressed
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with Compressed.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<Compressed> = defineCodec({
+    tags: [TAG_COMPRESSED],
+    decodeUntagged: (cborValue) => {
+      const elements = expectArray(cborValue);
+      if (elements.length < 3 || elements.length > 4) {
+        throw ComponentsError.invalidData("invalid number of elements in compressed");
+      }
+
+      const checksum = expectInteger(elements[0]);
+      const decompressedSize = expectInteger(elements[1]);
+      const compressedData = expectBytes(elements[2]);
+
+      let digest: Digest | undefined;
+      if (elements.length === 4) {
+        digest = Digest.fromCbor(elements[3]);
+      }
+
+      return Compressed.new(Number(checksum), Number(decompressedSize), compressedData, digest);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_COMPRESSED.value]);
+    return [...Compressed.codec.tags];
   }
 
   /**
@@ -323,81 +339,27 @@ export class Compressed
       cbor(this._compressedData),
     ];
     if (this._digest !== undefined) {
-      elements.push(this._digest.taggedCbor());
+      elements.push(this._digest.toCbor());
     }
     return cbor(elements);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): Compressed {
+    return Compressed.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
-
-  /**
-   * Creates a Compressed by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): Compressed {
-    const elements = expectArray(cborValue);
-    if (elements.length < 3 || elements.length > 4) {
-      throw ComponentsError.invalidData("invalid number of elements in compressed");
-    }
-
-    const checksum = expectInteger(elements[0]);
-    const decompressedSize = expectInteger(elements[1]);
-    const compressedData = expectBytes(elements[2]);
-
-    let digest: Digest | undefined;
-    if (elements.length === 4) {
-      digest = Digest.fromTaggedCbor(elements[3]);
-    }
-
-    return Compressed.new(Number(checksum), Number(decompressedSize), compressedData, digest);
-  }
-
-  /**
-   * Creates a Compressed by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): Compressed {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): Compressed {
-    const instance = Compressed.fromDecompressedData(new Uint8Array(0));
-    return instance.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): Compressed {
-    const cborValue = decodeCbor(data);
-    return Compressed.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): Compressed {
-    const cborValue = decodeCbor(data);
-    const instance = Compressed.fromDecompressedData(new Uint8Array(0));
-    return instance.fromUntaggedCbor(cborValue);
-  }
 }

@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from "vitest";
 import { Compressed, Digest } from "../src/index.js";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("Compressed", () => {
   describe("basic compression", () => {
@@ -96,8 +97,8 @@ describe("Compressed", () => {
       );
       const compressed = Compressed.fromDecompressedData(source);
 
-      const cborData = compressed.taggedCborData();
-      const recovered = Compressed.fromTaggedCborData(cborData);
+      const cborData = compressed.toCbor().toData();
+      const recovered = Compressed.fromCbor(decodeCbor(cborData));
 
       expect(recovered.equals(compressed)).toBe(true);
       expect(recovered.decompress()).toEqual(source);
@@ -110,7 +111,7 @@ describe("Compressed", () => {
       const compressed = Compressed.fromDecompressedData(source);
 
       const cborData = compressed.untaggedCbor().toData();
-      const recovered = Compressed.fromUntaggedCborData(cborData);
+      const recovered = Compressed.fromCbor(decodeCbor(cborData));
 
       expect(recovered.equals(compressed)).toBe(true);
       expect(recovered.decompress()).toEqual(source);
@@ -121,8 +122,8 @@ describe("Compressed", () => {
       const digest = Digest.fromImage(source);
       const compressed = Compressed.fromDecompressedData(source, digest);
 
-      const cborData = compressed.taggedCborData();
-      const recovered = Compressed.fromTaggedCborData(cborData);
+      const cborData = compressed.toCbor().toData();
+      const recovered = Compressed.fromCbor(decodeCbor(cborData));
 
       expect(recovered.hasDigest()).toBe(true);
       expect(recovered.digestOpt()?.equals(digest)).toBe(true);
@@ -185,14 +186,14 @@ describe("Compressed - miniz_oxide interop (RUST_DIVERGENCES D3)", () => {
 
   it("decompresses a stream produced by miniz_oxide", () => {
     const bytes = Uint8Array.from(RUST_TAGGED_HEX.match(/../g)!.map((b) => parseInt(b, 16)));
-    const c = Compressed.fromTaggedCborData(bytes);
+    const c = Compressed.fromCbor(decodeCbor(bytes));
     expect(new TextDecoder().decode(c.decompress())).toBe(TEXT);
     expect(c.decompressedSize()).toBe(TEXT.length);
   });
 
   it("produces a different but equivalent stream with pako", () => {
     const ours = Compressed.fromDecompressedData(new TextEncoder().encode(TEXT));
-    const hex = Array.from(ours.taggedCborData(), (b) => b.toString(16).padStart(2, "0")).join("");
+    const hex = Array.from(ours.toCbor().toData(), (b) => b.toString(16).padStart(2, "0")).join("");
     expect(hex).not.toBe(RUST_TAGGED_HEX);
     expect(ours.decompress()).toEqual(new TextEncoder().encode(TEXT));
   });

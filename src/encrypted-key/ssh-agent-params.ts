@@ -147,7 +147,7 @@ export class SSHAgentParams implements KeyDerivation {
    * Format: [4, Salt, id: tstr]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
    */
   toCbor(): Cbor {
-    return cbor([cbor(SSHAgentParams.INDEX), this._salt.taggedCbor(), cbor(this._id)]);
+    return cbor([cbor(SSHAgentParams.INDEX), this._salt.toCbor(), cbor(this._id)]);
   }
 
   /**
@@ -176,7 +176,7 @@ export class SSHAgentParams implements KeyDerivation {
       );
     }
 
-    const salt = Salt.fromTaggedCbor(array[1]);
+    const salt = Salt.fromCbor(array[1]);
     const id = expectText(array[2]);
 
     return new SSHAgentParams(salt, id);

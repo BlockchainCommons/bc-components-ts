@@ -47,23 +47,19 @@ import {
   CborMap,
   CborDate,
   expectMap,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
+  type ToCbor,
 } from "@blockchaincommons/dcbor";
 import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
   taggedCborOf,
   forgetTaggedCbor,
   mapGetText,
   mapGetBytes,
-  type UREncodable,
+  type ComponentCodec,
+  defineCodec,
 } from "./codable.js";
 import { SEED as TAG_SEED, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_SEED_V1 = LEGACY_TAGS.SEED_V1;
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { PrivateKeyDataProvider } from "./private-key-data-provider.js";
@@ -74,9 +70,7 @@ export interface SeedMetadata {
   createdAt?: Date;
 }
 
-export class Seed
-  implements CborTaggedEncodable, CborTaggedDecodable<Seed>, UREncodable, PrivateKeyDataProvider
-{
+export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   /**
    * Minimum seed length in bytes (matches Rust MIN_SEED_LENGTH).
    */
@@ -400,15 +394,45 @@ export class Seed
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with Seed.
-   * Includes TAG_SEED (40300) and TAG_SEED_V1 (300) for backward compatibility.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<Seed> = defineCodec({
+    tags: [TAG_SEED, TAG_SEED_V1],
+    decodeUntagged: (cborValue) => {
+      const map = expectMap(cborValue);
+
+      // Key 1: seed data (required)
+      // CborMap.extract() returns native types (Uint8Array for byte strings)
+      const data = mapGetBytes(map, 1);
+      if (data === undefined || data.length === 0) {
+        throw ComponentsError.invalidData("Seed data is empty");
+      }
+
+      // Key 2: creation date (optional)
+      // For tagged values (like dates), the extract returns the tagged Cbor object
+      let creationDate: Date | undefined;
+      const dateValue = map.get(2);
+      if (dateValue !== undefined) {
+        // The date is stored as a tagged CBOR value (tag 1)
+        const cborDate = CborDate.fromTaggedCbor(dateValue);
+        creationDate = cborDate.toDate();
+      }
+
+      // Key 3: name (optional)
+      const name = mapGetText(map, 3);
+
+      // Key 4: note (optional)
+      const note = mapGetText(map, 4);
+
+      return Seed.newOpt(new Uint8Array(data), name, note, creationDate);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_SEED.value, TAG_SEED_V1.value]);
+    return [...Seed.codec.tags];
   }
 
   /**
@@ -424,7 +448,7 @@ export class Seed
     map.set(1, cbor(this._data));
     if (this._creationDate !== undefined) {
       const cborDate = CborDate.fromDate(this._creationDate);
-      map.set(2, cborDate.taggedCbor());
+      map.set(2, cborDate.toCbor());
     }
     if (this._name.length > 0) {
       map.set(3, this._name);
@@ -435,123 +459,26 @@ export class Seed
     return cbor(map);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): Seed {
+    return Seed.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a Seed by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): Seed {
-    const map = expectMap(cborValue);
-
-    // Key 1: seed data (required)
-    // CborMap.extract() returns native types (Uint8Array for byte strings)
-    const data = mapGetBytes(map, 1);
-    if (data === undefined || data.length === 0) {
-      throw ComponentsError.invalidData("Seed data is empty");
-    }
-
-    // Key 2: creation date (optional)
-    // For tagged values (like dates), the extract returns the tagged Cbor object
-    let creationDate: Date | undefined;
-    const dateValue = map.get(2);
-    if (dateValue !== undefined) {
-      // The date is stored as a tagged CBOR value (tag 1)
-      const cborDate = CborDate.fromTaggedCbor(dateValue);
-      creationDate = cborDate.toDate();
-    }
-
-    // Key 3: name (optional)
-    const name = mapGetText(map, 3);
-
-    // Key 4: note (optional)
-    const note = mapGetText(map, 4);
-
-    return Seed.newOpt(new Uint8Array(data), name, note, creationDate);
-  }
-
-  /**
-   * Creates a Seed by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): Seed {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): Seed {
-    const instance = Seed.new();
-    return instance.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): Seed {
-    const cborValue = decodeCbor(data);
-    return Seed.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): Seed {
-    const cborValue = decodeCbor(data);
-    const instance = Seed.new();
-    return instance.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the Seed.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    return UR.from("seed", this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a Seed from a UR.
-   */
-  static fromUR(ur: UR): Seed {
-    ur.expectType("seed");
-    const instance = Seed.new();
-    return instance.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a Seed from a UR string.
-   */
-  static fromURString(urString: string): Seed {
-    const ur = UR.parse(urString);
-    return Seed.fromUR(ur);
-  }
 }

@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from "vitest";
 import { Seed } from "../src/seed.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("Seed", () => {
   // Test seed data (16 bytes minimum)
@@ -173,14 +175,14 @@ describe("Seed", () => {
 
     it("should serialize to tagged CBOR", () => {
       const seed = Seed.random(16);
-      const tagged = seed.taggedCbor();
+      const tagged = seed.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const seed = Seed.random(16);
-      const data = seed.taggedCborData();
+      const data = seed.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -188,8 +190,8 @@ describe("Seed", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const seed = Seed.random(16);
-      const data = seed.taggedCborData();
-      const restored = Seed.fromTaggedCborData(data);
+      const data = seed.toCbor().toData();
+      const restored = Seed.fromCbor(decodeCbor(data));
 
       expect(restored.equals(seed)).toBe(true);
     });
@@ -197,7 +199,7 @@ describe("Seed", () => {
     it("should roundtrip through untagged CBOR", () => {
       const seed = Seed.random(16);
       const data = seed.untaggedCbor().toData();
-      const restored = Seed.fromUntaggedCborData(data);
+      const restored = Seed.fromCbor(decodeCbor(data));
 
       expect(restored.equals(seed)).toBe(true);
     });
@@ -209,8 +211,8 @@ describe("Seed", () => {
         note: "A test note",
         createdAt: date,
       });
-      const data = seed.taggedCborData();
-      const restored = Seed.fromTaggedCborData(data);
+      const data = seed.toCbor().toData();
+      const restored = Seed.fromCbor(decodeCbor(data));
 
       expect(restored.equals(seed)).toBe(true);
       expect(restored.name()).toBe("Test Seed");
@@ -224,8 +226,8 @@ describe("Seed", () => {
         // note omitted
         // createdAt omitted
       });
-      const data = seed.taggedCborData();
-      const restored = Seed.fromTaggedCborData(data);
+      const data = seed.toCbor().toData();
+      const restored = Seed.fromCbor(decodeCbor(data));
 
       expect(restored.equals(seed)).toBe(true);
       expect(restored.name()).toBe("Test Seed");
@@ -238,22 +240,22 @@ describe("Seed", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const seed = Seed.random(16);
-      const ur = seed.ur();
+      const ur = seed.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
       const seed = Seed.random(16);
-      const urString = seed.urString();
+      const urString = seed.toUR().toString();
 
       expect(urString.startsWith("ur:seed/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
       const seed = Seed.random(16);
-      const urString = seed.urString();
-      const restored = Seed.fromURString(urString);
+      const urString = seed.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), Seed.codec);
 
       expect(restored.equals(seed)).toBe(true);
     });
@@ -265,8 +267,8 @@ describe("Seed", () => {
         note: "A test note",
         createdAt: date,
       });
-      const urString = seed.urString();
-      const restored = Seed.fromURString(urString);
+      const urString = seed.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), Seed.codec);
 
       expect(restored.equals(seed)).toBe(true);
       expect(restored.name()).toBe("Test Seed");
@@ -277,7 +279,7 @@ describe("Seed", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_seed/invalid";
 
-      expect(() => Seed.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), Seed.codec)).toThrow();
     });
   });
 

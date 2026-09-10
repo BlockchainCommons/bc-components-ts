@@ -4,10 +4,16 @@
 
 ### Changed
 
+- **One codable mechanism.** Every value type has `static codec` (a dcbor `CborCodec` over the tagged form whose `decode` also accepts the untagged form), `toCbor()`, `toUR()` and `static fromCbor(cbor)`. The thirteen-method ladder (`taggedCbor`, `taggedCborData`, instance and static `fromTaggedCbor`, `fromTaggedCborData`, `fromUntaggedCborData`, `ur`, `urString`, `fromUR`, `fromURString`, `fromUrString`, `UR_TYPE`) is gone: bytes and UR strings compose with dcbor's `decodeCbor`/`decodeWith` and uniform-resources' `decodeURWith`. Tag names come from the tag constants, so URs no longer need the global tag registry.
+- **`ComponentsError`** replaces `CryptoError`/`ErrorKind`: `code` (string union), `details` discriminated by code, `cause`; four unused kinds dropped; every bare `Error` thrown by the package now carries a code.
 - Ported to the canonical `@blockchaincommons/dcbor` (the `dcbor-compat` shim is gone) and to the redesigned `crypto`, `rand`, `sskr`, `tags` and `uniform-resources` siblings. Every wire byte is unchanged; the port is verified against a frozen pre-port baseline (`tests/differential.test.ts`) and against `bc-components-rust` 0.31.1 (`tests/rust-validation`, see `RUST_DIVERGENCES.md`).
 - `hexToBytes` is dcbor's: whitespace inside a hex string is tolerated, and malformed hex throws `CborError`.
 - Tagged CBOR of a value object is memoised; repeated `taggedCborData()`, references and XIDs over the same object no longer re-encode.
 - A `Seed` map value of the wrong CBOR type is now rejected with `InvalidData` (was an incidental `DataTooShort`).
+
+### Fixed
+
+- `createKeypair` for the ML-DSA schemes threw (it asked the private key for a public key it cannot derive); it now generates both keys together.
 
 ### Added
 

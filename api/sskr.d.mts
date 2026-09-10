@@ -1,24 +1,25 @@
 import { Cbor } from '@blockchaincommons/dcbor';
-import { CborTagged } from '@blockchaincommons/dcbor';
+import { CborCodec } from '@blockchaincommons/dcbor';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
 import { GroupSpec as SSKRGroupSpec } from '@blockchaincommons/sskr';
 import { Secret as SSKRSecret } from '@blockchaincommons/sskr';
 import { Spec as SSKRSpec } from '@blockchaincommons/sskr';
 import { Tag } from '@blockchaincommons/dcbor';
+import { ToCbor } from '@blockchaincommons/dcbor';
+import { UR } from '@blockchaincommons/uniform-resources';
 
-/** Decodes from tagged or untagged CBOR. */
-declare interface CborTaggedDecodable<T> extends CborTagged {
-    fromUntaggedCbor(cbor: Cbor): T;
-    fromTaggedCbor(cbor: Cbor): T;
-    fromTaggedCborData?(data: Uint8Array): T;
-    fromUntaggedCborData?(data: Uint8Array): T;
-}
-
-/** Encodes to tagged CBOR; the first tag is the one written. */
-declare interface CborTaggedEncodable extends CborTagged {
-    untaggedCbor(): Cbor;
-    taggedCbor(): Cbor;
-    taggedCborData?(): Uint8Array;
+/** A codec over a tagged type; `decode` also accepts the untagged form. */
+declare interface ComponentCodec<T> extends CborCodec<T> {
+    /** The tags this type is written and read with; the first is written. */
+    readonly tags: readonly Tag[];
+    /** Decode tagged (any of `tags`) or untagged CBOR. */
+    decode: (cbor: Cbor) => T;
+    /** Encode to the tagged form. */
+    encode: (value: T) => Cbor;
+    /** Decode the content inside the tag. */
+    decodeUntagged: (cbor: Cbor) => T;
+    /** Encode the content inside the tag. */
+    encodeUntagged: (value: T) => Cbor;
 }
 
 export declare interface SimpleRng {
@@ -52,7 +53,7 @@ export declare const SSKRShare: {
     fromUntaggedCborData: (data: Uint8Array) => SSKRShareCbor;
 };
 
-export declare class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<SSKRShareCbor> {
+export declare class SSKRShareCbor implements ToCbor {
     private readonly _data;
     private constructor();
     static fromData(data: Uint8Array): SSKRShareCbor;
@@ -70,15 +71,16 @@ export declare class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDec
     shareValue(): Uint8Array;
     equals(other: SSKRShareCbor): boolean;
     toString(): string;
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static readonly codec: ComponentCodec<SSKRShareCbor>;
     cborTags(): Tag[];
     untaggedCbor(): Cbor;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
-    fromUntaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    static fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    static fromTaggedCborData(data: Uint8Array): SSKRShareCbor;
-    static fromUntaggedCborData(data: Uint8Array): SSKRShareCbor;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): SSKRShareCbor;
 }
 
 export { SSKRSpec }

@@ -52,28 +52,14 @@
  */
 
 import { secureRng, randomBytes } from "@blockchaincommons/rand";
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "../codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { ARID as TAG_ARID } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
-export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, UREncodable {
+export class ARID implements ToCbor, ToUR {
   static readonly ARID_SIZE = 32;
 
   private readonly _data: Uint8Array;
@@ -222,14 +208,21 @@ export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, URE
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with ARID.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<ARID> = defineCodec({
+    tags: [TAG_ARID],
+    decodeUntagged: (cbor) => {
+      const data = expectBytes(cbor);
+      return ARID.fromDataRef(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_ARID.value]);
+    return [...ARID.codec.tags];
   }
 
   /**
@@ -239,106 +232,26 @@ export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, URE
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): ARID {
+    return ARID.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates an ARID by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cbor: Cbor): ARID {
-    const data = expectBytes(cbor);
-    return ARID.fromDataRef(data);
-  }
-
-  /**
-   * Creates an ARID by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): ARID {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cbor: Cbor): ARID {
-    const instance = new ARID(new Uint8Array(ARID.ARID_SIZE));
-    return instance.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): ARID {
-    const cbor = decodeCbor(data);
-    return ARID.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): ARID {
-    const cbor = decodeCbor(data);
-    const bytes = expectBytes(cbor);
-    return ARID.fromDataRef(bytes);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation of the ARID.
-   * Note: URs use untagged CBOR since the type is conveyed by the UR type itself.
-   */
-  ur(): UR {
-    return UR.from("arid", this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates an ARID from a UR.
-   */
-  static fromUR(ur: UR): ARID {
-    ur.expectType("arid");
-    const instance = new ARID(new Uint8Array(ARID.ARID_SIZE));
-    return instance.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates an ARID from a UR string.
-   */
-  static fromURString(urString: string): ARID {
-    const ur = UR.parse(urString);
-    return ARID.fromUR(ur);
-  }
-
-  /**
-   * Alias for fromURString for Rust API compatibility.
-   */
-  static fromUrString(urString: string): ARID {
-    return ARID.fromURString(urString);
-  }
 }

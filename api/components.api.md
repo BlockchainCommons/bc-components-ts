@@ -6,7 +6,7 @@
 
 import { bytesToHex } from '@blockchaincommons/dcbor';
 import { Cbor } from '@blockchaincommons/dcbor';
-import { CborTagged } from '@blockchaincommons/dcbor';
+import { CborCodec } from '@blockchaincommons/dcbor';
 import { COMPRESSED } from '@blockchaincommons/tags';
 import { ENCRYPTED } from '@blockchaincommons/tags';
 import { ENVELOPE } from '@blockchaincommons/tags';
@@ -18,6 +18,8 @@ import { GroupSpec as SSKRGroupSpec } from '@blockchaincommons/sskr';
 import { Secret as SSKRSecret } from '@blockchaincommons/sskr';
 import { Spec as SSKRSpec } from '@blockchaincommons/sskr';
 import { Tag } from '@blockchaincommons/dcbor';
+import { ToCbor } from '@blockchaincommons/dcbor';
+import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
 
 // @public
@@ -40,44 +42,34 @@ export class Argon2idParams implements KeyDerivation {
 // @public
 export function argon2idParams(params?: Argon2idParams): KeyDerivationParams;
 
-// Warning: (ae-forgotten-export) The symbol "CborTaggedEncodable" needs to be exported by the entry point index.d.ts
-// Warning: (ae-forgotten-export) The symbol "CborTaggedDecodable" needs to be exported by the entry point index.d.ts
-// Warning: (ae-forgotten-export) The symbol "UREncodable" needs to be exported by the entry point index.d.ts
-//
 // @public (undocumented)
-export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, UREncodable {
+export class ARID implements ToCbor, ToUR {
     // (undocumented)
     static readonly ARID_SIZE = 32;
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    // Warning: (ae-forgotten-export) The symbol "ComponentCodec" needs to be exported by the entry point index.d.ts
+    static readonly codec: ComponentCodec<ARID>;
     compare(other: ARID): number;
     data(): Uint8Array;
     equals(other: ARID): boolean;
     static from(data: Uint8Array): ARID;
+    static fromCbor(cbor: Cbor): ARID;
     static fromData(data: Uint8Array): ARID;
     static fromDataRef(data: Uint8Array): ARID;
     static fromHex(hex: string): ARID;
-    fromTaggedCbor(cbor: Cbor): ARID;
-    static fromTaggedCbor(cbor: Cbor): ARID;
-    static fromTaggedCborData(data: Uint8Array): ARID;
-    fromUntaggedCbor(cbor: Cbor): ARID;
-    static fromUntaggedCborData(data: Uint8Array): ARID;
-    static fromUR(ur: UR): ARID;
-    static fromURString(urString: string): ARID;
-    static fromUrString(urString: string): ARID;
     hex(): string;
     static new(): ARID;
     static random(): ARID;
     shortDescription(): string;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
@@ -106,12 +98,67 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean;
 
 export { bytesToHex }
 
+// @public
+export const COMPONENTS_ERROR_CODES: readonly ComponentsErrorCode[];
+
+// @public
+export class ComponentsError extends Error {
+    // (undocumented)
+    static cbor(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    readonly code: ComponentsErrorCode;
+    // (undocumented)
+    static compression(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static crypto(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static dataTooShort(dataType: string, minimum: number, actual: number): ComponentsError;
+    // (undocumented)
+    readonly details: ComponentsErrorDetails;
+    // (undocumented)
+    static general(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static invalidData(reason: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static invalidDataForType(dataType: string, reason: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static invalidFormat(reason: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static invalidSize(expected: number, actual: number): ComponentsError;
+    // (undocumented)
+    static invalidSizeForType(dataType: string, expected: number, actual: number): ComponentsError;
+    is(code: ComponentsErrorCode): boolean;
+    static isComponentsError(value: unknown): value is ComponentsError;
+    // (undocumented)
+    static levelMismatch(): ComponentsError;
+    // (undocumented)
+    override readonly name = "ComponentsError";
+    // (undocumented)
+    static postQuantum(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static ssh(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static sshAgent(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static sskr(message: string, cause?: unknown): ComponentsError;
+    // (undocumented)
+    static uri(message: string, cause?: unknown): ComponentsError;
+}
+
+// @public
+export type ComponentsErrorCode = "InvalidSize" | "InvalidData" | "DataTooShort" | "Crypto" | "Cbor" | "Sskr" | "Ssh" | "Uri" | "Compression" | "PostQuantum" | "LevelMismatch" | "SshAgent" | "General";
+
+// @public
+export type ComponentsErrorDetails = InvalidSizeDetails | InvalidDataDetails | DataTooShortDetails | MessageDetails;
+
 export { COMPRESSED }
 
 // @public
-export class Compressed implements CborTaggedEncodable, CborTaggedDecodable<Compressed>, DigestProvider {
+export class Compressed implements ToCbor, DigestProvider {
+    // (undocumented)
     cborTags(): Tag[];
     checksum(): number;
+    static readonly codec: ComponentCodec<Compressed>;
     compressedSize(): number;
     compressionRatio(): number;
     decompress(): Uint8Array;
@@ -119,17 +166,13 @@ export class Compressed implements CborTaggedEncodable, CborTaggedDecodable<Comp
     digest(): Digest;
     digestOpt(): Digest | undefined;
     equals(other: Compressed): boolean;
+    static fromCbor(cborValue: Cbor): Compressed;
     static fromDecompressedData(decompressedData: Uint8Array, digest?: Digest): Compressed;
-    fromTaggedCbor(cborValue: Cbor): Compressed;
-    static fromTaggedCbor(cborValue: Cbor): Compressed;
-    static fromTaggedCborData(data: Uint8Array): Compressed;
-    fromUntaggedCbor(cborValue: Cbor): Compressed;
-    static fromUntaggedCborData(data: Uint8Array): Compressed;
     hasDigest(): boolean;
     static new(checksum: number, decompressedSize: number, compressedData: Uint8Array, digest?: Digest): Compressed;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
 }
 
@@ -146,67 +189,11 @@ export function createKeypair(scheme: SignatureScheme, comment?: string): [Signi
 export function createKeypairUsing(scheme: SignatureScheme, rng: RandomNumberGenerator, comment?: string): [SigningPrivateKey, SigningPublicKey];
 
 // @public
-export class CryptoError extends Error {
-    static cbor(message: string): CryptoError;
-    static compression(message: string): CryptoError;
-    static crypto(message: string): CryptoError;
-    static cryptoOperation(message: string): CryptoError;
-    static dataTooShort(dataType: string, minimum: number, actual: number): CryptoError;
-    static env(message: string): CryptoError;
-    readonly errorData: ErrorData;
-    readonly errorKind: ErrorKind;
-    static general(message: string): CryptoError;
-    static hex(message: string): CryptoError;
-    static invalidData(message: string): CryptoError;
-    static invalidDataForType(dataType: string, reason: string): CryptoError;
-    static invalidFormat(message: string): CryptoError;
-    static invalidInput(message: string): CryptoError;
-    static invalidSize(expected: number, actual: number): CryptoError;
-    static invalidSizeForType(dataType: string, expected: number, actual: number): CryptoError;
-    isCbor(): boolean;
-    isCompression(): boolean;
-    isCrypto(): boolean;
-    isDataTooShort(): this is CryptoError & {
-        errorData: DataTooShortData & {
-            kind: ErrorKind.DataTooShort;
-        };
-    };
-    isEnv(): boolean;
-    isGeneral(): boolean;
-    isHex(): boolean;
-    isInvalidData(): this is CryptoError & {
-        errorData: InvalidDataData & {
-            kind: ErrorKind.InvalidData;
-        };
-    };
-    isInvalidSize(): this is CryptoError & {
-        errorData: InvalidSizeData & {
-            kind: ErrorKind.InvalidSize;
-        };
-    };
-    isKind(kind: ErrorKind): boolean;
-    isLevelMismatch(): boolean;
-    isPostQuantum(): boolean;
-    isSsh(): boolean;
-    isSshAgent(): boolean;
-    isSshAgentClient(): boolean;
-    isSskr(): boolean;
-    isUri(): boolean;
-    isUtf8(): boolean;
-    static levelMismatch(): CryptoError;
-    static postQuantum(message: string): CryptoError;
-    static ssh(message: string): CryptoError;
-    static sshAgent(message: string): CryptoError;
-    static sshAgentClient(message: string): CryptoError;
-    static sskr(message: string): CryptoError;
-    static uri(message: string): CryptoError;
-    static utf8(message: string): CryptoError;
-}
-
-// @public
-export interface DataTooShortData {
+export interface DataTooShortDetails {
     // (undocumented)
     actual: number;
+    // (undocumented)
+    code: "DataTooShort";
     // (undocumented)
     dataType: string;
     // (undocumented)
@@ -244,41 +231,35 @@ export function defaultKeyDerivationParams(): KeyDerivationParams;
 export function defaultSignatureScheme(): SignatureScheme;
 
 // @public (undocumented)
-export class Digest implements DigestProvider, CborTaggedEncodable, CborTaggedDecodable<Digest>, UREncodable {
+export class Digest implements DigestProvider, ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<Digest>;
     compare(other: Digest): number;
     data(): Uint8Array;
     digest(): Digest;
     // (undocumented)
     static readonly DIGEST_SIZE: number;
     equals(other: Digest): boolean;
+    static fromCbor(cbor: Cbor): Digest;
     static fromData(data: Uint8Array): Digest;
     static fromDataRef(data: Uint8Array): Digest;
     static fromDigests(digests: Digest[]): Digest;
     static fromHex(hex: string): Digest;
     static fromImage(image: Uint8Array): Digest;
     static fromImageParts(imageParts: Uint8Array[]): Digest;
-    fromTaggedCbor(cbor: Cbor): Digest;
-    static fromTaggedCbor(cbor: Cbor): Digest;
-    static fromTaggedCborData(data: Uint8Array): Digest;
-    fromUntaggedCbor(cbor: Cbor): Digest;
-    static fromUntaggedCborData(data: Uint8Array): Digest;
-    static fromUR(ur: UR): Digest;
-    static fromURString(urString: string): Digest;
     // @deprecated
     static hash(data: Uint8Array): Digest;
     hex(): string;
     shortDescription(): string;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     validate(image: Uint8Array): boolean;
     static validateOpt(image: Uint8Array, digest: Digest | undefined): boolean;
 }
@@ -303,23 +284,19 @@ export interface ECKeyBase {
 }
 
 // @public (undocumented)
-export class ECPrivateKey implements ECKey, CborTaggedEncodable, CborTaggedDecodable<ECPrivateKey>, UREncodable {
+export class ECPrivateKey implements ECKey, ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<ECPrivateKey>;
     data(): Uint8Array;
     static deriveFromKeyMaterial(keyMaterial: Uint8Array): ECPrivateKey;
     ecdsaSign(message: Uint8Array): Uint8Array;
     equals(other: ECPrivateKey): boolean;
     static from(data: Uint8Array): ECPrivateKey;
+    static fromCbor(cborValue: Cbor): ECPrivateKey;
     static fromData(data: Uint8Array): ECPrivateKey;
     static fromDataRef(data: Uint8Array): ECPrivateKey;
     static fromHex(hex: string): ECPrivateKey;
-    fromTaggedCbor(cborValue: Cbor): ECPrivateKey;
-    static fromTaggedCbor(cborValue: Cbor): ECPrivateKey;
-    static fromTaggedCborData(data: Uint8Array): ECPrivateKey;
-    fromUntaggedCbor(cborValue: Cbor): ECPrivateKey;
-    static fromUntaggedCborData(data: Uint8Array): ECPrivateKey;
-    static fromUR(ur: UR): ECPrivateKey;
-    static fromURString(urString: string): ECPrivateKey;
     hex(): string;
     // (undocumented)
     static readonly KEY_SIZE: number;
@@ -332,47 +309,39 @@ export class ECPrivateKey implements ECKey, CborTaggedEncodable, CborTaggedDecod
     schnorrPublicKey(): SchnorrPublicKey;
     schnorrSign(message: Uint8Array): Uint8Array;
     schnorrSignUsing(message: Uint8Array, rng: RandomNumberGenerator): Uint8Array;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
-export class ECPublicKey implements ECPublicKeyBase, CborTaggedEncodable, CborTaggedDecodable<ECPublicKey>, UREncodable {
+export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<ECPublicKey>;
     data(): Uint8Array;
     equals(other: ECPublicKey): boolean;
     static from(data: Uint8Array): ECPublicKey;
+    static fromCbor(cborValue: Cbor): ECPublicKey;
     static fromData(data: Uint8Array): ECPublicKey;
     static fromDataRef(data: Uint8Array): ECPublicKey;
     static fromHex(hex: string): ECPublicKey;
-    fromTaggedCbor(cborValue: Cbor): ECPublicKey;
-    static fromTaggedCbor(cborValue: Cbor): ECPublicKey;
-    static fromTaggedCborData(data: Uint8Array): ECPublicKey;
-    fromUntaggedCbor(cborValue: Cbor): ECPublicKey;
-    static fromUntaggedCborData(data: Uint8Array): ECPublicKey;
-    static fromUR(ur: UR): ECPublicKey;
-    static fromURString(urString: string): ECPublicKey;
     hex(): string;
     // (undocumented)
     static readonly KEY_SIZE: number;
     publicKey(): ECPublicKey;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     uncompressedPublicKey(): ECUncompressedPublicKey;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     verify(signature: Uint8Array, message: Uint8Array): boolean;
 }
 
@@ -382,34 +351,28 @@ export interface ECPublicKeyBase extends ECKey {
 }
 
 // @public (undocumented)
-export class ECUncompressedPublicKey implements ECKeyBase, CborTaggedEncodable, CborTaggedDecodable<ECUncompressedPublicKey>, UREncodable {
+export class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<ECUncompressedPublicKey>;
     compressedData(): Uint8Array;
     data(): Uint8Array;
     equals(other: ECUncompressedPublicKey): boolean;
     static from(data: Uint8Array): ECUncompressedPublicKey;
+    static fromCbor(cborValue: Cbor): ECUncompressedPublicKey;
     static fromData(data: Uint8Array): ECUncompressedPublicKey;
     static fromDataRef(data: Uint8Array): ECUncompressedPublicKey;
     static fromHex(hex: string): ECUncompressedPublicKey;
-    fromTaggedCbor(cborValue: Cbor): ECUncompressedPublicKey;
-    static fromTaggedCbor(cborValue: Cbor): ECUncompressedPublicKey;
-    static fromTaggedCborData(data: Uint8Array): ECUncompressedPublicKey;
-    fromUntaggedCbor(cborValue: Cbor): ECUncompressedPublicKey;
-    static fromUntaggedCborData(data: Uint8Array): ECUncompressedPublicKey;
-    static fromUR(ur: UR): ECUncompressedPublicKey;
-    static fromURString(urString: string): ECUncompressedPublicKey;
     hex(): string;
     // (undocumented)
     static readonly KEY_SIZE: number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
@@ -447,48 +410,40 @@ export class Ed25519PublicKey {
 }
 
 // @public
-export class EncapsulationCiphertext implements CborTaggedEncodable, CborTaggedDecodable<EncapsulationCiphertext> {
+export class EncapsulationCiphertext implements ToCbor {
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<EncapsulationCiphertext>;
     data(): Uint8Array;
     encapsulationScheme(): EncapsulationScheme;
     equals(other: EncapsulationCiphertext): boolean;
+    static fromCbor(cborValue: Cbor): EncapsulationCiphertext;
     static fromMlkem(ciphertext: MLKEMCiphertext): EncapsulationCiphertext;
     static fromMlkemData(level: MLKEMLevel, data: Uint8Array): EncapsulationCiphertext;
-    fromTaggedCbor(cborValue: Cbor): EncapsulationCiphertext;
-    static fromTaggedCbor(cborValue: Cbor): EncapsulationCiphertext;
-    static fromTaggedCborData(data: Uint8Array): EncapsulationCiphertext;
-    fromUntaggedCbor(cborValue: Cbor): EncapsulationCiphertext;
-    static fromUntaggedCborData(data: Uint8Array): EncapsulationCiphertext;
     static fromX25519Data(data: Uint8Array): EncapsulationCiphertext;
     static fromX25519PublicKey(publicKey: X25519PublicKey): EncapsulationCiphertext;
     isMlkem(): boolean;
     isX25519(): boolean;
     mlkemCiphertext(): MLKEMCiphertext;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toMlkem(): MLKEMCiphertext | null;
     toString(): string;
+    toUR(): UR;
     toX25519(): X25519PublicKey | null;
     untaggedCbor(): Cbor;
     x25519PublicKey(): X25519PublicKey;
 }
 
 // @public
-export class EncapsulationPrivateKey implements ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<EncapsulationPrivateKey>, UREncodable {
+export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR {
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<EncapsulationPrivateKey>;
     data(): Uint8Array;
     decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey;
     encapsulationScheme(): EncapsulationScheme;
     equals(other: EncapsulationPrivateKey): boolean;
+    static fromCbor(cborValue: Cbor): EncapsulationPrivateKey;
     static fromMlkem(privateKey: MLKEMPrivateKey): EncapsulationPrivateKey;
     static fromMlkemData(level: MLKEMLevel, data: Uint8Array): EncapsulationPrivateKey;
-    fromTaggedCbor(cborValue: Cbor): EncapsulationPrivateKey;
-    static fromTaggedCbor(cborValue: Cbor): EncapsulationPrivateKey;
-    static fromTaggedCborData(data: Uint8Array): EncapsulationPrivateKey;
-    fromUntaggedCbor(cborValue: Cbor): EncapsulationPrivateKey;
-    static fromUntaggedCborData(data: Uint8Array): EncapsulationPrivateKey;
-    static fromUR(ur: UR): EncapsulationPrivateKey;
-    static fromURString(urString: string): EncapsulationPrivateKey;
     static fromX25519Data(data: Uint8Array): EncapsulationPrivateKey;
     static fromX25519PrivateKey(privateKey: X25519PrivateKey): EncapsulationPrivateKey;
     isMlkem(): boolean;
@@ -505,48 +460,39 @@ export class EncapsulationPrivateKey implements ReferenceProvider, CborTaggedEnc
     publicKey(): EncapsulationPublicKey;
     static random(): EncapsulationPrivateKey;
     reference(): Reference;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toMlkem(): MLKEMPrivateKey | null;
     toString(): string;
+    toUR(): UR;
     toX25519(): X25519PrivateKey | null;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     x25519PrivateKey(): X25519PrivateKey;
 }
 
 // @public
-export class EncapsulationPublicKey implements ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<EncapsulationPublicKey>, UREncodable {
+export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<EncapsulationPublicKey>;
     data(): Uint8Array;
     encapsulateNewSharedSecret(): [SymmetricKey, EncapsulationCiphertext];
     encapsulationPublicKey(): EncapsulationPublicKey;
     encapsulationScheme(): EncapsulationScheme;
     equals(other: EncapsulationPublicKey): boolean;
+    static fromCbor(cborValue: Cbor): EncapsulationPublicKey;
     static fromMlkem(publicKey: MLKEMPublicKey): EncapsulationPublicKey;
     static fromMlkemData(level: MLKEMLevel, data: Uint8Array): EncapsulationPublicKey;
-    fromTaggedCbor(cborValue: Cbor): EncapsulationPublicKey;
-    static fromTaggedCbor(cborValue: Cbor): EncapsulationPublicKey;
-    static fromTaggedCborData(data: Uint8Array): EncapsulationPublicKey;
-    fromUntaggedCbor(cborValue: Cbor): EncapsulationPublicKey;
-    static fromUntaggedCborData(data: Uint8Array): EncapsulationPublicKey;
-    static fromUR(ur: UR): EncapsulationPublicKey;
-    static fromURString(urString: string): EncapsulationPublicKey;
     static fromX25519Data(data: Uint8Array): EncapsulationPublicKey;
     static fromX25519PublicKey(publicKey: X25519PublicKey): EncapsulationPublicKey;
     isMlkem(): boolean;
     isX25519(): boolean;
     mlkemPublicKey(): MLKEMPublicKey;
     reference(): Reference;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toMlkem(): MLKEMPublicKey | null;
     toString(): string;
+    toUR(): UR;
     toX25519(): X25519PublicKey | null;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     x25519PublicKey(): X25519PublicKey;
 }
 
@@ -561,58 +507,46 @@ export enum EncapsulationScheme {
 export { ENCRYPTED }
 
 // @public
-export class EncryptedKey implements CborTaggedEncodable, CborTaggedDecodable<EncryptedKey>, UREncodable {
+export class EncryptedKey implements ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<EncryptedKey>;
     encryptedMessage(): EncryptedMessage;
     equals(other: EncryptedKey): boolean;
-    fromTaggedCbor(cborValue: Cbor): EncryptedKey;
-    static fromTaggedCbor(cborValue: Cbor): EncryptedKey;
-    static fromTaggedCborData(data: Uint8Array): EncryptedKey;
-    fromUntaggedCbor(cborValue: Cbor): EncryptedKey;
-    static fromUntaggedCborData(data: Uint8Array): EncryptedKey;
-    static fromUR(ur: UR): EncryptedKey;
-    static fromURString(urString: string): EncryptedKey;
+    static fromCbor(cborValue: Cbor): EncryptedKey;
     isPasswordBased(): boolean;
     isSshAgent(): boolean;
     static lock(method: KeyDerivationMethod, secret: Uint8Array, contentKey: SymmetricKey): EncryptedKey;
     static lockOpt(params: KeyDerivationParams, secret: Uint8Array, contentKey: SymmetricKey): EncryptedKey;
     method(): KeyDerivationMethod;
     params(): KeyDerivationParams;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     unlock(secret: Uint8Array): SymmetricKey;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
-export class EncryptedMessage implements CborTaggedEncodable, CborTaggedDecodable<EncryptedMessage>, UREncodable {
+export class EncryptedMessage implements ToCbor, ToUR {
     aad(): Uint8Array;
     aadCbor(): Cbor | null;
     aadDigest(): Digest | null;
     authenticationTag(): AuthenticationTag;
+    // (undocumented)
     cborTags(): Tag[];
     ciphertext(): Uint8Array;
+    static readonly codec: ComponentCodec<EncryptedMessage>;
     equals(other: EncryptedMessage): boolean;
     static from(nonce: Nonce, ciphertext: Uint8Array, tag: AuthenticationTag, aad?: Uint8Array): EncryptedMessage;
-    fromTaggedCbor(cborValue: Cbor): EncryptedMessage;
-    static fromTaggedCbor(cborValue: Cbor): EncryptedMessage;
-    static fromTaggedCborData(data: Uint8Array): EncryptedMessage;
-    fromUntaggedCbor(cborValue: Cbor): EncryptedMessage;
-    static fromUntaggedCborData(data: Uint8Array): EncryptedMessage;
-    static fromUR(ur: UR): EncryptedMessage;
-    static fromURString(urString: string): EncryptedMessage;
+    static fromCbor(cborValue: Cbor): EncryptedMessage;
     hasDigest(): boolean;
     static new(ciphertext: Uint8Array, aad: Uint8Array, nonce: Nonce, auth: Uint8Array | AuthenticationTag): EncryptedMessage;
     nonce(): Nonce;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public
@@ -622,77 +556,6 @@ export interface Encrypter {
 }
 
 export { ENVELOPE }
-
-// @public
-export type ErrorData = ({
-    kind: ErrorKind.InvalidSize;
-} & InvalidSizeData) | ({
-    kind: ErrorKind.InvalidData;
-} & InvalidDataData) | ({
-    kind: ErrorKind.DataTooShort;
-} & DataTooShortData) | {
-    kind: ErrorKind.Crypto;
-    message: string;
-} | {
-    kind: ErrorKind.Cbor;
-    message: string;
-} | {
-    kind: ErrorKind.Sskr;
-    message: string;
-} | {
-    kind: ErrorKind.Ssh;
-    message: string;
-} | {
-    kind: ErrorKind.Uri;
-    message: string;
-} | {
-    kind: ErrorKind.Compression;
-    message: string;
-} | {
-    kind: ErrorKind.PostQuantum;
-    message: string;
-} | {
-    kind: ErrorKind.LevelMismatch;
-} | {
-    kind: ErrorKind.SshAgent;
-    message: string;
-} | {
-    kind: ErrorKind.Hex;
-    message: string;
-} | {
-    kind: ErrorKind.Utf8;
-    message: string;
-} | {
-    kind: ErrorKind.Env;
-    message: string;
-} | {
-    kind: ErrorKind.SshAgentClient;
-    message: string;
-} | {
-    kind: ErrorKind.General;
-    message: string;
-};
-
-// @public
-export enum ErrorKind {
-    Cbor = "Cbor",
-    Compression = "Compression",
-    Crypto = "Crypto",
-    DataTooShort = "DataTooShort",
-    Env = "Env",
-    General = "General",
-    Hex = "Hex",
-    InvalidData = "InvalidData",
-    InvalidSize = "InvalidSize",
-    LevelMismatch = "LevelMismatch",
-    PostQuantum = "PostQuantum",
-    Ssh = "Ssh",
-    SshAgent = "SshAgent",
-    SshAgentClient = "SshAgentClient",
-    Sskr = "Sskr",
-    Uri = "Uri",
-    Utf8 = "Utf8"
-}
 
 // @public
 export function fromBase64(base64: string): Uint8Array;
@@ -752,7 +615,9 @@ export class HKDFRng implements RandomNumberGenerator {
 }
 
 // @public
-export interface InvalidDataData {
+export interface InvalidDataDetails {
+    // (undocumented)
+    code: "InvalidData";
     // (undocumented)
     dataType: string;
     // (undocumented)
@@ -760,20 +625,15 @@ export interface InvalidDataData {
 }
 
 // @public
-export interface InvalidSizeData {
+export interface InvalidSizeDetails {
     // (undocumented)
     actual: number;
     // (undocumented)
+    code: "InvalidSize";
     dataType: string;
     // (undocumented)
     expected: number;
 }
-
-// @public
-export function isCryptoError(result: unknown): result is CryptoError;
-
-// @public
-export function isCryptoErrorKind(result: unknown, kind: ErrorKind): result is CryptoError;
 
 // @public
 export function isDecrypter(obj: unknown): obj is Decrypter;
@@ -789,9 +649,6 @@ export function isECPublicKeyBase(obj: unknown): obj is ECPublicKeyBase;
 
 // @public
 export function isEncrypter(obj: unknown): obj is Encrypter;
-
-// @public
-export function isError(result: unknown): result is Error;
 
 // @public
 export function isMldsaScheme(scheme: SignatureScheme): boolean;
@@ -815,26 +672,24 @@ export function isSshScheme(scheme: SignatureScheme): boolean;
 export function isXIDProvider(obj: unknown): obj is XIDProvider;
 
 // @public
-class JSON_2 implements CborTaggedEncodable, CborTaggedDecodable<JSON_2> {
+class JSON_2 implements ToCbor {
     asBytes(): Uint8Array;
     asStr(): string;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<JSON_2>;
     equals(other: JSON_2): boolean;
+    static fromCbor(cborValue: Cbor): JSON_2;
     static fromData(data: Uint8Array): JSON_2;
     static fromHex(hex: string): JSON_2;
     static fromString(s: string): JSON_2;
-    fromTaggedCbor(cborValue: Cbor): JSON_2;
-    static fromTaggedCbor(cborValue: Cbor): JSON_2;
-    static fromTaggedCborData(data: Uint8Array): JSON_2;
-    fromUntaggedCbor(cborValue: Cbor): JSON_2;
-    static fromUntaggedCborData(data: Uint8Array): JSON_2;
     hex(): string;
     isEmpty(): boolean;
     len(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
 }
 export { JSON_2 as JSON }
@@ -923,6 +778,14 @@ export { LEAF }
 export function lockWithParams(kdp: KeyDerivationParams, contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
 
 // @public
+export interface MessageDetails {
+    // (undocumented)
+    code: Exclude<ComponentsErrorCode, "InvalidSize" | "InvalidData" | "DataTooShort">;
+    // (undocumented)
+    message: string;
+}
+
+// @public
 export const MLDSA_KEY_SIZES: Readonly<Record<MLDSALevel, {
     privateKey: number;
     publicKey: number;
@@ -957,19 +820,15 @@ export function mldsaLevelFromValue(value: number): MLDSALevel;
 export function mldsaLevelToString(level: MLDSALevel): string;
 
 // @public
-export class MLDSAPrivateKey implements CborTaggedEncodable, CborTaggedDecodable<MLDSAPrivateKey>, UREncodable {
+export class MLDSAPrivateKey implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<MLDSAPrivateKey>;
     data(): Uint8Array;
     equals(other: MLDSAPrivateKey): boolean;
     static fromBytes(level: MLDSALevel, data: Uint8Array): MLDSAPrivateKey;
-    fromTaggedCbor(cborValue: Cbor): MLDSAPrivateKey;
-    static fromTaggedCbor(cborValue: Cbor): MLDSAPrivateKey;
-    static fromTaggedCborData(data: Uint8Array): MLDSAPrivateKey;
-    fromUntaggedCbor(cborValue: Cbor): MLDSAPrivateKey;
-    static fromUntaggedCborData(data: Uint8Array): MLDSAPrivateKey;
-    static fromUR(ur: UR): MLDSAPrivateKey;
-    static fromURString(urString: string): MLDSAPrivateKey;
+    static fromCbor(cborValue: Cbor): MLDSAPrivateKey;
     static keypair(level?: MLDSALevel): [MLDSAPrivateKey, MLDSAPublicKey];
     static keypairUsing(level: MLDSALevel, rng: RandomNumberGenerator): [MLDSAPrivateKey, MLDSAPublicKey];
     level(): MLDSALevel;
@@ -978,39 +837,31 @@ export class MLDSAPrivateKey implements CborTaggedEncodable, CborTaggedDecodable
     publicKey(): MLDSAPublicKey;
     sign(message: Uint8Array): MLDSASignature;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public
 export function mldsaPrivateKeySize(level: MLDSALevel): number;
 
 // @public
-export class MLDSAPublicKey implements CborTaggedEncodable, CborTaggedDecodable<MLDSAPublicKey>, UREncodable {
+export class MLDSAPublicKey implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<MLDSAPublicKey>;
     data(): Uint8Array;
     equals(other: MLDSAPublicKey): boolean;
     static fromBytes(level: MLDSALevel, data: Uint8Array): MLDSAPublicKey;
-    fromTaggedCbor(cborValue: Cbor): MLDSAPublicKey;
-    static fromTaggedCbor(cborValue: Cbor): MLDSAPublicKey;
-    static fromTaggedCborData(data: Uint8Array): MLDSAPublicKey;
-    fromUntaggedCbor(cborValue: Cbor): MLDSAPublicKey;
-    static fromUntaggedCborData(data: Uint8Array): MLDSAPublicKey;
-    static fromUR(ur: UR): MLDSAPublicKey;
-    static fromURString(urString: string): MLDSAPublicKey;
+    static fromCbor(cborValue: Cbor): MLDSAPublicKey;
     level(): MLDSALevel;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     verify(signature: MLDSASignature, message: Uint8Array): boolean;
 }
 
@@ -1021,27 +872,21 @@ export function mldsaPublicKeySize(level: MLDSALevel): number;
 export function mldsaSign(level: MLDSALevel, secretKey: Uint8Array, message: Uint8Array): Uint8Array;
 
 // @public
-export class MLDSASignature implements CborTaggedEncodable, CborTaggedDecodable<MLDSASignature>, UREncodable {
+export class MLDSASignature implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<MLDSASignature>;
     data(): Uint8Array;
     equals(other: MLDSASignature): boolean;
     static fromBytes(level: MLDSALevel, data: Uint8Array): MLDSASignature;
-    fromTaggedCbor(cborValue: Cbor): MLDSASignature;
-    static fromTaggedCbor(cborValue: Cbor): MLDSASignature;
-    static fromTaggedCborData(data: Uint8Array): MLDSASignature;
-    fromUntaggedCbor(cborValue: Cbor): MLDSASignature;
-    static fromUntaggedCborData(data: Uint8Array): MLDSASignature;
-    static fromUR(ur: UR): MLDSASignature;
-    static fromURString(urString: string): MLDSASignature;
+    static fromCbor(cborValue: Cbor): MLDSASignature;
     level(): MLDSALevel;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public
@@ -1059,27 +904,21 @@ export const MLKEM_KEY_SIZES: Readonly<Record<MLKEMLevel, {
 }>>;
 
 // @public
-export class MLKEMCiphertext implements CborTaggedEncodable, CborTaggedDecodable<MLKEMCiphertext>, UREncodable {
+export class MLKEMCiphertext implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<MLKEMCiphertext>;
     data(): Uint8Array;
     equals(other: MLKEMCiphertext): boolean;
     static fromBytes(level: MLKEMLevel, data: Uint8Array): MLKEMCiphertext;
-    fromTaggedCbor(cborValue: Cbor): MLKEMCiphertext;
-    static fromTaggedCbor(cborValue: Cbor): MLKEMCiphertext;
-    static fromTaggedCborData(data: Uint8Array): MLKEMCiphertext;
-    fromUntaggedCbor(cborValue: Cbor): MLKEMCiphertext;
-    static fromUntaggedCborData(data: Uint8Array): MLKEMCiphertext;
-    static fromUR(ur: UR): MLKEMCiphertext;
-    static fromURString(urString: string): MLKEMCiphertext;
+    static fromCbor(cborValue: Cbor): MLKEMCiphertext;
     level(): MLKEMLevel;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public
@@ -1133,20 +972,16 @@ export function mlkemLevelFromValue(value: number): MLKEMLevel;
 export function mlkemLevelToString(level: MLKEMLevel): string;
 
 // @public
-export class MLKEMPrivateKey implements CborTaggedEncodable, CborTaggedDecodable<MLKEMPrivateKey>, UREncodable {
+export class MLKEMPrivateKey implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<MLKEMPrivateKey>;
     data(): Uint8Array;
     decapsulate(ciphertext: MLKEMCiphertext): SymmetricKey;
     equals(other: MLKEMPrivateKey): boolean;
     static fromBytes(level: MLKEMLevel, data: Uint8Array): MLKEMPrivateKey;
-    fromTaggedCbor(cborValue: Cbor): MLKEMPrivateKey;
-    static fromTaggedCbor(cborValue: Cbor): MLKEMPrivateKey;
-    static fromTaggedCborData(data: Uint8Array): MLKEMPrivateKey;
-    fromUntaggedCbor(cborValue: Cbor): MLKEMPrivateKey;
-    static fromUntaggedCborData(data: Uint8Array): MLKEMPrivateKey;
-    static fromUR(ur: UR): MLKEMPrivateKey;
-    static fromURString(urString: string): MLKEMPrivateKey;
+    static fromCbor(cborValue: Cbor): MLKEMPrivateKey;
     static keypair(level?: MLKEMLevel): [MLKEMPrivateKey, MLKEMPublicKey];
     static keypairUsing(level: MLKEMLevel, rng: RandomNumberGenerator): [MLKEMPrivateKey, MLKEMPublicKey];
     level(): MLKEMLevel;
@@ -1154,40 +989,32 @@ export class MLKEMPrivateKey implements CborTaggedEncodable, CborTaggedDecodable
     static newUsing(level: MLKEMLevel, rng: RandomNumberGenerator): MLKEMPrivateKey;
     publicKey(): MLKEMPublicKey;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public
 export function mlkemPrivateKeySize(level: MLKEMLevel): number;
 
 // @public
-export class MLKEMPublicKey implements CborTaggedEncodable, CborTaggedDecodable<MLKEMPublicKey>, UREncodable {
+export class MLKEMPublicKey implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<MLKEMPublicKey>;
     data(): Uint8Array;
     encapsulate(): MLKEMEncapsulationPair;
     equals(other: MLKEMPublicKey): boolean;
     static fromBytes(level: MLKEMLevel, data: Uint8Array): MLKEMPublicKey;
-    fromTaggedCbor(cborValue: Cbor): MLKEMPublicKey;
-    static fromTaggedCbor(cborValue: Cbor): MLKEMPublicKey;
-    static fromTaggedCborData(data: Uint8Array): MLKEMPublicKey;
-    fromUntaggedCbor(cborValue: Cbor): MLKEMPublicKey;
-    static fromUntaggedCborData(data: Uint8Array): MLKEMPublicKey;
-    static fromUR(ur: UR): MLKEMPublicKey;
-    static fromURString(urString: string): MLKEMPublicKey;
+    static fromCbor(cborValue: Cbor): MLKEMPublicKey;
     level(): MLKEMLevel;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public
@@ -1197,37 +1024,31 @@ export function mlkemPublicKeySize(level: MLKEMLevel): number;
 export function mlkemSharedSecretSize(level: MLKEMLevel): number;
 
 // @public (undocumented)
-export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, UREncodable {
+export class Nonce implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<Nonce>;
     data(): Uint8Array;
     equals(other: Nonce): boolean;
     static from(data: Uint8Array): Nonce;
+    static fromCbor(cbor: Cbor): Nonce;
     static fromData(data: Uint8Array): Nonce;
     static fromDataRef(data: Uint8Array): Nonce;
     static fromHex(hex: string): Nonce;
-    fromTaggedCbor(cbor: Cbor): Nonce;
-    static fromTaggedCbor(cbor: Cbor): Nonce;
-    static fromTaggedCborData(data: Uint8Array): Nonce;
-    fromUntaggedCbor(cbor: Cbor): Nonce;
-    static fromUntaggedCborData(data: Uint8Array): Nonce;
-    static fromUR(ur: UR): Nonce;
-    static fromURString(urString: string): Nonce;
     hex(): string;
     static new(): Nonce;
     // (undocumented)
     static readonly NONCE_SIZE: number;
     static random(): Nonce;
     static randomUsing(rng: RandomNumberGenerator): Nonce;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
@@ -1256,9 +1077,11 @@ export class PBKDF2Params implements KeyDerivation {
 export function pbkdf2Params(params?: PBKDF2Params): KeyDerivationParams;
 
 // @public
-export class PrivateKeyBase implements CborTaggedEncodable, CborTaggedDecodable<PrivateKeyBase>, UREncodable, Decrypter {
+export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<PrivateKeyBase>;
     data(): Uint8Array;
     decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey;
     ecdsaPrivateKeys(): PrivateKeys;
@@ -1269,14 +1092,8 @@ export class PrivateKeyBase implements CborTaggedEncodable, CborTaggedDecodable<
     ed25519SigningPrivateKey(): SigningPrivateKey;
     encapsulationPrivateKey(): EncapsulationPrivateKey;
     equals(other: PrivateKeyBase): boolean;
+    static fromCbor(cborValue: Cbor): PrivateKeyBase;
     static fromData(data: Uint8Array): PrivateKeyBase;
-    fromTaggedCbor(cborValue: Cbor): PrivateKeyBase;
-    static fromTaggedCbor(cborValue: Cbor): PrivateKeyBase;
-    static fromTaggedCborData(data: Uint8Array): PrivateKeyBase;
-    fromUntaggedCbor(cborValue: Cbor): PrivateKeyBase;
-    static fromUntaggedCborData(data: Uint8Array): PrivateKeyBase;
-    static fromUR(ur: UR): PrivateKeyBase;
-    static fromURString(urString: string): PrivateKeyBase;
     static new(): PrivateKeyBase;
     static newUsing(rng: RandomNumberGenerator): PrivateKeyBase;
     schnorrPrivateKeys(): PrivateKeys;
@@ -1285,12 +1102,10 @@ export class PrivateKeyBase implements CborTaggedEncodable, CborTaggedDecodable<
     sshPrivateKeys(algorithm: SshAlgorithm, comment?: string): PrivateKeys;
     sshPublicKeys(algorithm: SshAlgorithm, comment?: string): PublicKeys;
     sshSigningPrivateKey(algorithm: SshAlgorithm, comment?: string): SigningPrivateKey;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     x25519PrivateKey(): X25519PrivateKey;
 }
 
@@ -1300,18 +1115,14 @@ export interface PrivateKeyDataProvider {
 }
 
 // @public
-export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<PrivateKeys>, UREncodable {
+export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<PrivateKeys>;
     decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey;
     encapsulationPrivateKey(): EncapsulationPrivateKey;
     equals(other: PrivateKeys): boolean;
-    fromTaggedCbor(cborValue: Cbor): PrivateKeys;
-    static fromTaggedCbor(cborValue: Cbor): PrivateKeys;
-    static fromTaggedCborData(data: Uint8Array): PrivateKeys;
-    fromUntaggedCbor(cborValue: Cbor): PrivateKeys;
-    static fromUntaggedCborData(data: Uint8Array): PrivateKeys;
-    static fromUR(ur: UR): PrivateKeys;
-    static fromURString(urString: string): PrivateKeys;
+    static fromCbor(cborValue: Cbor): PrivateKeys;
     static generate(): PrivateKeys;
     static new(): PrivateKeys;
     publicKeys(): PublicKeys;
@@ -1319,12 +1130,10 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, CborTa
     sign(message: Uint8Array): Signature;
     signingPrivateKey(): SigningPrivateKey;
     signWithOptions(message: Uint8Array, options?: SigningOptions): Signature;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     static withKeys(signingPrivateKey: SigningPrivateKey, encapsulationPrivateKey: EncapsulationPrivateKey): PrivateKeys;
 }
 
@@ -1334,27 +1143,21 @@ export interface PrivateKeysProvider {
 }
 
 // @public
-export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<PublicKeys>, UREncodable {
+export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<PublicKeys>;
     encapsulateNewSharedSecret(): [SymmetricKey, EncapsulationCiphertext];
     encapsulationPublicKey(): EncapsulationPublicKey;
     equals(other: PublicKeys): boolean;
-    fromTaggedCbor(cborValue: Cbor): PublicKeys;
-    static fromTaggedCbor(cborValue: Cbor): PublicKeys;
-    static fromTaggedCborData(data: Uint8Array): PublicKeys;
-    fromUntaggedCbor(cborValue: Cbor): PublicKeys;
-    static fromUntaggedCborData(data: Uint8Array): PublicKeys;
-    static fromUR(ur: UR): PublicKeys;
-    static fromURString(urString: string): PublicKeys;
+    static fromCbor(cborValue: Cbor): PublicKeys;
     static new(signingPublicKey: SigningPublicKey, encapsulationPublicKey: EncapsulationPublicKey): PublicKeys;
     reference(): Reference;
     signingPublicKey(): SigningPublicKey;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     verify(signature: Signature, message: Uint8Array): boolean;
 }
 
@@ -1364,35 +1167,22 @@ export interface PublicKeysProvider {
 }
 
 // @public
-export class Reference implements CborTaggedEncodable, CborTaggedDecodable<Reference>, DigestProvider, ReferenceProvider {
+export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
     asBytes(): Uint8Array;
     bytemojiIdentifier(prefix?: string): string;
     bytewordsIdentifier(prefix?: string): string;
     // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<Reference>;
     data(): Uint8Array;
     digest(): Digest;
-    // (undocumented)
     equals(other: Reference): boolean;
     static from(digest: Digest): Reference;
+    static fromCbor(cbor: Cbor): Reference;
     static fromData(data: Uint8Array): Reference;
     static fromDataRef(data: Uint8Array): Reference;
     static fromDigest(digest: Digest): Reference;
     static fromHex(hex: string): Reference;
-    // (undocumented)
-    fromTaggedCbor(cbor: Cbor): Reference;
-    // (undocumented)
-    static fromTaggedCbor(cbor: Cbor): Reference;
-    // (undocumented)
-    static fromTaggedCborData(data: Uint8Array): Reference;
-    // (undocumented)
-    fromUntaggedCbor(cbor: Cbor): Reference;
-    // (undocumented)
-    static fromUntaggedCborData(data: Uint8Array): Reference;
-    // (undocumented)
-    static fromUR(ur: UR): Reference;
-    // (undocumented)
-    static fromURString(s: string): Reference;
     fullReference(): string;
     getDigest(): Digest;
     // @deprecated
@@ -1403,19 +1193,12 @@ export class Reference implements CborTaggedEncodable, CborTaggedDecodable<Refer
     refHex(): string;
     refHexShort(): string;
     shortReference(format?: ReferenceEncodingFormat): string;
-    // (undocumented)
-    taggedCbor(): Cbor;
-    // (undocumented)
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    // (undocumented)
-    static readonly UR_TYPE = "reference";
-    // (undocumented)
-    urString(): string;
 }
 
 // @public
@@ -1426,24 +1209,17 @@ export interface ReferenceProvider {
     reference(): Reference;
 }
 
-// @public
-export type Result<T> = T | Error;
-
 // @public (undocumented)
-export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, UREncodable {
+export class Salt implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<Salt>;
     equals(other: Salt): boolean;
     static from(data: Uint8Array): Salt;
+    static fromCbor(cbor: Cbor): Salt;
     static fromData(data: Uint8Array): Salt;
     static fromHex(hex: string): Salt;
-    fromTaggedCbor(cbor: Cbor): Salt;
-    static fromTaggedCbor(cbor: Cbor): Salt;
-    static fromTaggedCborData(data: Uint8Array): Salt;
-    fromUntaggedCbor(cbor: Cbor): Salt;
-    static fromUntaggedCborData(data: Uint8Array): Salt;
-    static fromUR(ur: UR): Salt;
-    static fromURString(urString: string): Salt;
     hex(): string;
     isEmpty(): boolean;
     len(): number;
@@ -1457,15 +1233,13 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
     static random(size?: number): Salt;
     static randomUsing(rng: RandomNumberGenerator, size?: number): Salt;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public
@@ -1513,49 +1287,39 @@ export class ScryptParams implements KeyDerivation {
 export function scryptParams(params?: ScryptParams): KeyDerivationParams;
 
 // @public
-export class SealedMessage implements CborTaggedEncodable, CborTaggedDecodable<SealedMessage>, UREncodable {
+export class SealedMessage implements ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<SealedMessage>;
     decrypt(privateKey: EncapsulationPrivateKey): Uint8Array;
     encapsulatedKey(): EncapsulationCiphertext;
     encapsulationScheme(): EncapsulationScheme;
     equals(other: SealedMessage): boolean;
     static from(message: EncryptedMessage, encapsulatedKey: EncapsulationCiphertext): SealedMessage;
-    fromTaggedCbor(cborValue: Cbor): SealedMessage;
-    static fromTaggedCbor(cborValue: Cbor): SealedMessage;
-    static fromTaggedCborData(data: Uint8Array): SealedMessage;
-    fromUntaggedCbor(cborValue: Cbor): SealedMessage;
-    static fromUntaggedCborData(data: Uint8Array): SealedMessage;
-    static fromUR(ur: UR): SealedMessage;
-    static fromURString(urString: string): SealedMessage;
+    static fromCbor(cborValue: Cbor): SealedMessage;
     message(): EncryptedMessage;
     static new(plaintext: Uint8Array, recipient: EncapsulationPublicKey): SealedMessage;
     static newOpt(plaintext: Uint8Array, recipient: EncapsulationPublicKey, aad: Uint8Array, testNonce?: Nonce): SealedMessage;
     static newWithAad(plaintext: Uint8Array, recipient: EncapsulationPublicKey, aad: Uint8Array): SealedMessage;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
-export class Seed implements CborTaggedEncodable, CborTaggedDecodable<Seed>, UREncodable, PrivateKeyDataProvider {
+export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<Seed>;
     // @deprecated
     createdAt(): Date | undefined;
     creationDate(): Date | undefined;
     equals(other: Seed): boolean;
     static from(data: Uint8Array, metadata?: SeedMetadata): Seed;
+    static fromCbor(cborValue: Cbor): Seed;
     static fromHex(hex: string, metadata?: SeedMetadata): Seed;
-    fromTaggedCbor(cbor: Cbor): Seed;
-    static fromTaggedCbor(cborValue: Cbor): Seed;
-    static fromTaggedCborData(data: Uint8Array): Seed;
-    fromUntaggedCbor(cborValue: Cbor): Seed;
-    static fromUntaggedCborData(data: Uint8Array): Seed;
-    static fromUR(ur: UR): Seed;
-    static fromURString(urString: string): Seed;
     getMetadata(): SeedMetadata;
     static readonly MIN_SEED_LENGTH = 16;
     name(): string;
@@ -1573,15 +1337,13 @@ export class Seed implements CborTaggedEncodable, CborTaggedDecodable<Seed>, URE
     setName(name: string): void;
     setNote(note: string): void;
     size(): number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
@@ -1595,23 +1357,18 @@ export interface SeedMetadata {
 }
 
 // @public
-export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signature> {
+export class Signature implements ToCbor {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<Signature>;
     data(): Uint8Array;
     static ecdsaFromData(data: Uint8Array): Signature;
     static ecdsaFromHex(hex: string): Signature;
     static ed25519FromData(data: Uint8Array): Signature;
     static ed25519FromHex(hex: string): Signature;
     equals(other: Signature): boolean;
+    static fromCbor(cborValue: Cbor): Signature;
     static fromSsh(sig: SSHSignature): Signature;
-    fromTaggedCbor(cborValue: Cbor): Signature;
-    static fromTaggedCbor(cborValue: Cbor): Signature;
-    static fromTaggedCborData(data: Uint8Array): Signature;
-    fromUntaggedCbor(cborValue: Cbor): Signature;
-    static fromUntaggedCborData(data: Uint8Array): Signature;
-    static fromUR(ur: UR): Signature;
-    static fromURString(urString: string): Signature;
-    static fromUrString(urString: string): Signature;
     isEcdsa(): boolean;
     isEd25519(): boolean;
     isMldsa(): boolean;
@@ -1625,8 +1382,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
     signatureType(): string;
     static sr25519FromData(data: Uint8Array): Signature;
     static sr25519FromHex(hex: string): Signature;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toEcdsa(): Uint8Array | null;
     toEd25519(): Uint8Array | null;
     toHex(): string;
@@ -1635,10 +1391,8 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
     toSr25519(): Uint8Array | null;
     toSsh(): SSHSignature | null;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    static readonly UR_TYPE = "signature";
-    urString(): string;
 }
 
 // @public
@@ -1673,21 +1427,15 @@ export type SigningOptions = {
 };
 
 // @public
-export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<SigningPrivateKey> {
+export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, ToCbor {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<SigningPrivateKey>;
     ecdsaSign(message: Uint8Array): Signature;
     ed25519Sign(message: Uint8Array): Signature;
     equals(other: SigningPrivateKey): boolean;
+    static fromCbor(cborValue: Cbor): SigningPrivateKey;
     static fromSsh(key: SSHPrivateKey): SigningPrivateKey;
-    fromTaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    static fromTaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    static fromTaggedCborData(data: Uint8Array): SigningPrivateKey;
-    fromUntaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    static fromUntaggedCbor(cborValue: Cbor): SigningPrivateKey;
-    static fromUntaggedCborData(data: Uint8Array): SigningPrivateKey;
-    static fromUR(ur: UR): SigningPrivateKey;
-    static fromURString(urString: string): SigningPrivateKey;
-    static fromUrString(urString: string): SigningPrivateKey;
     isEcdsa(): boolean;
     isEd25519(): boolean;
     isMldsa(): boolean;
@@ -1712,8 +1460,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, C
     sign(message: Uint8Array): Signature;
     signWithOptions(message: Uint8Array, options?: SigningOptions): Signature;
     sr25519Sign(message: Uint8Array): Signature;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toEc(): ECPrivateKey | null;
     toEcdsa(): ECPrivateKey | null;
     toEd25519(): Ed25519PrivateKey | null;
@@ -1723,32 +1470,24 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, C
     toSsh(): SSHPrivateKey | null;
     toSshOpenssh(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    static readonly UR_TYPE = "signing-private-key";
-    urString(): string;
     verify(signature: Signature, message: Uint8Array): boolean;
 }
 
 // @public
-export class SigningPublicKey implements Verifier, ReferenceProvider, CborTaggedEncodable, CborTaggedDecodable<SigningPublicKey> {
+export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<SigningPublicKey>;
     equals(other: SigningPublicKey): boolean;
+    static fromCbor(cborValue: Cbor): SigningPublicKey;
     static fromEcdsa(key: ECPublicKey): SigningPublicKey;
     static fromEd25519(key: Ed25519PublicKey): SigningPublicKey;
     static fromMldsa(key: MLDSAPublicKey): SigningPublicKey;
     static fromSchnorr(key: SchnorrPublicKey): SigningPublicKey;
     static fromSr25519(key: Sr25519PublicKey): SigningPublicKey;
     static fromSsh(key: SSHPublicKey): SigningPublicKey;
-    fromTaggedCbor(cborValue: Cbor): SigningPublicKey;
-    static fromTaggedCbor(cborValue: Cbor): SigningPublicKey;
-    static fromTaggedCborData(data: Uint8Array): SigningPublicKey;
-    fromUntaggedCbor(cborValue: Cbor): SigningPublicKey;
-    static fromUntaggedCbor(cborValue: Cbor): SigningPublicKey;
-    static fromUntaggedCborData(data: Uint8Array): SigningPublicKey;
-    static fromUR(ur: UR): SigningPublicKey;
-    static fromURString(urString: string): SigningPublicKey;
-    static fromUrString(urString: string): SigningPublicKey;
     isEcdsa(): boolean;
     isEd25519(): boolean;
     isMldsa(): boolean;
@@ -1758,8 +1497,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, CborTagged
     keyType(): string;
     reference(): Reference;
     scheme(): SignatureScheme;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     toEcdsa(): ECPublicKey | null;
     toEd25519(): Ed25519PublicKey | null;
     toMldsa(): MLDSAPublicKey | null;
@@ -1768,10 +1506,8 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, CborTagged
     toSsh(): SSHPublicKey | null;
     toSshOpenssh(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    static readonly UR_TYPE = "signing-public-key";
-    urString(): string;
     verify(signature: Signature, message: Uint8Array): boolean;
     withSshComment(comment: string): SigningPublicKey;
 }
@@ -2057,29 +1793,21 @@ export const SSKRShare: {
 };
 
 // @public (undocumented)
-export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<SSKRShareCbor> {
+export class SSKRShareCbor implements ToCbor {
     // (undocumented)
     asBytes(): Uint8Array;
     // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<SSKRShareCbor>;
     // (undocumented)
     data(): Uint8Array;
     // (undocumented)
     equals(other: SSKRShareCbor): boolean;
+    static fromCbor(cborValue: Cbor): SSKRShareCbor;
     // (undocumented)
     static fromData(data: Uint8Array): SSKRShareCbor;
     // (undocumented)
     static fromHex(hex: string): SSKRShareCbor;
-    // (undocumented)
-    fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    // (undocumented)
-    static fromTaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    // (undocumented)
-    static fromTaggedCborData(data: Uint8Array): SSKRShareCbor;
-    // (undocumented)
-    fromUntaggedCbor(cborValue: Cbor): SSKRShareCbor;
-    // (undocumented)
-    static fromUntaggedCborData(data: Uint8Array): SSKRShareCbor;
     // (undocumented)
     groupCount(): number;
     // (undocumented)
@@ -2098,12 +1826,10 @@ export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<S
     memberThreshold(): number;
     // (undocumented)
     shareValue(): Uint8Array;
-    // (undocumented)
-    taggedCbor(): Cbor;
-    // (undocumented)
-    taggedCborData(): Uint8Array;
+    toCbor(): Cbor;
     // (undocumented)
     toString(): string;
+    toUR(): UR;
     // (undocumented)
     untaggedCbor(): Cbor;
 }
@@ -2111,59 +1837,47 @@ export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<S
 export { SSKRSpec }
 
 // @public (undocumented)
-export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<SymmetricKey> {
+export class SymmetricKey implements ToCbor {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<SymmetricKey>;
     data(): Uint8Array;
     decrypt(message: EncryptedMessage): Uint8Array;
     encrypt(plaintext: Uint8Array, aad?: Uint8Array, nonce?: Nonce): EncryptedMessage;
     equals(other: SymmetricKey): boolean;
     static from(data: Uint8Array): SymmetricKey;
+    static fromCbor(cbor: Cbor): SymmetricKey;
     static fromData(data: Uint8Array): SymmetricKey;
     static fromDataRef(data: Uint8Array): SymmetricKey;
     static fromHex(hex: string): SymmetricKey;
-    fromTaggedCbor(cbor: Cbor): SymmetricKey;
-    static fromTaggedCbor(cbor: Cbor): SymmetricKey;
-    static fromTaggedCborData(data: Uint8Array): SymmetricKey;
-    fromUntaggedCbor(cbor: Cbor): SymmetricKey;
-    static fromUntaggedCborData(data: Uint8Array): SymmetricKey;
-    static fromUR(ur: UR): SymmetricKey;
-    static fromURString(urString: string): SymmetricKey;
-    static fromUrString(urString: string): SymmetricKey;
     hex(): string;
     static new(): SymmetricKey;
     static random(): SymmetricKey;
     static randomUsing(rng: RandomNumberGenerator): SymmetricKey;
     // (undocumented)
     static readonly SYMMETRIC_KEY_SIZE: number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    static readonly UR_TYPE = "crypto-key";
-    urString(): string;
 }
 
 // @public
 export function toBase64(data: Uint8Array): string;
 
 // @public (undocumented)
-export class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREncodable {
+export class URI implements ToCbor, ToUR {
     asRef(): string;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<URI>;
     equals(other: URI): boolean;
     static from(uri: string): URI;
-    fromTaggedCbor(cborValue: Cbor): URI;
-    static fromTaggedCbor(cborValue: Cbor): URI;
-    static fromTaggedCborData(data: Uint8Array): URI;
-    fromUntaggedCbor(cborValue: Cbor): URI;
-    static fromUntaggedCborData(data: Uint8Array): URI;
-    static fromUR(ur: UR): URI;
-    static fromURString(urString: string): URI;
+    static fromCbor(cborValue: Cbor): URI;
     getRaw(): string;
     isAbsolute(): boolean;
     isRelative(): boolean;
@@ -2173,46 +1887,38 @@ export class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREnc
     path(): string;
     scheme(): string | null;
     startsWith(prefix: string): boolean;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toString(): string;
+    toUR(): UR;
     toURI(): string;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
-export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, UREncodable {
+export class UUID implements ToCbor, ToUR {
     asBytes(): Uint8Array;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<UUID>;
     data(): Uint8Array;
     equals(other: UUID): boolean;
     static from(data: Uint8Array): UUID;
+    static fromCbor(cbor: Cbor): UUID;
     static fromData(data: Uint8Array): UUID;
     static fromDataRef(data: Uint8Array): UUID;
     static fromHex(hex: string): UUID;
     static fromString(uuidString: string): UUID;
-    fromTaggedCbor(cbor: Cbor): UUID;
-    static fromTaggedCbor(cbor: Cbor): UUID;
-    static fromTaggedCborData(data: Uint8Array): UUID;
-    fromUntaggedCbor(cbor: Cbor): UUID;
-    static fromUntaggedCborData(data: Uint8Array): UUID;
-    static fromUR(ur: UR): UUID;
-    static fromURString(urString: string): UUID;
     hex(): string;
     static new(): UUID;
     static random(): UUID;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     // (undocumented)
     static readonly UUID_SIZE: number;
 }
@@ -2223,22 +1929,18 @@ export interface Verifier {
 }
 
 // @public (undocumented)
-export class X25519PrivateKey implements CborTaggedEncodable, CborTaggedDecodable<X25519PrivateKey>, UREncodable {
+export class X25519PrivateKey implements ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<X25519PrivateKey>;
     data(): Uint8Array;
     static deriveFromKeyMaterial(keyMaterial: Uint8Array): X25519PrivateKey;
     equals(other: X25519PrivateKey): boolean;
     static from(data: Uint8Array): X25519PrivateKey;
+    static fromCbor(cbor: Cbor): X25519PrivateKey;
     static fromData(data: Uint8Array): X25519PrivateKey;
     static fromDataRef(data: Uint8Array): X25519PrivateKey;
     static fromHex(hex: string): X25519PrivateKey;
-    fromTaggedCbor(cbor: Cbor): X25519PrivateKey;
-    static fromTaggedCbor(cbor: Cbor): X25519PrivateKey;
-    static fromTaggedCborData(data: Uint8Array): X25519PrivateKey;
-    fromUntaggedCbor(cbor: Cbor): X25519PrivateKey;
-    static fromUntaggedCborData(data: Uint8Array): X25519PrivateKey;
-    static fromUR(ur: UR): X25519PrivateKey;
-    static fromURString(urString: string): X25519PrivateKey;
     hex(): string;
     // (undocumented)
     static readonly KEY_SIZE: number;
@@ -2251,84 +1953,70 @@ export class X25519PrivateKey implements CborTaggedEncodable, CborTaggedDecodabl
     sharedKeyWith(publicKey: X25519PublicKey): SymmetricKey;
     // @deprecated
     sharedSecret(publicKey: X25519PublicKey): Uint8Array;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
-export class X25519PublicKey implements CborTaggedEncodable, CborTaggedDecodable<X25519PublicKey>, UREncodable {
+export class X25519PublicKey implements ToCbor, ToUR {
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<X25519PublicKey>;
     data(): Uint8Array;
     equals(other: X25519PublicKey): boolean;
     static from(data: Uint8Array): X25519PublicKey;
+    static fromCbor(cbor: Cbor): X25519PublicKey;
     static fromData(data: Uint8Array): X25519PublicKey;
     static fromDataRef(data: Uint8Array): X25519PublicKey;
     static fromHex(hex: string): X25519PublicKey;
-    fromTaggedCbor(cbor: Cbor): X25519PublicKey;
-    static fromTaggedCbor(cbor: Cbor): X25519PublicKey;
-    static fromTaggedCborData(data: Uint8Array): X25519PublicKey;
-    fromUntaggedCbor(cbor: Cbor): X25519PublicKey;
-    static fromUntaggedCborData(data: Uint8Array): X25519PublicKey;
-    static fromUR(ur: UR): X25519PublicKey;
-    static fromURString(urString: string): X25519PublicKey;
     hex(): string;
     // (undocumented)
     static readonly KEY_SIZE: number;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
 }
 
 // @public (undocumented)
-export class XID implements CborTaggedEncodable, CborTaggedDecodable<XID>, UREncodable, XIDProvider, ReferenceProvider {
+export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
     asBytes(): Uint8Array;
     bytemojisIdentifier(prefix?: boolean): string;
     bytewordsIdentifier(prefix?: boolean): string;
+    // (undocumented)
     cborTags(): Tag[];
+    static readonly codec: ComponentCodec<XID>;
     data(): Uint8Array;
     equals(other: XID): boolean;
     static from(data: Uint8Array): XID;
+    static fromCbor(cbor: Cbor): XID;
     static fromData(data: Uint8Array): XID;
     static fromDataRef(data: Uint8Array): XID;
     static fromHex(hex: string): XID;
     static fromPrivateKeyBase(base: PrivateKeyBase): XID;
     static fromPublicKeys(publicKeys: PublicKeys): XID;
     static fromSigningPublicKey(signingPublicKey: SigningPublicKey): XID;
-    fromTaggedCbor(cbor: Cbor): XID;
-    static fromTaggedCbor(cbor: Cbor): XID;
-    static fromTaggedCborData(data: Uint8Array): XID;
-    fromUntaggedCbor(cbor: Cbor): XID;
-    static fromUntaggedCborData(data: Uint8Array): XID;
-    static fromUR(ur: UR): XID;
-    static fromURString(urString: string): XID;
     static newFromSigningKey(signingPublicKey: SigningPublicKey): XID;
     static random(): XID;
     reference(): Reference;
     shortDescription(): string;
     shortReference(): string;
-    taggedCbor(): Cbor;
-    taggedCborData(): Uint8Array;
     toBase64(): string;
+    toCbor(): Cbor;
     toData(): Uint8Array;
     toHex(): string;
     toString(): string;
+    toUR(): UR;
     static tryFromSigningPrivateKey(signingPrivateKey: SigningPrivateKey): XID;
     untaggedCbor(): Cbor;
-    ur(): UR;
-    urString(): string;
     validate(signingPublicKey: SigningPublicKey): boolean;
     xid(): XID;
     // (undocumented)

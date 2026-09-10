@@ -32,6 +32,8 @@ import {
 } from "../src/encrypted-key/index.js";
 import { SymmetricKey } from "../src/symmetric/symmetric-key.js";
 import { Salt } from "../src/salt.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // Test helper functions (matching Rust tests)
 function testSecret(): Uint8Array {
@@ -455,8 +457,8 @@ describe("EncryptedKey", () => {
       const contentKey = testContentKey();
 
       const encrypted = EncryptedKey.lock(KeyDerivationMethod.HKDF, secret, contentKey);
-      const cborData = encrypted.taggedCborData();
-      const restored = EncryptedKey.fromTaggedCborData(cborData);
+      const cborData = encrypted.toCbor().toData();
+      const restored = EncryptedKey.fromCbor(decodeCbor(cborData));
       const decrypted = restored.unlock(secret);
 
       expect(decrypted.equals(contentKey)).toBe(true);
@@ -489,8 +491,8 @@ describe("EncryptedKey", () => {
       const pbkdf2 = PBKDF2Params.newOpt(salt, 1000, HashType.SHA256);
       const params = pbkdf2Params(pbkdf2);
       const encrypted = EncryptedKey.lockOpt(params, secret, contentKey);
-      const cborData = encrypted.taggedCborData();
-      const restored = EncryptedKey.fromTaggedCborData(cborData);
+      const cborData = encrypted.toCbor().toData();
+      const restored = EncryptedKey.fromCbor(decodeCbor(cborData));
       const decrypted = restored.unlock(secret);
 
       expect(decrypted.equals(contentKey)).toBe(true);
@@ -523,8 +525,8 @@ describe("EncryptedKey", () => {
       const scrypt = ScryptParams.newOpt(salt, 10, 8, 1);
       const params = scryptParams(scrypt);
       const encrypted = EncryptedKey.lockOpt(params, secret, contentKey);
-      const cborData = encrypted.taggedCborData();
-      const restored = EncryptedKey.fromTaggedCborData(cborData);
+      const cborData = encrypted.toCbor().toData();
+      const restored = EncryptedKey.fromCbor(decodeCbor(cborData));
       const decrypted = restored.unlock(secret);
 
       expect(decrypted.equals(contentKey)).toBe(true);
@@ -550,8 +552,8 @@ describe("EncryptedKey", () => {
       const contentKey = testContentKey();
 
       const encrypted = EncryptedKey.lock(KeyDerivationMethod.Argon2id, secret, contentKey);
-      const cborData = encrypted.taggedCborData();
-      const restored = EncryptedKey.fromTaggedCborData(cborData);
+      const cborData = encrypted.toCbor().toData();
+      const restored = EncryptedKey.fromCbor(decodeCbor(cborData));
       const decrypted = restored.unlock(secret);
 
       expect(decrypted.equals(contentKey)).toBe(true);
@@ -638,7 +640,7 @@ describe("EncryptedKey", () => {
       const secret = testSecret();
       const contentKey = testContentKey();
       const encrypted = EncryptedKey.lock(KeyDerivationMethod.HKDF, secret, contentKey);
-      const urString = encrypted.urString();
+      const urString = encrypted.toUR().toString();
 
       expect(urString.startsWith("ur:encrypted-key/")).toBe(true);
     });
@@ -647,8 +649,8 @@ describe("EncryptedKey", () => {
       const secret = testSecret();
       const contentKey = testContentKey();
       const encrypted = EncryptedKey.lock(KeyDerivationMethod.HKDF, secret, contentKey);
-      const urString = encrypted.urString();
-      const restored = EncryptedKey.fromURString(urString);
+      const urString = encrypted.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), EncryptedKey.codec);
       const decrypted = restored.unlock(secret);
 
       expect(decrypted.equals(contentKey)).toBe(true);

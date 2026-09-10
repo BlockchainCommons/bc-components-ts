@@ -25,19 +25,10 @@
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
 import { chacha20Poly1305 } from "@blockchaincommons/crypto";
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectBytes,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
+import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { SYMMETRIC_KEY as TAG_SYMMETRIC_KEY } from "@blockchaincommons/tags";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import { Nonce } from "../nonce.js";
@@ -45,7 +36,7 @@ import { EncryptedMessage } from "./encrypted-message.js";
 
 const SYMMETRIC_KEY_SIZE = 32;
 
-export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<SymmetricKey> {
+export class SymmetricKey implements ToCbor {
   static readonly SYMMETRIC_KEY_SIZE: number = SYMMETRIC_KEY_SIZE;
 
   private readonly _data: Uint8Array;
@@ -214,14 +205,21 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with SymmetricKey.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<SymmetricKey> = defineCodec({
+    tags: [TAG_SYMMETRIC_KEY],
+    decodeUntagged: (cbor) => {
+      const data = expectBytes(cbor);
+      return SymmetricKey.fromDataRef(data);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_SYMMETRIC_KEY.value]);
+    return [...SymmetricKey.codec.tags];
   }
 
   /**
@@ -231,113 +229,26 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
     return cbor(this._data);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cbor: Cbor): SymmetricKey {
+    return SymmetricKey.codec.decode(cbor);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a SymmetricKey by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cbor: Cbor): SymmetricKey {
-    const data = expectBytes(cbor);
-    return SymmetricKey.fromDataRef(data);
-  }
-
-  /**
-   * Creates a SymmetricKey by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cbor: Cbor): SymmetricKey {
-    validateTag(cbor, this.cborTags());
-    const content = extractTaggedContent(cbor);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cbor: Cbor): SymmetricKey {
-    const instance = new SymmetricKey(new Uint8Array(SYMMETRIC_KEY_SIZE));
-    return instance.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): SymmetricKey {
-    const cbor = decodeCbor(data);
-    return SymmetricKey.fromTaggedCbor(cbor);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): SymmetricKey {
-    const cbor = decodeCbor(data);
-    const bytes = expectBytes(cbor);
-    return SymmetricKey.fromDataRef(bytes);
-  }
-
   // ============================================================================
   // UR (Uniform Resource) Serialization
   // ============================================================================
-
-  /**
-   * Get the UR type for symmetric keys.
-   */
-  static readonly UR_TYPE = "crypto-key";
-
-  /**
-   * Returns the UR representation of the symmetric key.
-   *
-   * The UR type prefix (`ur:crypto-key/...`) carries the CBOR tag, so the
-   * inner CBOR must be untagged — matches Rust's `UREncodable` blanket impl.
-   */
-  ur(): UR {
-    return UR.from(SymmetricKey.UR_TYPE, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation of the symmetric key.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a SymmetricKey from a UR.
-   */
-  static fromUR(ur: UR): SymmetricKey {
-    ur.expectType(SymmetricKey.UR_TYPE);
-    const dummy = SymmetricKey.fromData(new Uint8Array(SymmetricKey.SYMMETRIC_KEY_SIZE));
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a SymmetricKey from a UR string.
-   */
-  static fromURString(urString: string): SymmetricKey {
-    const ur = UR.parse(urString);
-    return SymmetricKey.fromUR(ur);
-  }
-
-  /**
-   * Alias for fromURString for Rust API compatibility.
-   */
-  static fromUrString(urString: string): SymmetricKey {
-    return SymmetricKey.fromURString(urString);
-  }
 }

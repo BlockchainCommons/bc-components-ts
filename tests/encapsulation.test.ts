@@ -13,6 +13,8 @@ import {
   X25519PublicKey,
   Nonce,
 } from "../src/index.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("EncapsulationScheme", () => {
   it("should have X25519 as default scheme", () => {
@@ -160,22 +162,22 @@ describe("EncapsulationPrivateKey", () => {
 
     it("should serialize to tagged CBOR", () => {
       const key = EncapsulationPrivateKey.new();
-      const cborData = key.taggedCborData();
+      const cborData = key.toCbor().toData();
       expect(cborData).toBeInstanceOf(Uint8Array);
       expect(cborData.length).toBeGreaterThan(0);
     });
 
     it("should roundtrip through tagged CBOR", () => {
       const original = EncapsulationPrivateKey.new();
-      const cborData = original.taggedCborData();
-      const restored = EncapsulationPrivateKey.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = EncapsulationPrivateKey.fromCbor(decodeCbor(cborData));
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should roundtrip through untagged CBOR", () => {
       const original = EncapsulationPrivateKey.new();
       const cborData = original.untaggedCbor().toData();
-      const restored = EncapsulationPrivateKey.fromUntaggedCborData(cborData);
+      const restored = EncapsulationPrivateKey.fromCbor(decodeCbor(cborData));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -183,21 +185,21 @@ describe("EncapsulationPrivateKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const key = EncapsulationPrivateKey.new();
-      const ur = key.ur();
+      const ur = key.toUR();
       expect(ur).toBeDefined();
       expect(ur.type.name).toBe("agreement-private-key");
     });
 
     it("should serialize to UR string", () => {
       const key = EncapsulationPrivateKey.new();
-      const urString = key.urString();
+      const urString = key.toUR().toString();
       expect(urString).toMatch(/^ur:agreement-private-key\//);
     });
 
     it("should roundtrip through UR", () => {
       const original = EncapsulationPrivateKey.new();
-      const urString = original.urString();
-      const restored = EncapsulationPrivateKey.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), EncapsulationPrivateKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -283,8 +285,8 @@ describe("EncapsulationPublicKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const [, original] = EncapsulationPrivateKey.keypair();
-      const cborData = original.taggedCborData();
-      const restored = EncapsulationPublicKey.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = EncapsulationPublicKey.fromCbor(decodeCbor(cborData));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -292,14 +294,14 @@ describe("EncapsulationPublicKey", () => {
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
       const [, publicKey] = EncapsulationPrivateKey.keypair();
-      const ur = publicKey.ur();
+      const ur = publicKey.toUR();
       expect(ur.type.name).toBe("agreement-public-key");
     });
 
     it("should roundtrip through UR", () => {
       const [, original] = EncapsulationPrivateKey.keypair();
-      const urString = original.urString();
-      const restored = EncapsulationPublicKey.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), EncapsulationPublicKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -341,8 +343,8 @@ describe("EncapsulationCiphertext", () => {
     it("should roundtrip through tagged CBOR", () => {
       const [, x25519Public] = X25519PrivateKey.keypair();
       const original = EncapsulationCiphertext.fromX25519PublicKey(x25519Public);
-      const cborData = original.taggedCborData();
-      const restored = EncapsulationCiphertext.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = EncapsulationCiphertext.fromCbor(decodeCbor(cborData));
       expect(restored.equals(original)).toBe(true);
     });
   });
@@ -496,7 +498,7 @@ describe("SealedMessage", () => {
       const plaintext = new TextEncoder().encode("Hello");
       const sealed = SealedMessage.new(plaintext, recipientPublic);
 
-      const cborData = sealed.taggedCborData();
+      const cborData = sealed.toCbor().toData();
       expect(cborData).toBeInstanceOf(Uint8Array);
       expect(cborData.length).toBeGreaterThan(0);
     });
@@ -506,8 +508,8 @@ describe("SealedMessage", () => {
       const plaintext = new TextEncoder().encode("Hello, CBOR!");
 
       const original = SealedMessage.new(plaintext, recipientPublic);
-      const cborData = original.taggedCborData();
-      const restored = SealedMessage.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = SealedMessage.fromCbor(decodeCbor(cborData));
 
       // Verify we can decrypt the restored message
       const decrypted = restored.decrypt(recipientPrivate);
@@ -520,7 +522,7 @@ describe("SealedMessage", () => {
 
       const original = SealedMessage.new(plaintext, recipientPublic);
       const cborData = original.untaggedCbor().toData();
-      const restored = SealedMessage.fromUntaggedCborData(cborData);
+      const restored = SealedMessage.fromCbor(decodeCbor(cborData));
 
       const decrypted = restored.decrypt(recipientPrivate);
       expect(new TextDecoder().decode(decrypted)).toBe("Untagged test");
@@ -533,7 +535,7 @@ describe("SealedMessage", () => {
       const plaintext = new TextEncoder().encode("Hello");
       const sealed = SealedMessage.new(plaintext, recipientPublic);
 
-      const ur = sealed.ur();
+      const ur = sealed.toUR();
       expect(ur.type.name).toBe("crypto-sealed");
     });
 
@@ -542,7 +544,7 @@ describe("SealedMessage", () => {
       const plaintext = new TextEncoder().encode("Hello");
       const sealed = SealedMessage.new(plaintext, recipientPublic);
 
-      const urString = sealed.urString();
+      const urString = sealed.toUR().toString();
       expect(urString).toMatch(/^ur:crypto-sealed\//);
     });
 
@@ -551,8 +553,8 @@ describe("SealedMessage", () => {
       const plaintext = new TextEncoder().encode("Hello, UR!");
 
       const original = SealedMessage.new(plaintext, recipientPublic);
-      const urString = original.urString();
-      const restored = SealedMessage.fromURString(urString);
+      const urString = original.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), SealedMessage.codec);
 
       const decrypted = restored.decrypt(recipientPrivate);
       expect(new TextDecoder().decode(decrypted)).toBe("Hello, UR!");
@@ -608,10 +610,10 @@ describe("Integration tests", () => {
     const sealed = SealedMessage.new(secretMessage, alicePublic);
 
     // Bob serializes the sealed message (e.g., for transmission)
-    const transmittedData = sealed.urString();
+    const transmittedData = sealed.toUR().toString();
 
     // Alice receives and deserializes the sealed message
-    const receivedSealed = SealedMessage.fromURString(transmittedData);
+    const receivedSealed = decodeURWith(UR.parse(transmittedData), SealedMessage.codec);
 
     // Alice decrypts using her private key
     const decrypted = receivedSealed.decrypt(alicePrivate);

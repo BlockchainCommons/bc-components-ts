@@ -62,7 +62,7 @@ describe("CBOR Interoperability", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const privateKey = SigningPrivateKey.newSchnorr(ecKey);
 
-      const taggedCbor = privateKey.taggedCborData();
+      const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       // Should be tagged with 40021 (SigningPrivateKey tag)
@@ -80,7 +80,7 @@ describe("CBOR Interoperability", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const privateKey = SigningPrivateKey.newEcdsa(ecKey);
 
-      const taggedCbor = privateKey.taggedCborData();
+      const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -100,7 +100,7 @@ describe("CBOR Interoperability", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
 
-      const taggedCbor = privateKey.taggedCborData();
+      const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -120,7 +120,7 @@ describe("CBOR Interoperability", () => {
       const sr25519Key = Sr25519PrivateKey.fromSeed(hexToBytes(TEST_PRIVATE_KEY_HEX));
       const privateKey = SigningPrivateKey.newSr25519(sr25519Key);
 
-      const taggedCbor = privateKey.taggedCborData();
+      const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -143,7 +143,7 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newSchnorr(ecKey);
       const publicKey = privateKey.publicKey();
 
-      const taggedCbor = publicKey.taggedCborData();
+      const taggedCbor = publicKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       // Should be tagged with 40022 (SigningPublicKey tag)
@@ -162,7 +162,7 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newEcdsa(ecKey);
       const publicKey = privateKey.publicKey();
 
-      const taggedCbor = publicKey.taggedCborData();
+      const taggedCbor = publicKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -183,7 +183,7 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
-      const taggedCbor = publicKey.taggedCborData();
+      const taggedCbor = publicKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -211,7 +211,7 @@ describe("CBOR Interoperability", () => {
       const signature = privateKey.sign(TEST_MESSAGE);
 
       // Verify the CBOR structure
-      const taggedCbor = signature.taggedCborData();
+      const taggedCbor = signature.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -236,7 +236,7 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newSchnorr(ecKey);
       const signature = privateKey.sign(TEST_MESSAGE);
 
-      const taggedCbor = signature.taggedCborData();
+      const taggedCbor = signature.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -263,7 +263,7 @@ describe("CBOR Interoperability", () => {
         rng: fakeRng,
       });
 
-      const taggedCbor = signature.taggedCborData();
+      const taggedCbor = signature.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       const [, content] = asTaggedValue(decoded)!;
@@ -277,7 +277,7 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
-      const taggedCbor = signature.taggedCborData();
+      const taggedCbor = signature.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -297,7 +297,7 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newSr25519(sr25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
-      const taggedCbor = signature.taggedCborData();
+      const taggedCbor = signature.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
 
       expect(isTagged(decoded)).toBe(true);
@@ -318,8 +318,8 @@ describe("CBOR Interoperability", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const original = SigningPrivateKey.newSchnorr(ecKey);
 
-      const cborData = original.taggedCborData();
-      const restored = SigningPrivateKey.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(original.scheme());
       expect(restored.equals(original)).toBe(true);
@@ -329,8 +329,8 @@ describe("CBOR Interoperability", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const original = SigningPrivateKey.newEcdsa(ecKey);
 
-      const cborData = original.taggedCborData();
-      const restored = SigningPrivateKey.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(original.scheme());
       expect(restored.equals(original)).toBe(true);
@@ -340,8 +340,8 @@ describe("CBOR Interoperability", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const original = SigningPrivateKey.newEd25519(ed25519Key);
 
-      const cborData = original.taggedCborData();
-      const restored = SigningPrivateKey.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(original.scheme());
       expect(restored.equals(original)).toBe(true);
@@ -351,8 +351,8 @@ describe("CBOR Interoperability", () => {
       const sr25519Key = Sr25519PrivateKey.fromSeed(hexToBytes(TEST_PRIVATE_KEY_HEX));
       const original = SigningPrivateKey.newSr25519(sr25519Key);
 
-      const cborData = original.taggedCborData();
-      const restored = SigningPrivateKey.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(original.scheme());
       expect(restored.equals(original)).toBe(true);
@@ -363,8 +363,8 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newSchnorr(ecKey);
       const original = privateKey.sign(TEST_MESSAGE);
 
-      const cborData = original.taggedCborData();
-      const restored = Signature.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = Signature.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(original.scheme());
       expect(restored.equals(original)).toBe(true);
@@ -379,8 +379,8 @@ describe("CBOR Interoperability", () => {
       const privateKey = SigningPrivateKey.newEcdsa(ecKey);
       const original = privateKey.sign(TEST_MESSAGE);
 
-      const cborData = original.taggedCborData();
-      const restored = Signature.fromTaggedCborData(cborData);
+      const cborData = original.toCbor().toData();
+      const restored = Signature.fromCbor(decodeCbor(cborData));
 
       expect(restored.scheme()).toBe(original.scheme());
       expect(restored.equals(original)).toBe(true);

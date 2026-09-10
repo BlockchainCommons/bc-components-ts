@@ -24,23 +24,9 @@
  * Ported from bc-components-rust/src/public_keys.rs
  */
 
-import {
-  type Cbor,
-  type Tag,
-  cbor,
-  expectArray,
-  validateTag,
-  extractTaggedContent,
-  decodeCbor,
-  tagsForValues,
-} from "@blockchaincommons/dcbor";
-import {
-  type CborTaggedEncodable,
-  type CborTaggedDecodable,
-  taggedCborOf,
-  type UREncodable,
-} from "./codable.js";
-import { UR } from "@blockchaincommons/uniform-resources";
+import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
+import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { PUBLIC_KEYS as TAG_PUBLIC_KEYS } from "@blockchaincommons/tags";
 
 import { SigningPublicKey } from "./signing/signing-public-key.js";
@@ -73,15 +59,7 @@ export interface PublicKeysProvider {
  * This type provides a convenient way to share public keys for both
  * signature verification and encryption operations.
  */
-export class PublicKeys
-  implements
-    Verifier,
-    Encrypter,
-    ReferenceProvider,
-    CborTaggedEncodable,
-    CborTaggedDecodable<PublicKeys>,
-    UREncodable
-{
+export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbor, ToUR {
   private readonly _signingPublicKey: SigningPublicKey;
   private readonly _encapsulationPublicKey: EncapsulationPublicKey;
 
@@ -165,7 +143,7 @@ export class PublicKeys
    * representation, providing a unique, content-addressable identifier.
    */
   reference(): Reference {
-    const digest = Digest.fromImage(this.taggedCborData());
+    const digest = Digest.fromImage(this.toCbor().toData());
     return Reference.from(digest);
   }
 
@@ -202,14 +180,31 @@ export class PublicKeys
   }
 
   // ============================================================================
-  // CBOR Serialization (CborTaggedEncodable)
+  // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /**
-   * Returns the CBOR tags associated with PublicKeys.
-   */
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static readonly codec: ComponentCodec<PublicKeys> = defineCodec({
+    tags: [TAG_PUBLIC_KEYS],
+    decodeUntagged: (cborValue) => {
+      const elements = expectArray(cborValue);
+
+      if (elements.length !== 2) {
+        throw ComponentsError.invalidData(
+          `PublicKeys must have 2 elements, got ${elements.length}`,
+        );
+      }
+
+      const signingPublicKey = SigningPublicKey.fromCbor(elements[0]);
+      const encapsulationPublicKey = EncapsulationPublicKey.fromCbor(elements[1]);
+
+      return new PublicKeys(signingPublicKey, encapsulationPublicKey);
+    },
+    encodeUntagged: (value) => value.untaggedCbor(),
+  });
+
   cborTags(): Tag[] {
-    return tagsForValues([TAG_PUBLIC_KEYS.value]);
+    return [...PublicKeys.codec.tags];
   }
 
   /**
@@ -218,151 +213,29 @@ export class PublicKeys
    * Format: [<SigningPublicKey>, <EncapsulationPublicKey>]
    */
   untaggedCbor(): Cbor {
-    return cbor([this._signingPublicKey.taggedCbor(), this._encapsulationPublicKey.taggedCbor()]);
+    return cbor([this._signingPublicKey.toCbor(), this._encapsulationPublicKey.toCbor()]);
   }
 
-  /**
-   * Returns the tagged CBOR encoding.
-   */
-  taggedCbor(): Cbor {
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
     return taggedCborOf(this);
   }
 
-  /**
-   * Returns the tagged value in CBOR binary representation.
-   */
-  taggedCborData(): Uint8Array {
-    return this.taggedCbor().toData();
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): PublicKeys {
+    return PublicKeys.codec.decode(cborValue);
   }
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
   // ============================================================================
 
-  /**
-   * Creates a PublicKeys by decoding it from untagged CBOR.
-   */
-  fromUntaggedCbor(cborValue: Cbor): PublicKeys {
-    const elements = expectArray(cborValue);
-
-    if (elements.length !== 2) {
-      throw ComponentsError.invalidData(`PublicKeys must have 2 elements, got ${elements.length}`);
-    }
-
-    const signingPublicKey = SigningPublicKey.fromTaggedCbor(elements[0]);
-    const encapsulationPublicKey = EncapsulationPublicKey.fromTaggedCbor(elements[1]);
-
-    return new PublicKeys(signingPublicKey, encapsulationPublicKey);
-  }
-
-  /**
-   * Creates a PublicKeys by decoding it from tagged CBOR.
-   */
-  fromTaggedCbor(cborValue: Cbor): PublicKeys {
-    validateTag(cborValue, this.cborTags());
-    const content = extractTaggedContent(cborValue);
-    return this.fromUntaggedCbor(content);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR.
-   */
-  static fromTaggedCbor(cborValue: Cbor): PublicKeys {
-    // We need a dummy instance to call instance methods
-    // Create minimal valid keys for this purpose
-    const signingKeyPrefix = new Uint8Array([0x82, 0x02, 0x58, 0x20]);
-    const signingKeyData = new Uint8Array(36);
-    signingKeyData.set(signingKeyPrefix, 0);
-    const signingKey = SigningPublicKey.fromUntaggedCborData(signingKeyData);
-
-    const encapsulationKeyPrefix = new Uint8Array([0x58, 0x20]);
-    const encapsulationKeyData = new Uint8Array(34);
-    encapsulationKeyData.set(encapsulationKeyPrefix, 0);
-    const encapsulationKey = EncapsulationPublicKey.fromUntaggedCborData(encapsulationKeyData);
-
-    const dummy = new PublicKeys(signingKey, encapsulationKey);
-    return dummy.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from tagged CBOR binary data.
-   */
-  static fromTaggedCborData(data: Uint8Array): PublicKeys {
-    const cborValue = decodeCbor(data);
-    return PublicKeys.fromTaggedCbor(cborValue);
-  }
-
-  /**
-   * Static method to decode from untagged CBOR binary data.
-   */
-  static fromUntaggedCborData(data: Uint8Array): PublicKeys {
-    const cborValue = decodeCbor(data);
-    // We need a dummy instance to call instance methods
-    const signingKeyPrefix = new Uint8Array([0x82, 0x02, 0x58, 0x20]);
-    const signingKeyData = new Uint8Array(36);
-    signingKeyData.set(signingKeyPrefix, 0);
-    const signingKey = SigningPublicKey.fromUntaggedCborData(signingKeyData);
-
-    const encapsulationKeyPrefix = new Uint8Array([0x58, 0x20]);
-    const encapsulationKeyData = new Uint8Array(34);
-    encapsulationKeyData.set(encapsulationKeyPrefix, 0);
-    const encapsulationKey = EncapsulationPublicKey.fromUntaggedCborData(encapsulationKeyData);
-
-    const dummy = new PublicKeys(signingKey, encapsulationKey);
-    return dummy.fromUntaggedCbor(cborValue);
-  }
-
   // ============================================================================
-  // UR Serialization (UREncodable)
+  // UR Serialization (ToUR)
   // ============================================================================
-
-  /**
-   * Returns the UR representation.
-   */
-  ur(): UR {
-    const name = TAG_PUBLIC_KEYS.name;
-    if (name === undefined) {
-      throw ComponentsError.invalidData("PUBLIC_KEYS tag name is undefined");
-    }
-    return UR.from(name, this.untaggedCbor());
-  }
-
-  /**
-   * Returns the UR string representation.
-   */
-  urString(): string {
-    return this.ur().toString();
-  }
-
-  /**
-   * Creates a PublicKeys from a UR.
-   */
-  static fromUR(ur: UR): PublicKeys {
-    if (ur.type.name !== TAG_PUBLIC_KEYS.name) {
-      throw ComponentsError.invalidData(
-        `Expected UR type ${TAG_PUBLIC_KEYS.name}, got ${ur.type.name}`,
-      );
-    }
-    // We need a dummy instance to call instance methods
-    const signingKeyPrefix = new Uint8Array([0x82, 0x02, 0x58, 0x20]);
-    const signingKeyData = new Uint8Array(36);
-    signingKeyData.set(signingKeyPrefix, 0);
-    const signingKey = SigningPublicKey.fromUntaggedCborData(signingKeyData);
-
-    const encapsulationKeyPrefix = new Uint8Array([0x58, 0x20]);
-    const encapsulationKeyData = new Uint8Array(34);
-    encapsulationKeyData.set(encapsulationKeyPrefix, 0);
-    const encapsulationKey = EncapsulationPublicKey.fromUntaggedCborData(encapsulationKeyData);
-
-    const dummy = new PublicKeys(signingKey, encapsulationKey);
-    return dummy.fromUntaggedCbor(ur.cbor);
-  }
-
-  /**
-   * Creates a PublicKeys from a UR string.
-   */
-  static fromURString(urString: string): PublicKeys {
-    const ur = UR.parse(urString);
-    return PublicKeys.fromUR(ur);
-  }
 }

@@ -7,6 +7,8 @@
 import { describe, it, expect } from "vitest";
 import { SymmetricKey, AuthenticationTag, EncryptedMessage } from "../src/symmetric/index.js";
 import { Nonce } from "../src/nonce.js";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+import { decodeCbor } from "@blockchaincommons/dcbor";
 
 describe("AuthenticationTag", () => {
   const TEST_HEX = "1ae10b594f09e26a7e902ecbd0600691";
@@ -248,14 +250,14 @@ describe("SymmetricKey", () => {
 
     it("should serialize to tagged CBOR", () => {
       const key = SymmetricKey.new();
-      const tagged = key.taggedCbor();
+      const tagged = key.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
       const key = SymmetricKey.new();
-      const data = key.taggedCborData();
+      const data = key.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -263,8 +265,8 @@ describe("SymmetricKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const key = SymmetricKey.new();
-      const data = key.taggedCborData();
-      const restored = SymmetricKey.fromTaggedCborData(data);
+      const data = key.toCbor().toData();
+      const restored = SymmetricKey.fromCbor(decodeCbor(data));
 
       expect(restored.equals(key)).toBe(true);
     });
@@ -272,7 +274,7 @@ describe("SymmetricKey", () => {
     it("should roundtrip through untagged CBOR", () => {
       const key = SymmetricKey.new();
       const data = key.untaggedCbor().toData();
-      const restored = SymmetricKey.fromUntaggedCborData(data);
+      const restored = SymmetricKey.fromCbor(decodeCbor(data));
 
       expect(restored.equals(key)).toBe(true);
     });
@@ -422,7 +424,7 @@ describe("EncryptedMessage", () => {
     it("should serialize to tagged CBOR", () => {
       const key = SymmetricKey.new();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
-      const tagged = encrypted.taggedCbor();
+      const tagged = encrypted.toCbor();
 
       expect(tagged).toBeDefined();
     });
@@ -430,7 +432,7 @@ describe("EncryptedMessage", () => {
     it("should serialize to tagged CBOR binary data", () => {
       const key = SymmetricKey.new();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
-      const data = encrypted.taggedCborData();
+      const data = encrypted.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
       expect(data.length).toBeGreaterThan(0);
@@ -439,8 +441,8 @@ describe("EncryptedMessage", () => {
     it("should roundtrip through tagged CBOR", () => {
       const key = SymmetricKey.new();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
-      const data = encrypted.taggedCborData();
-      const restored = EncryptedMessage.fromTaggedCborData(data);
+      const data = encrypted.toCbor().toData();
+      const restored = EncryptedMessage.fromCbor(decodeCbor(data));
 
       expect(restored.equals(encrypted)).toBe(true);
     });
@@ -449,7 +451,7 @@ describe("EncryptedMessage", () => {
       const key = SymmetricKey.new();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const data = encrypted.untaggedCbor().toData();
-      const restored = EncryptedMessage.fromUntaggedCborData(data);
+      const restored = EncryptedMessage.fromCbor(decodeCbor(data));
 
       expect(restored.equals(encrypted)).toBe(true);
     });
@@ -458,7 +460,7 @@ describe("EncryptedMessage", () => {
       const key = SymmetricKey.fromHex(KEY_HEX);
       const nonce = Nonce.fromHex(NONCE_HEX);
       const encrypted = key.encrypt(PLAINTEXT, AAD, nonce);
-      const data = encrypted.taggedCborData();
+      const data = encrypted.toCbor().toData();
 
       // Expected from Rust test
       const expectedHex =
@@ -471,7 +473,7 @@ describe("EncryptedMessage", () => {
     it("should serialize to UR", () => {
       const key = SymmetricKey.new();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
-      const ur = encrypted.ur();
+      const ur = encrypted.toUR();
 
       expect(ur).toBeDefined();
     });
@@ -479,7 +481,7 @@ describe("EncryptedMessage", () => {
     it("should serialize to UR string", () => {
       const key = SymmetricKey.new();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
-      const urString = encrypted.urString();
+      const urString = encrypted.toUR().toString();
 
       expect(urString.startsWith("ur:encrypted/")).toBe(true);
     });
@@ -487,8 +489,8 @@ describe("EncryptedMessage", () => {
     it("should roundtrip through UR string", () => {
       const key = SymmetricKey.new();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
-      const urString = encrypted.urString();
-      const restored = EncryptedMessage.fromURString(urString);
+      const urString = encrypted.toUR().toString();
+      const restored = decodeURWith(UR.parse(urString), EncryptedMessage.codec);
 
       expect(restored.equals(encrypted)).toBe(true);
     });
@@ -497,7 +499,7 @@ describe("EncryptedMessage", () => {
       const key = SymmetricKey.fromHex(KEY_HEX);
       const nonce = Nonce.fromHex(NONCE_HEX);
       const encrypted = key.encrypt(PLAINTEXT, AAD, nonce);
-      const urString = encrypted.urString();
+      const urString = encrypted.toUR().toString();
 
       // Expected from Rust test
       const expectedUR =
@@ -508,7 +510,7 @@ describe("EncryptedMessage", () => {
     it("should throw on invalid UR type", () => {
       const invalidUr = "ur:not_encrypted/invalid";
 
-      expect(() => EncryptedMessage.fromURString(invalidUr)).toThrow();
+      expect(() => decodeURWith(UR.parse(invalidUr), EncryptedMessage.codec)).toThrow();
     });
   });
 });

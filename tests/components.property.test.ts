@@ -3,9 +3,12 @@
  * CBOR and UR; sign/verify per scheme; encrypt/decrypt; compress/decompress;
  * PrivateKeyBase(seed).publicKeys() equals privateKeys().publicKeys().
  */
+import type { ComponentCodec } from "../src/codable.js";
 import fc from "fast-check";
 import { SeededRng } from "@blockchaincommons/rand";
 import * as c from "../src";
+import { decodeCbor, type Cbor } from "@blockchaincommons/dcbor";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 
 const bytes32 = fc.uint8Array({ minLength: 32, maxLength: 32 });
 const hexOf = (b: Uint8Array): string => Buffer.from(b).toString("hex");
@@ -18,7 +21,7 @@ describe("codable round-trips", () => {
         fc.uint8Array({ minLength: 12, maxLength: 12 }),
         fc.uint8Array({ minLength: 16, maxLength: 16 }),
         (b, n, u) => {
-          const items: { taggedCborData(): Uint8Array; urString(): string }[] = [
+          const items: { toCbor(): Cbor; toUR(): UR }[] = [
             c.Digest.fromData(b),
             c.ARID.fromData(b),
             c.XID.fromData(b),
@@ -43,14 +46,15 @@ describe("codable round-trips", () => {
             c.PrivateKeyBase,
           ];
           return items.every((v, i) => {
-            const ctor = ctors[i] as {
-              fromTaggedCborData(d: Uint8Array): { taggedCborData(): Uint8Array };
-              fromURString(s: string): { taggedCborData(): Uint8Array };
+            const ctor = ctors[i] as unknown as {
+              codec: ComponentCodec<{ toCbor(): Cbor }>;
+              fromCbor(c: Cbor): { toCbor(): Cbor };
             };
-            const t = v.taggedCborData();
+            const t = v.toCbor().toData();
             return (
-              hexOf(ctor.fromTaggedCborData(t).taggedCborData()) === hexOf(t) &&
-              hexOf(ctor.fromURString(v.urString()).taggedCborData()) === hexOf(t)
+              hexOf(ctor.fromCbor(decodeCbor(t)).toCbor().toData()) === hexOf(t) &&
+              hexOf(decodeURWith(UR.parse(v.toUR().toString()), ctor.codec).toCbor().toData()) ===
+                hexOf(t)
             );
           });
         },
@@ -72,8 +76,10 @@ describe("codable round-trips", () => {
             note || undefined,
             new Date(secs * 1000),
           );
-          const back = c.Seed.fromTaggedCborData(seed.taggedCborData());
-          return back.equals(seed) && hexOf(back.taggedCborData()) === hexOf(seed.taggedCborData());
+          const back = c.Seed.fromCbor(decodeCbor(seed.toCbor().toData()));
+          return (
+            back.equals(seed) && hexOf(back.toCbor().toData()) === hexOf(seed.toCbor().toData())
+          );
         },
       ),
       { numRuns: 60 },
@@ -102,8 +108,8 @@ describe("crypto round-trips", () => {
           const sig =
             i === 0 ? priv.signWithOptions(msg, { type: "Schnorr", rng }) : priv.sign(msg);
           const pub = priv.publicKey();
-          const sig2 = c.Signature.fromTaggedCborData(sig.taggedCborData());
-          const pub2 = c.SigningPublicKey.fromTaggedCborData(pub.taggedCborData());
+          const sig2 = c.Signature.fromCbor(decodeCbor(sig.toCbor().toData()));
+          const pub2 = c.SigningPublicKey.fromCbor(decodeCbor(pub.toCbor().toData()));
           return (
             pub.verify(sig, msg) &&
             pub2.verify(sig2, msg) &&
@@ -124,7 +130,7 @@ describe("crypto round-trips", () => {
         (k, n, pt, aad) => {
           const key = c.SymmetricKey.fromData(k);
           const msg = key.encrypt(pt, aad.length ? aad : undefined, c.Nonce.fromData(n));
-          const back = c.EncryptedMessage.fromTaggedCborData(msg.taggedCborData());
+          const back = c.EncryptedMessage.fromCbor(decodeCbor(msg.toCbor().toData()));
           return hexOf(key.decrypt(msg)) === hexOf(pt) && hexOf(key.decrypt(back)) === hexOf(pt);
         },
       ),
@@ -141,7 +147,7 @@ describe("crypto round-trips", () => {
         );
         return [x, kem].every((priv) => {
           const sealed = c.SealedMessage.new(pt, priv.publicKey());
-          const back = c.SealedMessage.fromTaggedCborData(sealed.taggedCborData());
+          const back = c.SealedMessage.fromCbor(decodeCbor(sealed.toCbor().toData()));
           return (
             hexOf(sealed.decrypt(priv)) === hexOf(pt) && hexOf(back.decrypt(priv)) === hexOf(pt)
           );
@@ -154,7 +160,7 @@ describe("crypto round-trips", () => {
     fc.assert(
       fc.property(fc.uint8Array({ maxLength: 2048 }), (d) => {
         const cmp = c.Compressed.fromDecompressedData(d, c.Digest.fromImage(d));
-        const back = c.Compressed.fromTaggedCborData(cmp.taggedCborData());
+        const back = c.Compressed.fromCbor(decodeCbor(cmp.toCbor().toData()));
         return (
           hexOf(cmp.decompress()) === hexOf(d) &&
           hexOf(back.decompress()) === hexOf(d) &&
