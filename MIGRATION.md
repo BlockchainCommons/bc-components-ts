@@ -5,8 +5,8 @@
 published as `@bcts/components`, into its own Blockchain Commons repository at
 [`BlockchainCommons/bc-components-ts`](https://github.com/BlockchainCommons/bc-components-ts).
 
-For the extraction release, **`1.0.0-beta.1`, the public API is unchanged.** The
-migration is a rename. `@bcts/components` remains published for one beta cycle as a
+The extraction release, **`1.0.0-beta.1`**, renames the package and
+redesigns the API (second part of this guide). `@bcts/components` remains published for one beta cycle as a
 thin re-export of this package, so nothing breaks the moment you update.
 
 ## TL;DR checklist
@@ -72,9 +72,9 @@ shared type is resolved:
 
 ---
 
-# Migrating to the redesigned API (`1.0.0-beta.2`)
+# Migrating to the redesigned API
 
-`1.0.0-beta.2` redesigns the TypeScript surface; **every wire byte is
+`1.0.0-beta.1` also redesigns the TypeScript surface; **every wire byte is
 unchanged** (tagged CBOR, URs, derivations, signatures, encryption are
 verified against a frozen pre-redesign baseline and against
 `bc-components-rust` 0.31.1 by `tests/rust-validation`). What changed is

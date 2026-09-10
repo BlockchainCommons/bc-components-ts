@@ -14,7 +14,7 @@ export default defineConfig({
       // Raise-only floors. Seed from the first measured run; never lower.
       thresholds: {
         statements: 85,
-        branches: 75,
+        branches: 76,
         functions: 91,
         lines: 87,
       },

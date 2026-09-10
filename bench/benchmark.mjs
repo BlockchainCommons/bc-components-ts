@@ -2,6 +2,9 @@
  * Baseline vs working tree micro-benchmarks (Phase 2.3).
  *
  *   bun run build && bun bench/benchmark.mjs
+ *
+ * The baseline speaks the pre-redesign names; `api()` adapts the few calls
+ * used here so both sides run the same work.
  */
 import * as baseline from "../tests/baseline/components-baseline.mjs";
 import * as current from "../dist/index.mjs";
@@ -28,6 +31,28 @@ const rng = {
     return 0x12345678n;
   },
 };
+const api = (m, redesigned) =>
+  redesigned
+    ? {
+        pkb: (s) => m.PrivateKeyBase.from(s),
+        schnorr: (s) => m.SigningPrivateKey.fromSchnorr(m.ECPrivateKey.from(s)),
+        ecdsa: (s) => m.SigningPrivateKey.fromEcdsa(m.ECPrivateKey.from(s)),
+        ed25519: (s) => m.SigningPrivateKey.fromEd25519(m.Ed25519PrivateKey.from(s)),
+        seal: (pt, pub) => m.SealedMessage.seal(pt, pub),
+        seed: (s) => m.Seed.from(s, { name: "bench", note: "note" }),
+        tagged: (v) => v.toCbor().toData(),
+        signingPub: (pk) => pk.signingPublicKey,
+      }
+    : {
+        pkb: (s) => m.PrivateKeyBase.fromData(s),
+        schnorr: (s) => m.SigningPrivateKey.newSchnorr(m.ECPrivateKey.fromData(s)),
+        ecdsa: (s) => m.SigningPrivateKey.newEcdsa(m.ECPrivateKey.fromData(s)),
+        ed25519: (s) => m.SigningPrivateKey.newEd25519(m.Ed25519PrivateKey.from(s)),
+        seal: (pt, pub) => m.SealedMessage.new(pt, pub),
+        seed: (s) => m.Seed.from(s, { name: "bench", note: "note" }),
+        tagged: (v) => v.taggedCborData(),
+        signingPub: (pk) => pk.signingPublicKey(),
+      };
 
 function time(fn, iters = 5) {
   fn();
@@ -39,62 +64,60 @@ function time(fn, iters = 5) {
   }
   return best;
 }
-const both = (make) => [make(baseline), make(current)];
+const both = (make) => [make(baseline, api(baseline, false)), make(current, api(current, true))];
 const cases = {
-  "PrivateKeyBase(seed) → schnorr keys + x25519 ×200": both((m) => () => {
+  "PrivateKeyBase(seed) → schnorr keys + x25519 ×200": both((m, a) => () => {
     for (let i = 0; i < 200; i++) {
-      const b = m.PrivateKeyBase.fromData(seed);
+      const b = a.pkb(seed);
       b.schnorrPrivateKeys();
       b.schnorrPublicKeys();
       b.encapsulationPrivateKey();
     }
   }),
-  "schnorr sign+verify ×200": both((m) => {
-    const k = m.SigningPrivateKey.newSchnorr(m.ECPrivateKey.fromData(seed));
-    const p = k.publicKey();
+  "schnorr sign+verify ×200": both((m, a) => {
+    const k = a.schnorr(seed),
+      p = k.publicKey();
     return () => {
       for (let i = 0; i < 200; i++) p.verify(k.schnorrSign(msg, rng), msg);
     };
   }),
-  "ecdsa sign+verify ×200": both((m) => {
-    const k = m.SigningPrivateKey.newEcdsa(m.ECPrivateKey.fromData(seed));
-    const p = k.publicKey();
+  "ecdsa sign+verify ×200": both((m, a) => {
+    const k = a.ecdsa(seed),
+      p = k.publicKey();
     return () => {
       for (let i = 0; i < 200; i++) p.verify(k.sign(msg), msg);
     };
   }),
-  "ed25519 sign+verify ×200": both((m) => {
-    const k = m.SigningPrivateKey.newEd25519(m.Ed25519PrivateKey.from(seed));
-    const p = k.publicKey();
+  "ed25519 sign+verify ×200": both((m, a) => {
+    const k = a.ed25519(seed),
+      p = k.publicKey();
     return () => {
       for (let i = 0; i < 200; i++) p.verify(k.sign(msg), msg);
     };
   }),
-  "x25519 seal+open ×200": both((m) => {
-    const b = m.PrivateKeyBase.fromData(seed);
-    const priv = b.encapsulationPrivateKey();
-    const pub = priv.publicKey();
+  "x25519 seal+open ×200": both((m, a) => {
+    const priv = a.pkb(seed).encapsulationPrivateKey(),
+      pub = priv.publicKey();
     return () => {
-      for (let i = 0; i < 200; i++) m.SealedMessage.new(msg, pub).decrypt(priv);
+      for (let i = 0; i < 200; i++) a.seal(msg, pub).decrypt(priv);
     };
   }),
   "Digest.fromImage(1 KiB) ×5000": both((m) => () => {
     for (let i = 0; i < 5000; i++) m.Digest.fromImage(kib);
   }),
-  "Seed tagged CBOR encode (fresh) ×5000": both((m) => () => {
-    for (let i = 0; i < 5000; i++)
-      m.Seed.from(seed, { name: "bench", note: "note" }).taggedCborData();
+  "Seed tagged CBOR encode (fresh) ×5000": both((m, a) => () => {
+    for (let i = 0; i < 5000; i++) a.tagged(a.seed(seed));
   }),
-  "XID.fromPublicKeys(same keys) ×5000": both((m) => {
-    const pk = m.PrivateKeyBase.fromData(seed).schnorrPublicKeys();
+  "XID.fromPublicKeys(same keys) ×5000": both((m, a) => {
+    const pk = a.pkb(seed).schnorrPublicKeys();
     return () => {
       for (let i = 0; i < 5000; i++) m.XID.fromPublicKeys(pk);
     };
   }),
-  "SigningPublicKey.taggedCborData (same key) ×20000": both((m) => {
-    const pk = m.PrivateKeyBase.fromData(seed).schnorrPublicKeys().signingPublicKey();
+  "SigningPublicKey tagged CBOR (same key) ×20000": both((m, a) => {
+    const spk = a.signingPub(a.pkb(seed).schnorrPublicKeys());
     return () => {
-      for (let i = 0; i < 20000; i++) pk.taggedCborData();
+      for (let i = 0; i < 20000; i++) a.tagged(spk);
     };
   }),
 };
