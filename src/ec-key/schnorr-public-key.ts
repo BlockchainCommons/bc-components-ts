@@ -29,7 +29,7 @@
 
 import { schnorr, SCHNORR_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
 import { Digest } from "../digest.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import type { ECKeyBase } from "./ec-key-base.js";
 
@@ -40,7 +40,7 @@ export class SchnorrPublicKey implements ECKeyBase {
 
   private constructor(data: Uint8Array) {
     if (data.length !== SCHNORR_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(SCHNORR_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(SCHNORR_PUBLIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -62,7 +62,7 @@ export class SchnorrPublicKey implements ECKeyBase {
    */
   static fromDataRef(data: Uint8Array): SchnorrPublicKey {
     if (data.length !== SCHNORR_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(SCHNORR_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(SCHNORR_PUBLIC_KEY_SIZE, data.length);
     }
     return SchnorrPublicKey.fromData(data);
   }

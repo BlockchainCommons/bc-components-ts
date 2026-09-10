@@ -70,7 +70,7 @@ import {
 } from "../codable.js";
 import { ARID as TAG_ARID } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
 export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, UREncodable {
@@ -80,7 +80,7 @@ export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, URE
 
   private constructor(data: Uint8Array) {
     if (data.length !== ARID.ARID_SIZE) {
-      throw CryptoError.invalidSize(ARID.ARID_SIZE, data.length);
+      throw ComponentsError.invalidSize(ARID.ARID_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -116,7 +116,7 @@ export class ARID implements CborTaggedEncodable, CborTaggedDecodable<ARID>, URE
    */
   static fromDataRef(data: Uint8Array): ARID {
     if (data.length !== ARID.ARID_SIZE) {
-      throw CryptoError.invalidSize(ARID.ARID_SIZE, data.length);
+      throw ComponentsError.invalidSize(ARID.ARID_SIZE, data.length);
     }
     return ARID.fromData(data);
   }

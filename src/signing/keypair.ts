@@ -18,7 +18,7 @@ import { PrivateKeyBase } from "../private-key-base.js";
 import type { SshAlgorithm } from "../ssh/ssh-algorithm.js";
 import { SigningPrivateKey } from "./signing-private-key.js";
 import type { SigningPublicKey } from "./signing-public-key.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { SignatureScheme } from "./signature-scheme.js";
 
 /**
@@ -42,7 +42,7 @@ function sshSchemeToAlgorithm(scheme: SignatureScheme): SshAlgorithm {
     case SignatureScheme.MLDSA44:
     case SignatureScheme.MLDSA65:
     case SignatureScheme.MLDSA87:
-      throw new Error(`Not an SSH SignatureScheme: ${scheme}`);
+      throw ComponentsError.invalidData(`Not an SSH SignatureScheme: ${scheme}`);
   }
 }
 
@@ -125,7 +125,7 @@ export function createKeypair(
  *                  mirrors Rust `SignatureScheme::keypair_using(rng, comment)`
  *                  at `signature_scheme.rs:316`)
  * @returns A tuple containing a signing private key and its corresponding public key
- * @throws CryptoError for MLDSA (which doesn't support deterministic generation)
+ * @throws ComponentsError for MLDSA (which doesn't support deterministic generation)
  */
 export function createKeypairUsing(
   scheme: SignatureScheme,
@@ -161,7 +161,7 @@ export function createKeypairUsing(
     case SignatureScheme.MLDSA65:
     case SignatureScheme.MLDSA87:
       // ML-DSA doesn't support deterministic generation with custom RNG (matching Rust behavior)
-      throw CryptoError.general(
+      throw ComponentsError.general(
         `Deterministic keypair generation not supported for ${scheme}. Use createKeypair() instead.`,
       );
     case SignatureScheme.SshEd25519:

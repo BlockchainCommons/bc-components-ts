@@ -651,7 +651,7 @@
      "start": 3
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:InvalidData"
   },
   {
    "name": "value sr25519Pub cyc:32 (32B)",
@@ -675,7 +675,7 @@
      "start": 3
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:InvalidData"
   },
   {
    "name": "value privateKeyBase cyc:16 (16B)",
@@ -745,7 +745,7 @@
      "start": 3
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:Sskr"
   },
   {
    "name": "value uri text:not a uri (9B)",
@@ -3597,7 +3597,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c5482035840d848a486cad409ee16613581c8830acf771f31746a71c35ecc5bbf19826aaf256c8fd54b519b5ad47d9536595289a5ed6b886d4643abdf3b3564a8329eb1848c|ur:signature/lfaxhdfztpfdoxlnsgtyaswycmhseclysplsbktkktctehjyimjssrhysfhprscflfimpedajzmytlgrgyndhttykimdenhkgmldonwejelojnfgfxpyurfreciepdeynnpalrlkhkamatpk|verified"
+   "expect": "d99c5482035840c023f67db3639c09346f48b93ea0d37528d46ce53def2fd315974d8b6417d629929425f7b7d82a0737b1fbc33a7f2a302703a1345c107da519d0f050e0bc9481|ur:signature/lfaxhdfzrtcnynkiqdiansaseejlfdrhfmnbtekpdetyjzvwfswsdltebzmsgtluiechtbdtmomwdaylrltpdratempazosrftlbdrdydiaxoyeehhbekioncftiwtgdvtrfmwlyltssbgpr|verified"
   },
   {
    "name": "sign sr25519 hex:322b5c1dd5a1 msg=cyc:0",
@@ -3612,7 +3612,7 @@
      "start": 0
     }
    },
-   "expect": "d99c5482035840f25a0f0770e87a785044803dfef91cc16db22972edd4226b5c6ecf94ac66b023d15cfb653109a51a52f76172f63484b7c2c53f52ddc8467d24440121d9119089|ur:signature/lfaxhdfzwzhtbsatjovsknksgdfylafszeytcesejnprdtjpwetycpjehhjttkmwpsiypfcntthhzoihehasoncygmylhsjpyneelrrlsaskfhgmutspfgkidkfyadcltabymhldghwfgelt|verified"
+   "expect": "d99c54820358406014871efadec387bcd18e74026fac042b5dfba7711a7914eb72e54e3451d83930aac53cbae477ae33a956998b110919e691dcfec281b5aff817a8681fc18d87|ur:signature/lfaxhdfzhnbbltckzsuesrltrfttmnjyaojlpsaadnhlzoosjscykkbbwmjpvwgleegytpesdypkskfnrdvektpleopthfnllubyascfvameuozesalyrepeyachpdisctselgltatmyftpt|verified"
   },
   {
    "name": "sign sr25519 hex:322b5c1dd5a1 msg=cyc:100",
@@ -3627,7 +3627,7 @@
      "start": 7
     }
    },
-   "expect": "d99c54820358405edb113132ee57552070732d2cf7b2c6ecc5939b51185a21a96a91c2007e842860d4a780e014f996f2931ce3f0cd52fdea4c06d7d51a3613418dc96854f9378e|ur:signature/lfaxhdfzhyuybyeheywyhggocxjojkdpdwylprswwpskmundgycshtclptimmesaaekblrdehntyoslavtbbytmtwzmucevlwtsngmzcwdgsamtstlcyenbwfplgsoisghytemmnlorspflt|verified"
+   "expect": "d99c548203584072341ef4612d90e7cddf88f8f88e00708055a4dfbb4c5c0239ff5f375c0f7a5fe3568de8d710a7471777aae5075bf19ec653eada8df699c32de3d5bc782e9889|ur:signature/lfaxhdfzjpeeckwkhsdpmhvdsnurloyayamnaejolagooxurrkgshhaoeszmheemhhbsknhevlhflgvstsbeosflchktpkvwathpwnnnswguwdtnlgynnlsrdpvltlrfksdmmkldatttpegs|verified"
   },
   {
    "name": "signingKeys sr25519 cyc:32",
@@ -3654,7 +3654,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c54820358403aa04c36bfca45dcfef495758a5067b9d820c1550b6dc02d4be24bdcb22f74221effda35386062f3214a4f1d50c581a62b10ae1e6c8e6573d420a95bfd01688d|ur:signature/lfaxhdfzftnbgsenrssgfeuozewkmdkplegdiorhtpcxsegobdjnrtdpgrvogruoprdljycpckzmtnecethnidwfclgegwcagdsklyoldnbeplckjzmnihjktycxpthpzcadislglsuepyid|verified"
+   "expect": "d99c548203584008ae3f9a1a5d7018d041dc7e7dbda310ef164eed729ddc1946970d0611308363898d69c70675b46806c778652f4e74e107c7217ae3ebde67b893289260348a86|ur:signature/lfaxhdfzayplfhnycyhljocstifpuokbkiryotbewscmglwejpntuocffgmsbtambydylsialdlginstamkpqzisamstksihdlgljyvyatstclknvlwmueioromudemohneelelnhebwfwhy|verified"
   },
   {
    "name": "sign sr25519 cyc:32 msg=cyc:0",
@@ -3670,7 +3670,7 @@
      "start": 0
     }
    },
-   "expect": "d99c5482035840a2fb30660869550ac0ce39a2aa8400fde54df04ae236d94b605ab2965083d634bf6bb870c7a69b36522d332c9e7a9044374c9b5437055eefe234a2540937c688|ur:signature/lfaxhdfzoezodyiyayingobkrttoesoepklraezcvwgtwtgevoentagrhnhtprmtgdlstbeersjerojostolndengmdpeodwnnknmhfyemgsndghemahhywsvoeeoeghasemswloguvwolpk|verified"
+   "expect": "d99c5482035840347c06ddd7f337a124b79725a5f23d20e21376b1cfd99de6ac92a845485d796058400966c822118c8528d2e535da37a9b0fb2c5873e8ed1ac1d80b7a55fb0a8b|ur:signature/lfaxhdfzeekeamuttswfemoydkrlmsdaonwzfscxvobwkopatktantvapsmopdfefdhlkkhnhdfzasiyspcpbylklpdetdvwectnemptpfzodwhdjkvswecysetpbdkngozobklulponrkmt|verified"
   },
   {
    "name": "sign sr25519 cyc:32 msg=cyc:100",
@@ -3686,7 +3686,7 @@
      "start": 7
     }
    },
-   "expect": "d99c5482035840d463a5d312929aa21ca1c3715e1faee97886483953a5285352b6d737f6ea38088beb90a91d76dfbcc5bcb575b82715f7543f5a844c9ccad6f84d8c7d86c3ef85|ur:signature/lfaxhdfztyiaontebgmonyoeceoysrjshyctplwlkslnfdesguondegugmrptsemynwdetayluwmmhptcakourrfskrfrekprodibzylghfhhtlrgsnssgtbyagtlkkilnsrwslpheahzegs|verified"
+   "expect": "d99c54820358400a21d3a18baed307d885376f4a1bad970c18ec28246d84c2c73ec708177397773f0f6a7129a1a1df88896ac2fc7ffe21aa51e603331612ef58f565f33945888b|ur:signature/lfaxhdfzbkclteoyluplteattplpemjlgecwpmmsbncswpdedkjnlrsastfmstaychjkmsktfhbsimjsdtoyoyurloldimsaztlbzeclpkgyvaaxeocmbgwshdykihwfesfelolundwyislp|verified"
   },
   {
    "name": "signingKeys sr25519 hex:59f2293a5bce",
@@ -3711,7 +3711,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c54820358404c1c136afc27fb84c89ccd043f4877e3a1906dfa187cee6f4c7d6eb45039066141c2068265105f99ef8837e4547cd21aef0aea754a3a62a4a2ba6a0c82ff358b|ur:signature/lfaxhdfzgscebwimztdizolrspnssnaafhfdktvloymhjnzscskewyjlgskijtqzgdesamhsfpsaamlfihbehenlwsloemveghketdcywsbkwdkpgeftidoxoerdimbnlfzmeclueyzsiyim|verified"
+   "expect": "d99c54820358408eae36590745896cc607cda35c7e20d82a3dc52d3da3c72416a26d819f58f97c17546e37b28e20ebab5ec8363285ad098b38eea829c75791f3c464ddaafa778d|ur:signature/lfaxhdfzmnplenhkatfeldjzswatsnothhkbcxtpdrfsskdpfsotstdkcmoejnlynehdytkechghjtemprmncxwmpyhyspeneylppmasluetwypddtsthgmewfssieutpkzsktlgrhvoeedm|verified"
   },
   {
    "name": "sign sr25519 hex:59f2293a5bce msg=cyc:0",
@@ -3726,7 +3726,7 @@
      "start": 0
     }
    },
-   "expect": "d99c5482035840664ece7cb83d668619641c16b09eb199088c41f91422d58c0db426aa5adf0821e1a6d305e962746c779d9294c7c151837bb5a88211ede1841e7e3cc999a9d28f|ur:signature/lfaxhdfziygltokerofsiylncfiececmpfnnpanlaylkfpytbbcptllkbtqzdspkhturayclvyolteahwlidjyjzktntmomwstsegylskgrepdlfbywevylrckkbfnsonlpttdmymufgskdm|verified"
+   "expect": "d99c5482035840900d1a87f010ac789ae409d175a8d07bb76faff92c44859c4b3674a7148d3920a733614f4a122fec7ae8d69a0a98b763e6dd676f0e59388062c7d9be99922689|ur:signature/lfaxhdfzmhbtcyltwtbepsksnyveasttkppdtikgrljlpeytdwfylpnsgrenjyosbblgescxoseohsgwgebgdlwpknvstbnybkmkrliavautiojlbahketlaidsttarnnlmodsldiykofxws|verified"
   },
   {
    "name": "sign sr25519 hex:59f2293a5bce msg=cyc:100",
@@ -3741,7 +3741,7 @@
      "start": 7
     }
    },
-   "expect": "d99c5482035840c285e6fb173cde6851dad9735acc289f0a71836d8d0e151f64b524f3dad989345eef69523db75039cd0d6f886c0d98855031df0d624a60c33739589a070ba28c|ur:signature/lfaxhdfzsalpvazochfnueisgytntajkhtsfdenebkjslsjnlgbabzctieredkwftntaldeehywsingmfsrlgdessnbtjllojzbtmklpgdehurbtidgehnsremeshdnyatbdoelkecvejedk|verified"
+   "expect": "d99c548203584098e00f41c2ebc0872c6b69da758ff5f933c2b3ce07d0e345c7422938e5b2b63e7447713c51c47fa82aa543fb1363def671659c1e8f2a35adb1478be3c2cbd28c|ur:signature/lfaxhdfzmkvtbsfpsawmrtltdwjeintnkpmyykyteosaqdtoattivlfestfwdtetvwprrpfmjyfljsfngysslbpddronfxzobwiaueynjsihnsckmydrecpmpaflluvlsasbtdlkhknesbeo|verified"
   },
   {
    "name": "sshFromSeed ed25519 hex:59f2293a5bce \"Key comment.\"",
@@ -4012,7 +4012,7 @@
      ]
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "keypair ecdsa/x25519 seed=172951",
@@ -4046,7 +4046,7 @@
      ]
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "keypair ed25519/x25519 seed=172951",
@@ -4080,7 +4080,7 @@
      ]
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "keypair sr25519/x25519 seed=172951",
@@ -4114,7 +4114,7 @@
      ]
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "keypair schnorr/mlkem512 fake",
@@ -4126,7 +4126,7 @@
      "fake": true
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "keypair ed25519/mlkem1024 seed=819855",
@@ -4143,7 +4143,7 @@
      ]
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "seal cyc:0 → x25519",
@@ -4602,7 +4602,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "mldsa65 seed=172951 +sign",
@@ -4621,7 +4621,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "mldsa87 seed=172951 +sign",
@@ -4640,7 +4640,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "mldsa65 fake",
@@ -4651,7 +4651,7 @@
      "fake": true
     }
    },
-   "expect": "throw:Error"
+   "expect": "throw:General"
   },
   {
    "name": "mlkem512 seed=172951",
@@ -5017,7 +5017,7 @@
     "type": "sskrShare",
     "hex": "d99d6555001100020000112233445566778899aabbccddeeff"
    },
-   "expect": "throw:Error"
+   "expect": "throw:Sskr"
   },
   {
    "name": "decode sskrShare d9013555001100020000… (25B)",
@@ -5098,7 +5098,7 @@
     "type": "encryptedMessage",
     "hex": "d99c4282404c000000000000000000000000"
    },
-   "expect": "throw:Error"
+   "expect": "throw:InvalidData"
   },
   {
    "name": "decode signature d99c5458400000000000… (69B)",
@@ -5125,7 +5125,7 @@
     "type": "signature",
     "hex": "d99c548209584000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
    },
-   "expect": "throw:Error"
+   "expect": "throw:InvalidData"
   },
   {
    "name": "decode signingPriv d99c5558200000000000… (37B)",
@@ -5197,7 +5197,7 @@
     "type": "mldsaPriv",
     "hex": "d99ca7820340"
    },
-   "expect": "throw:Error"
+   "expect": "throw:PostQuantum"
   },
   {
    "name": "decode mldsaPriv d99ca7820740… (6B)",
@@ -5206,7 +5206,7 @@
     "type": "mldsaPriv",
     "hex": "d99ca7820740"
    },
-   "expect": "throw:Error"
+   "expect": "throw:PostQuantum"
   },
   {
    "name": "decode mlkemCiphertext d99ca68219030040… (8B)",
@@ -5215,7 +5215,7 @@
     "type": "mlkemCiphertext",
     "hex": "d99ca68219030040"
    },
-   "expect": "throw:Error"
+   "expect": "throw:PostQuantum"
   },
   {
    "name": "decode privateKeys d99c4d82d99c55582000… (78B)",

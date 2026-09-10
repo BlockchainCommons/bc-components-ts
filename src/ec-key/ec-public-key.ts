@@ -51,7 +51,7 @@ import {
 import { UR } from "@blockchaincommons/uniform-resources";
 import { EC_KEY as TAG_EC_KEY, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { ECUncompressedPublicKey } from "./ec-uncompressed-public-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import type { ECPublicKeyBase } from "./ec-key-base.js";
@@ -65,7 +65,7 @@ export class ECPublicKey
 
   private constructor(data: Uint8Array) {
     if (data.length !== ECDSA_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(ECDSA_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ECDSA_PUBLIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -87,7 +87,7 @@ export class ECPublicKey
    */
   static fromDataRef(data: Uint8Array): ECPublicKey {
     if (data.length !== ECDSA_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(ECDSA_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ECDSA_PUBLIC_KEY_SIZE, data.length);
     }
     return ECPublicKey.fromData(data);
   }
@@ -248,14 +248,16 @@ export class ECPublicKey
     // Check that key 2 is not present (would indicate private key)
     const isPrivate = mapGetBoolean(map, 2);
     if (isPrivate === true) {
-      throw new Error("Expected ECPublicKey but found private key (key 2 is true)");
+      throw ComponentsError.invalidData(
+        "Expected ECPublicKey but found private key (key 2 is true)",
+      );
     }
 
     // Get key data from key 3
     // CborMap.extract() returns native types (Uint8Array for byte strings)
     const keyData = mapGetBytes(map, 3);
     if (keyData === undefined || keyData.length === 0) {
-      throw new Error("ECPublicKey CBOR must have key 3 (data)");
+      throw ComponentsError.invalidData("ECPublicKey CBOR must have key 3 (data)");
     }
 
     return ECPublicKey.fromDataRef(keyData);
@@ -306,7 +308,7 @@ export class ECPublicKey
   ur(): UR {
     const name = TAG_EC_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_EC_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -324,7 +326,7 @@ export class ECPublicKey
   static fromUR(ur: UR): ECPublicKey {
     const name = TAG_EC_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_EC_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
     }
     ur.expectType(name);
     const dummy = new ECPublicKey(new Uint8Array(ECDSA_PUBLIC_KEY_SIZE));

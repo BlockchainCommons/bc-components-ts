@@ -50,6 +50,7 @@ import {
   mlkemCiphertextSize,
 } from "./mlkem-level.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * MLKEMCiphertext - Post-quantum key encapsulation ciphertext using ML-KEM.
@@ -63,7 +64,7 @@ export class MLKEMCiphertext
   private constructor(level: MLKEMLevel, data: Uint8Array) {
     const expectedSize = mlkemCiphertextSize(level);
     if (data.length !== expectedSize) {
-      throw new Error(
+      throw ComponentsError.postQuantum(
         `MLKEMCiphertext (${mlkemLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
       );
     }
@@ -185,7 +186,9 @@ export class MLKEMCiphertext
   fromUntaggedCbor(cborValue: Cbor): MLKEMCiphertext {
     const elements = expectArray(cborValue);
     if (elements.length !== 2) {
-      throw new Error(`MLKEMCiphertext CBOR must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.postQuantum(
+        `MLKEMCiphertext CBOR must have 2 elements, got ${elements.length}`,
+      );
     }
     const levelValue = Number(expectInteger(elements[0]));
     const level = mlkemLevelFromValue(levelValue);
@@ -240,7 +243,7 @@ export class MLKEMCiphertext
   ur(): UR {
     const name = TAG_MLKEM_CIPHERTEXT.name;
     if (name === undefined) {
-      throw new Error("MLKEM_CIPHERTEXT tag name is undefined");
+      throw ComponentsError.postQuantum("MLKEM_CIPHERTEXT tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -257,7 +260,9 @@ export class MLKEMCiphertext
    */
   static fromUR(ur: UR): MLKEMCiphertext {
     if (ur.type.name !== TAG_MLKEM_CIPHERTEXT.name) {
-      throw new Error(`Expected UR type ${TAG_MLKEM_CIPHERTEXT.name}, got ${ur.type.name}`);
+      throw ComponentsError.postQuantum(
+        `Expected UR type ${TAG_MLKEM_CIPHERTEXT.name}, got ${ur.type.name}`,
+      );
     }
     const dummyData = new Uint8Array(mlkemCiphertextSize(MLKEMLevel.MLKEM512));
     const dummy = new MLKEMCiphertext(MLKEMLevel.MLKEM512, dummyData);

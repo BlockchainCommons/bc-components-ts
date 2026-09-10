@@ -31,6 +31,7 @@ import { type EncryptedMessage } from "../symmetric/encrypted-message.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import { SALT_LEN } from "./hkdf-params.js";
 import type { KeyDerivation } from "./key-derivation.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Argon2id parameters for password-based key derivation.
@@ -143,12 +144,14 @@ export class Argon2idParams implements KeyDerivation {
     const array = expectArray(cborValue);
 
     if (array.length !== 2) {
-      throw new Error(`Invalid Argon2idParams: expected 2 elements, got ${array.length}`);
+      throw ComponentsError.invalidData(
+        `Invalid Argon2idParams: expected 2 elements, got ${array.length}`,
+      );
     }
 
     const index = expectNumber(array[0]);
     if (index !== Argon2idParams.INDEX) {
-      throw new Error(
+      throw ComponentsError.invalidData(
         `Invalid Argon2idParams index: expected ${Argon2idParams.INDEX}, got ${index}`,
       );
     }

@@ -76,7 +76,7 @@ import {
 } from "./codable.js";
 import { SALT as TAG_SALT } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "./error.js";
+import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 
 const MIN_SALT_SIZE = 8;
@@ -131,7 +131,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
    */
   static newWithLenUsing(count: number, rng: RandomNumberGenerator): Salt {
     if (count < MIN_SALT_SIZE) {
-      throw CryptoError.dataTooShort("salt", MIN_SALT_SIZE, count);
+      throw ComponentsError.dataTooShort("salt", MIN_SALT_SIZE, count);
     }
     return new Salt(randomBytes(count, { rng: rng }));
   }
@@ -143,7 +143,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
    */
   static newInRange(minSize: number, maxSize: number): Salt {
     if (minSize < MIN_SALT_SIZE) {
-      throw CryptoError.dataTooShort("salt", MIN_SALT_SIZE, minSize);
+      throw ComponentsError.dataTooShort("salt", MIN_SALT_SIZE, minSize);
     }
     const rng = secureRng();
     return Salt.newInRangeUsing(minSize, maxSize, rng);
@@ -156,7 +156,7 @@ export class Salt implements CborTaggedEncodable, CborTaggedDecodable<Salt>, URE
    */
   static newInRangeUsing(minSize: number, maxSize: number, rng: RandomNumberGenerator): Salt {
     if (minSize < MIN_SALT_SIZE) {
-      throw CryptoError.dataTooShort("salt", MIN_SALT_SIZE, minSize);
+      throw ComponentsError.dataTooShort("salt", MIN_SALT_SIZE, minSize);
     }
     const count = nextInClosedRangeI32(rng, minSize, maxSize);
     return Salt.newWithLenUsing(count, rng);

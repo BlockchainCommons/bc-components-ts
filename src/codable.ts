@@ -15,6 +15,7 @@ import {
   taggedValue,
 } from "@blockchaincommons/dcbor";
 import type { UR } from "@blockchaincommons/uniform-resources";
+import { ComponentsError } from "./error.js";
 
 /** Encodes to tagged CBOR; the first tag is the one written. */
 export interface CborTaggedEncodable extends CborTagged {
@@ -51,7 +52,7 @@ export function taggedCborOf(value: CborTaggedEncodable): Cbor {
   const memo = TAGGED_CBOR.get(value);
   if (memo !== undefined) return memo;
   const tag: Tag | undefined = value.cborTags()[0];
-  if (tag === undefined) throw new Error("No tags defined for this type");
+  if (tag === undefined) throw ComponentsError.invalidData("No tags defined for this type");
   const out = taggedValue(tag, value.untaggedCbor());
   TAGGED_CBOR.set(value, out);
   return out;

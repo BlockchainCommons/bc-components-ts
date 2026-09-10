@@ -46,7 +46,7 @@ import {
 import { UR } from "@blockchaincommons/uniform-resources";
 import { X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY } from "@blockchaincommons/tags";
 import { Digest } from "../digest.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
 export class X25519PublicKey
@@ -58,7 +58,7 @@ export class X25519PublicKey
 
   private constructor(data: Uint8Array) {
     if (data.length !== X25519_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(X25519_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(X25519_PUBLIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -80,7 +80,7 @@ export class X25519PublicKey
    */
   static fromDataRef(data: Uint8Array): X25519PublicKey {
     if (data.length !== X25519_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(X25519_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(X25519_PUBLIC_KEY_SIZE, data.length);
     }
     return X25519PublicKey.fromData(data);
   }
@@ -251,7 +251,7 @@ export class X25519PublicKey
   ur(): UR {
     const name = TAG_X25519_PUBLIC_KEY.name;
     if (name === undefined) {
-      throw new Error("X25519_PUBLIC_KEY tag name is undefined");
+      throw ComponentsError.invalidData("X25519_PUBLIC_KEY tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -269,7 +269,7 @@ export class X25519PublicKey
   static fromUR(ur: UR): X25519PublicKey {
     const name = TAG_X25519_PUBLIC_KEY.name;
     if (name === undefined) {
-      throw new Error("X25519_PUBLIC_KEY tag name is undefined");
+      throw ComponentsError.invalidData("X25519_PUBLIC_KEY tag name is undefined");
     }
     ur.expectType(name);
     const dummy = new X25519PublicKey(new Uint8Array(X25519_PUBLIC_KEY_SIZE));

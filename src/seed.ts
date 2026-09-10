@@ -64,7 +64,7 @@ import {
 import { SEED as TAG_SEED, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_SEED_V1 = LEGACY_TAGS.SEED_V1;
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "./error.js";
+import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { PrivateKeyDataProvider } from "./private-key-data-provider.js";
 
@@ -90,7 +90,7 @@ export class Seed
 
   private constructor(data: Uint8Array, name?: string, note?: string, creationDate?: Date) {
     if (data.length < Seed.MIN_SEED_LENGTH) {
-      throw CryptoError.dataTooShort("seed", Seed.MIN_SEED_LENGTH, data.length);
+      throw ComponentsError.dataTooShort("seed", Seed.MIN_SEED_LENGTH, data.length);
     }
     // Defensive copy on construction to ensure immutability of internal state
     this._data = new Uint8Array(data);
@@ -118,7 +118,7 @@ export class Seed
    * Rust equivalent: `Seed::new_with_len(count)`
    *
    * @param count - Number of bytes (must be >= 16)
-   * @throws CryptoError if count < 16
+   * @throws ComponentsError if count < 16
    */
   static newWithLen(count: number): Seed {
     const rng = secureRng();
@@ -132,7 +132,7 @@ export class Seed
    *
    * @param count - Number of bytes (must be >= 16)
    * @param rng - Random number generator
-   * @throws CryptoError if count < 16
+   * @throws ComponentsError if count < 16
    */
   static newWithLenUsing(count: number, rng: RandomNumberGenerator): Seed {
     const data = randomBytes(count, { rng: rng });
@@ -148,7 +148,7 @@ export class Seed
    * @param name - Optional name for the seed
    * @param note - Optional note for the seed
    * @param creationDate - Optional creation date
-   * @throws CryptoError if data < 16 bytes
+   * @throws ComponentsError if data < 16 bytes
    */
   static newOpt(
     data: Uint8Array,
@@ -463,7 +463,7 @@ export class Seed
     // CborMap.extract() returns native types (Uint8Array for byte strings)
     const data = mapGetBytes(map, 1);
     if (data === undefined || data.length === 0) {
-      throw CryptoError.invalidData("Seed data is empty");
+      throw ComponentsError.invalidData("Seed data is empty");
     }
 
     // Key 2: creation date (optional)

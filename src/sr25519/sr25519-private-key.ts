@@ -23,7 +23,7 @@ import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchainc
 import { blake2b } from "@noble/hashes/blake2.js";
 import { Sr25519PublicKey } from "./sr25519-public-key.js";
 import { bytesToHex, bytesEqual } from "../utils.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { SR25519_PRIVATE_KEY_SIZE, SR25519_DEFAULT_CONTEXT } from "./constants.js";
 
 export {
@@ -44,7 +44,7 @@ export class Sr25519PrivateKey {
 
   private constructor(seed: Uint8Array) {
     if (seed.length !== SR25519_PRIVATE_KEY_SIZE) {
-      throw new Error(
+      throw ComponentsError.invalidData(
         `Sr25519PrivateKey seed must be ${SR25519_PRIVATE_KEY_SIZE} bytes, got ${seed.length}`,
       );
     }
@@ -92,7 +92,7 @@ export class Sr25519PrivateKey {
   static fromHex(hex: string): Sr25519PrivateKey {
     const matches = hex.match(/.{1,2}/g);
     if (matches === null) {
-      throw new Error("Invalid hex string");
+      throw ComponentsError.invalidData("Invalid hex string");
     }
     const data = new Uint8Array(matches.map((byte) => parseInt(byte, 16)));
     return Sr25519PrivateKey.fromSeed(data);
@@ -192,11 +192,11 @@ export class Sr25519PrivateKey {
    * @param message - The message to sign
    * @param context - The signing context (must equal `SR25519_DEFAULT_CONTEXT`)
    * @returns 64-byte signature
-   * @throws CryptoError if `context` is not the substrate default
+   * @throws ComponentsError if `context` is not the substrate default
    */
   signWithContext(message: Uint8Array, context: Uint8Array): Uint8Array {
     if (!bytesEqual(context, SR25519_DEFAULT_CONTEXT)) {
-      throw CryptoError.cryptoOperation(
+      throw ComponentsError.crypto(
         "Sr25519: only the default substrate context is supported by the underlying library",
       );
     }

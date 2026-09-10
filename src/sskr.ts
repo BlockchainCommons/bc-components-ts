@@ -25,6 +25,7 @@ import {
 import type { RandomNumberGenerator } from "@blockchaincommons/rand";
 import { bytesToHex, hexToBytes } from "./utils.js";
 import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "./codable.js";
+import { ComponentsError } from "./error.js";
 
 const TAG_SSKR_SHARE_V1 = LEGACY_TAGS.SSKR_SHARE_V1;
 export { SSKRSecret, SSKRGroupSpec, SSKRSpec };
@@ -34,7 +35,7 @@ export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<S
   private readonly _data: Uint8Array;
   private constructor(data: Uint8Array) {
     if (data.length < METADATA_SIZE_BYTES) {
-      throw new Error(
+      throw ComponentsError.sskr(
         `SSKRShare must be at least ${METADATA_SIZE_BYTES} bytes, got ${data.length}`,
       );
     }
@@ -107,7 +108,7 @@ export class SSKRShareCbor implements CborTaggedEncodable, CborTaggedDecodable<S
   fromTaggedCbor(cborValue: Cbor): SSKRShareCbor {
     const tag = tagValue(cborValue);
     if (tag !== TAG_SSKR_SHARE.value && tag !== TAG_SSKR_SHARE_V1.value) {
-      throw new Error(
+      throw ComponentsError.sskr(
         `Invalid SSKRShare tag: expected ${TAG_SSKR_SHARE.value} or ${TAG_SSKR_SHARE_V1.value}, got ${tag}`,
       );
     }

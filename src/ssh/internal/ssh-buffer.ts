@@ -1,3 +1,4 @@
+import { ComponentsError } from "../../error.js";
 /**
  * Copyright © 2025-2026 Parity Technologies
  *
@@ -37,7 +38,7 @@ export class SshBufferReader {
 
   private requireBytes(n: number, what: string): void {
     if (this.offset + n > this.bytes.length) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SshBuffer: not enough bytes for ${what} (need ${n}, have ${this.bytes.length - this.offset})`,
       );
     }
@@ -96,7 +97,7 @@ export class SshBufferWriter {
 
   writeByte(b: number): this {
     if (b < 0 || b > 0xff || !Number.isInteger(b)) {
-      throw new Error(`SshBuffer: byte out of range: ${b}`);
+      throw ComponentsError.ssh(`SshBuffer: byte out of range: ${b}`);
     }
     const buf = new Uint8Array(1);
     buf[0] = b;
@@ -111,7 +112,7 @@ export class SshBufferWriter {
 
   writeUint32(v: number): this {
     if (v < 0 || v > MAX_UINT32 || !Number.isInteger(v)) {
-      throw new Error(`SshBuffer: uint32 out of range: ${v}`);
+      throw ComponentsError.ssh(`SshBuffer: uint32 out of range: ${v}`);
     }
     const buf = new Uint8Array(4);
     new DataView(buf.buffer).setUint32(0, v, false);
@@ -205,7 +206,7 @@ export function stripMpintSignByte(bytes: Uint8Array): Uint8Array {
 export function padLeftToLength(bytes: Uint8Array, len: number): Uint8Array {
   if (bytes.length === len) return bytes;
   if (bytes.length > len) {
-    throw new Error(`padLeftToLength: input ${bytes.length} > target ${len}`);
+    throw ComponentsError.ssh(`padLeftToLength: input ${bytes.length} > target ${len}`);
   }
   const out = new Uint8Array(len);
   out.set(bytes, len - bytes.length);

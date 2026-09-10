@@ -59,7 +59,7 @@ import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from
 import { COMPRESSED as TAG_COMPRESSED } from "@blockchaincommons/tags";
 import { Digest } from "./digest.js";
 import type { DigestProvider } from "./digest-provider.js";
-import { CryptoError } from "./error.js";
+import { ComponentsError } from "./error.js";
 import { bytesToHex } from "./utils.js";
 
 /**
@@ -87,7 +87,7 @@ export class Compressed
     digest?: Digest,
   ) {
     if (compressedData.length > decompressedSize) {
-      throw CryptoError.cryptoOperation("compressed data is larger than decompressed size");
+      throw ComponentsError.crypto("compressed data is larger than decompressed size");
     }
     this._checksum = checksum;
     this._decompressedSize = decompressedSize;
@@ -111,7 +111,7 @@ export class Compressed
    * @param compressedData - The compressed data bytes
    * @param digest - Optional cryptographic digest of the content
    * @returns A new `Compressed` object
-   * @throws CryptoError if the compressed data is larger than the decompressed size
+   * @throws ComponentsError if the compressed data is larger than the decompressed size
    */
   static new(
     checksum: number,
@@ -164,7 +164,7 @@ export class Compressed
    * stored checksum.
    *
    * @returns The decompressed data
-   * @throws CryptoError if the compressed data is corrupt or checksum doesn't match
+   * @throws ComponentsError if the compressed data is corrupt or checksum doesn't match
    */
   decompress(): Uint8Array {
     const compressedSize = this._compressedData.length;
@@ -179,13 +179,13 @@ export class Compressed
 
       // Verify checksum
       if (crc32(decompressedData) !== this._checksum) {
-        throw CryptoError.cryptoOperation("compressed data checksum mismatch");
+        throw ComponentsError.crypto("compressed data checksum mismatch");
       }
 
       return decompressedData;
     } catch (e) {
-      if (e instanceof CryptoError) throw e;
-      throw CryptoError.cryptoOperation("corrupt compressed data");
+      if (e instanceof ComponentsError) throw e;
+      throw ComponentsError.crypto("corrupt compressed data");
     }
   }
 
@@ -253,7 +253,7 @@ export class Compressed
    */
   digest(): Digest {
     if (this._digest === undefined) {
-      throw new Error("No digest associated with this compressed data");
+      throw ComponentsError.compression("No digest associated with this compressed data");
     }
     return this._digest;
   }
@@ -352,7 +352,7 @@ export class Compressed
   fromUntaggedCbor(cborValue: Cbor): Compressed {
     const elements = expectArray(cborValue);
     if (elements.length < 3 || elements.length > 4) {
-      throw CryptoError.invalidData("invalid number of elements in compressed");
+      throw ComponentsError.invalidData("invalid number of elements in compressed");
     }
 
     const checksum = expectInteger(elements[0]);

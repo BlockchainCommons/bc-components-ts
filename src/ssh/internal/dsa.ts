@@ -20,6 +20,7 @@
 
 import { sha1 } from "@noble/hashes/legacy.js";
 import { hmac } from "@noble/hashes/hmac.js";
+import { ComponentsError } from "../../error.js";
 
 // ----------------------------------------------------------------------------
 // Modular-arithmetic helpers (BigInt — not constant-time, matches Rust `dsa`)
@@ -51,7 +52,7 @@ function modinv(a: bigint, m: bigint): bigint {
     [oldS, s] = [s, oldS - q * s];
   }
   if (oldR !== 1n) {
-    throw new Error("dsa: modular inverse does not exist");
+    throw ComponentsError.ssh("dsa: modular inverse does not exist");
   }
   return ((oldS % m) + m) % m;
 }
@@ -70,7 +71,7 @@ function bigintToBytesFixed(v: bigint, len: number): Uint8Array {
     n >>= 8n;
   }
   if (n !== 0n) {
-    throw new Error(`dsa: integer does not fit in ${len} bytes`);
+    throw ComponentsError.ssh(`dsa: integer does not fit in ${len} bytes`);
   }
   return out;
 }
@@ -158,7 +159,7 @@ function rfc6979Nonce(q: bigint, x: Uint8Array, hashedMessage: Uint8Array): bigi
     K = hmac(sha1, K, concatBytes(V, new Uint8Array([0x00])));
     V = hmac(sha1, K, V);
   }
-  throw new Error("dsa: RFC 6979 failed to produce a valid k after 1024 iterations");
+  throw ComponentsError.ssh("dsa: RFC 6979 failed to produce a valid k after 1024 iterations");
 }
 
 // ----------------------------------------------------------------------------
@@ -207,13 +208,13 @@ export function dsaSign(params: DsaSignParams): Uint8Array {
   const k = rfc6979Nonce(q, params.x, params.messageDigest);
   const r = modpow(g, k, p) % q;
   if (r === 0n) {
-    throw new Error("dsa: degenerate signature with r=0");
+    throw ComponentsError.ssh("dsa: degenerate signature with r=0");
   }
   const z = bits2int(params.messageDigest, qlenBits);
   const kInv = modinv(k, q);
   const s = (kInv * (z + x * r)) % q;
   if (s === 0n) {
-    throw new Error("dsa: degenerate signature with s=0");
+    throw ComponentsError.ssh("dsa: degenerate signature with s=0");
   }
 
   const out = new Uint8Array(rolen * 2);

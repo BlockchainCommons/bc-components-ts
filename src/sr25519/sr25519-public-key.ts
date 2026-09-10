@@ -16,7 +16,7 @@
 import * as sr25519 from "@scure/sr25519";
 import { SR25519_PUBLIC_KEY_SIZE, SR25519_DEFAULT_CONTEXT } from "./constants.js";
 import { bytesToHex, bytesEqual } from "../utils.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Sr25519PublicKey - Public key for Schnorr signatures over Ristretto25519.
@@ -28,7 +28,7 @@ export class Sr25519PublicKey {
 
   private constructor(data: Uint8Array) {
     if (data.length !== SR25519_PUBLIC_KEY_SIZE) {
-      throw new Error(
+      throw ComponentsError.invalidData(
         `Sr25519PublicKey must be ${SR25519_PUBLIC_KEY_SIZE} bytes, got ${data.length}`,
       );
     }
@@ -52,7 +52,7 @@ export class Sr25519PublicKey {
   static fromHex(hex: string): Sr25519PublicKey {
     const matches = hex.match(/.{1,2}/g);
     if (matches === null) {
-      throw new Error("Invalid hex string");
+      throw ComponentsError.invalidData("Invalid hex string");
     }
     const data = new Uint8Array(matches.map((byte) => parseInt(byte, 16)));
     return Sr25519PublicKey.from(data);
@@ -106,11 +106,11 @@ export class Sr25519PublicKey {
    * @param message - The message that was signed
    * @param context - The signing context (must equal `SR25519_DEFAULT_CONTEXT`)
    * @returns true if the signature is valid
-   * @throws CryptoError if `context` is not the substrate default
+   * @throws ComponentsError if `context` is not the substrate default
    */
   verifyWithContext(signature: Uint8Array, message: Uint8Array, context: Uint8Array): boolean {
     if (!bytesEqual(context, SR25519_DEFAULT_CONTEXT)) {
-      throw CryptoError.cryptoOperation(
+      throw ComponentsError.crypto(
         "Sr25519: only the default substrate context is supported by the underlying library",
       );
     }

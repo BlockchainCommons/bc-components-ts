@@ -27,6 +27,7 @@ import { type EncryptedMessage } from "../symmetric/encrypted-message.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import { SALT_LEN } from "./hkdf-params.js";
 import type { KeyDerivation } from "./key-derivation.js";
+import { ComponentsError } from "../error.js";
 
 // Defaults match Rust `ScryptParams::new()` in bc-components-rust v0.34.x
 // (`log_n = 15, r = 8, p = 1`). Distinct from Rust's `bc_crypto::scrypt()`
@@ -193,12 +194,16 @@ export class ScryptParams implements KeyDerivation {
     const array = expectArray(cborValue);
 
     if (array.length !== 5) {
-      throw new Error(`Invalid ScryptParams: expected 5 elements, got ${array.length}`);
+      throw ComponentsError.invalidData(
+        `Invalid ScryptParams: expected 5 elements, got ${array.length}`,
+      );
     }
 
     const index = expectNumber(array[0]);
     if (index !== ScryptParams.INDEX) {
-      throw new Error(`Invalid ScryptParams index: expected ${ScryptParams.INDEX}, got ${index}`);
+      throw ComponentsError.invalidData(
+        `Invalid ScryptParams index: expected ${ScryptParams.INDEX}, got ${index}`,
+      );
     }
 
     const salt = Salt.fromTaggedCbor(array[1]);

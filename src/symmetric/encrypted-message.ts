@@ -66,6 +66,7 @@ import { Nonce } from "../nonce.js";
 import { Digest } from "../digest.js";
 import { AuthenticationTag } from "./authentication-tag.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 export class EncryptedMessage
   implements CborTaggedEncodable, CborTaggedDecodable<EncryptedMessage>, UREncodable
@@ -260,7 +261,7 @@ export class EncryptedMessage
     const elements = expectArray(cborValue);
 
     if (elements.length < 3) {
-      throw new Error("EncryptedMessage must have at least 3 elements");
+      throw ComponentsError.invalidData("EncryptedMessage must have at least 3 elements");
     }
 
     const ciphertext = expectBytes(elements[0]);

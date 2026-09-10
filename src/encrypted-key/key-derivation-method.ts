@@ -21,6 +21,7 @@
  */
 
 import { type Cbor, expectNumber } from "@blockchaincommons/dcbor";
+import { ComponentsError } from "../error.js";
 
 /**
  * Enum representing supported key derivation methods.
@@ -88,7 +89,7 @@ export function keyDerivationMethodToString(method: KeyDerivationMethod): string
     case KeyDerivationMethod.SSHAgent:
       return "SSHAgent";
     default:
-      throw new Error(`Unknown KeyDerivationMethod: ${String(method)}`);
+      throw ComponentsError.invalidData(`Unknown KeyDerivationMethod: ${String(method)}`);
   }
 }
 
@@ -99,7 +100,7 @@ export function keyDerivationMethodFromCbor(cborValue: Cbor): KeyDerivationMetho
   const value = expectNumber(cborValue);
   const method = keyDerivationMethodFromIndex(Number(value));
   if (method === undefined) {
-    throw new Error(`Invalid KeyDerivationMethod index: ${value}`);
+    throw ComponentsError.invalidData(`Invalid KeyDerivationMethod index: ${value}`);
   }
   return method;
 }

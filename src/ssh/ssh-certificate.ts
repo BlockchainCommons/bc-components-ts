@@ -14,6 +14,7 @@
  */
 
 import { sha256 } from "@noble/hashes/sha2.js";
+import { ComponentsError } from "../error.js";
 
 export class SSHCertificate {
   /** The full single-line OpenSSH cert text, e.g.
@@ -28,7 +29,7 @@ export class SSHCertificate {
   static fromText(text: string): SSHCertificate {
     const trimmed = text.trim();
     if (trimmed.length === 0) {
-      throw new Error("SSHCertificate: empty input");
+      throw ComponentsError.ssh("SSHCertificate: empty input");
     }
     return new SSHCertificate(trimmed);
   }

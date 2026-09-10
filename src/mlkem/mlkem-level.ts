@@ -24,6 +24,7 @@
 
 import { ml_kem512, ml_kem768, ml_kem1024 } from "@noble/post-quantum/ml-kem.js";
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
+import { ComponentsError } from "../error.js";
 
 /**
  * ML-KEM security levels.
@@ -126,7 +127,7 @@ export function mlkemLevelFromValue(value: number): MLKEMLevel {
     case 1024:
       return MLKEMLevel.MLKEM1024;
     default:
-      throw new Error(`Invalid MLKEM level value: ${value}`);
+      throw ComponentsError.postQuantum(`Invalid MLKEM level value: ${value}`);
   }
 }
 

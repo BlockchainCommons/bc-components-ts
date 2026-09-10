@@ -43,7 +43,7 @@ import {
 } from "../codable.js";
 import { URI as TAG_URI } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { toBase64 } from "../utils.js";
 
 export class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREncodable {
@@ -66,7 +66,7 @@ export class URI implements CborTaggedEncodable, CborTaggedDecodable<URI>, UREnc
       new URL(uri);
       return new URI(uri);
     } catch {
-      throw CryptoError.invalidData("URI: invalid URI format");
+      throw ComponentsError.invalidData("URI: invalid URI format");
     }
   }
 

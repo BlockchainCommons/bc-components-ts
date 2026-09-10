@@ -61,6 +61,7 @@ import type { Verifier } from "./signer.js";
 import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
 import { UR } from "@blockchaincommons/uniform-resources";
+import { ComponentsError } from "../error.js";
 
 /**
  * A public key used for verifying digital signatures.
@@ -193,7 +194,7 @@ export class SigningPublicKey
         scheme = SignatureScheme.MLDSA87;
         break;
       default:
-        throw new Error(`Unknown MLDSA level: ${key.level()}`);
+        throw ComponentsError.invalidData(`Unknown MLDSA level: ${key.level()}`);
     }
     return new SigningPublicKey(scheme, undefined, undefined, undefined, undefined, key);
   }
@@ -395,7 +396,9 @@ export class SigningPublicKey
    */
   withSshComment(comment: string): SigningPublicKey {
     if (this._sshKey === undefined) {
-      throw new Error(`SigningPublicKey.withSshComment: not an SSH key (scheme: ${this._type})`);
+      throw ComponentsError.invalidData(
+        `SigningPublicKey.withSshComment: not an SSH key (scheme: ${this._type})`,
+      );
     }
     return SigningPublicKey.fromSsh(this._sshKey.withComment(comment));
   }
@@ -621,26 +624,26 @@ export class SigningPublicKey
     switch (this._type) {
       case SignatureScheme.Schnorr: {
         if (this._schnorrKey === undefined) {
-          throw new Error("Schnorr public key is missing");
+          throw ComponentsError.invalidData("Schnorr public key is missing");
         }
         // Rust: CBOR::to_byte_string(key.data()) - bare byte string
         return cbor(this._schnorrKey.toData());
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecdsaKey === undefined) {
-          throw new Error("ECDSA public key is missing");
+          throw ComponentsError.invalidData("ECDSA public key is missing");
         }
         return cbor([1, cbor(this._ecdsaKey.toData())]);
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
-          throw new Error("Ed25519 public key is missing");
+          throw ComponentsError.invalidData("Ed25519 public key is missing");
         }
         return cbor([2, cbor(this._ed25519Key.toData())]);
       }
       case SignatureScheme.Sr25519: {
         if (this._sr25519Key === undefined) {
-          throw new Error("Sr25519 public key is missing");
+          throw ComponentsError.invalidData("Sr25519 public key is missing");
         }
         return cbor([3, cbor(this._sr25519Key.toData())]);
       }
@@ -648,7 +651,7 @@ export class SigningPublicKey
       case SignatureScheme.MLDSA65:
       case SignatureScheme.MLDSA87: {
         if (this._mldsaKey === undefined) {
-          throw new Error("MLDSA public key is missing");
+          throw ComponentsError.invalidData("MLDSA public key is missing");
         }
         // Rust: delegates to MLDSAPublicKey (which produces tagged CBOR)
         return this._mldsaKey.taggedCbor();
@@ -658,7 +661,7 @@ export class SigningPublicKey
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384: {
         if (this._sshKey === undefined) {
-          throw new Error("SSH public key is missing");
+          throw ComponentsError.invalidData("SSH public key is missing");
         }
         // Mirror Rust `SigningPublicKey::SSH(key) => to_tagged_value(TAG_SSH_TEXT_PUBLIC_KEY, openssh)`
         // (`signing_public_key.rs:441-443`).
@@ -706,7 +709,7 @@ export class SigningPublicKey
       const elements = expectArray(cborValue);
 
       if (elements.length !== 2) {
-        throw new Error("SigningPublicKey array must have 2 elements");
+        throw ComponentsError.invalidData("SigningPublicKey array must have 2 elements");
       }
 
       const discriminator = expectUnsigned(elements[0]);
@@ -720,7 +723,9 @@ export class SigningPublicKey
         case 3: // Sr25519
           return SigningPublicKey.fromSr25519(Sr25519PublicKey.from(keyData));
         default:
-          throw new Error(`Unknown SigningPublicKey discriminator: ${discriminator}`);
+          throw ComponentsError.invalidData(
+            `Unknown SigningPublicKey discriminator: ${discriminator}`,
+          );
       }
     }
 
@@ -738,7 +743,7 @@ export class SigningPublicKey
       }
     }
 
-    throw new Error(
+    throw ComponentsError.invalidData(
       "SigningPublicKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
     );
   }
@@ -864,7 +869,9 @@ export class SigningPublicKey
    */
   toSshOpenssh(): string {
     if (this._sshKey === undefined) {
-      throw new Error(`SigningPublicKey is not an SSH key (scheme: ${this._type})`);
+      throw ComponentsError.invalidData(
+        `SigningPublicKey is not an SSH key (scheme: ${this._type})`,
+      );
     }
     return this._sshKey.toOpenssh();
   }

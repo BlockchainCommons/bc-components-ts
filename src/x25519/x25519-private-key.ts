@@ -46,7 +46,7 @@ import {
 } from "../codable.js";
 import { UR } from "@blockchaincommons/uniform-resources";
 import { X25519_PRIVATE_KEY as TAG_X25519_PRIVATE_KEY } from "@blockchaincommons/tags";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { X25519PublicKey } from "./x25519-public-key.js";
 import { SymmetricKey } from "../symmetric/symmetric-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
@@ -61,7 +61,7 @@ export class X25519PrivateKey
 
   private constructor(data: Uint8Array) {
     if (data.length !== X25519_PRIVATE_KEY_SIZE) {
-      throw CryptoError.invalidSize(X25519_PRIVATE_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(X25519_PRIVATE_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -134,7 +134,7 @@ export class X25519PrivateKey
    */
   static fromDataRef(data: Uint8Array): X25519PrivateKey {
     if (data.length !== X25519_PRIVATE_KEY_SIZE) {
-      throw CryptoError.invalidSize(X25519_PRIVATE_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(X25519_PRIVATE_KEY_SIZE, data.length);
     }
     return X25519PrivateKey.fromData(data);
   }
@@ -225,7 +225,7 @@ export class X25519PrivateKey
       const shared = x25519.sharedKey(this._data, publicKey.data());
       return new Uint8Array(shared);
     } catch (e: unknown) {
-      throw CryptoError.cryptoOperation(`ECDH key agreement failed: ${String(e)}`);
+      throw ComponentsError.crypto(`ECDH key agreement failed: ${String(e)}`);
     }
   }
 
@@ -336,7 +336,7 @@ export class X25519PrivateKey
   ur(): UR {
     const name = TAG_X25519_PRIVATE_KEY.name;
     if (name === undefined) {
-      throw new Error("X25519_PRIVATE_KEY tag name is undefined");
+      throw ComponentsError.invalidData("X25519_PRIVATE_KEY tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -354,7 +354,7 @@ export class X25519PrivateKey
   static fromUR(ur: UR): X25519PrivateKey {
     const name = TAG_X25519_PRIVATE_KEY.name;
     if (name === undefined) {
-      throw new Error("X25519_PRIVATE_KEY tag name is undefined");
+      throw ComponentsError.invalidData("X25519_PRIVATE_KEY tag name is undefined");
     }
     ur.expectType(name);
     const dummy = new X25519PrivateKey(new Uint8Array(X25519_PRIVATE_KEY_SIZE));

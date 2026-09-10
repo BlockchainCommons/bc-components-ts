@@ -18,6 +18,7 @@
  */
 
 import { type Cbor, cbor, expectNumber } from "@blockchaincommons/dcbor";
+import { ComponentsError } from "../error.js";
 
 /**
  * Enum representing supported hash types for key derivation.
@@ -39,7 +40,7 @@ export function hashTypeToString(hashType: HashType): string {
     case HashType.SHA512:
       return "SHA512";
     default:
-      throw new Error(`Unknown HashType: ${String(hashType)}`);
+      throw ComponentsError.invalidData(`Unknown HashType: ${String(hashType)}`);
   }
 }
 
@@ -61,6 +62,6 @@ export function hashTypeFromCbor(cborValue: Cbor): HashType {
     case 1:
       return HashType.SHA512;
     default:
-      throw new Error(`Invalid HashType: ${value}`);
+      throw ComponentsError.invalidData(`Invalid HashType: ${value}`);
   }
 }

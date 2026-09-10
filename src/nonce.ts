@@ -70,7 +70,7 @@ import {
 } from "./codable.js";
 import { NONCE as TAG_NONCE } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "./error.js";
+import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 
 export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, UREncodable {
@@ -80,7 +80,7 @@ export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, U
 
   private constructor(data: Uint8Array) {
     if (data.length !== Nonce.NONCE_SIZE) {
-      throw CryptoError.invalidSize(Nonce.NONCE_SIZE, data.length);
+      throw ComponentsError.invalidSize(Nonce.NONCE_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -116,7 +116,7 @@ export class Nonce implements CborTaggedEncodable, CborTaggedDecodable<Nonce>, U
    */
   static fromDataRef(data: Uint8Array): Nonce {
     if (data.length !== Nonce.NONCE_SIZE) {
-      throw CryptoError.invalidSize(Nonce.NONCE_SIZE, data.length);
+      throw ComponentsError.invalidSize(Nonce.NONCE_SIZE, data.length);
     }
     return Nonce.fromData(data);
   }

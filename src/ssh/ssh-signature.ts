@@ -48,6 +48,7 @@ import {
   type SshAlgorithm,
 } from "./ssh-algorithm.js";
 import { SSHPublicKey } from "./ssh-public-key.js";
+import { ComponentsError } from "../error.js";
 
 const PEM_LABEL = "SSH SIGNATURE";
 const PEM_LINE_WIDTH = 76;
@@ -93,12 +94,12 @@ export class SSHSignature {
 
   static fromBlob(blob: Uint8Array): SSHSignature {
     if (blob.length < MAGIC.length || !bytesEqual(blob.subarray(0, MAGIC.length), MAGIC)) {
-      throw new Error("SSHSignature: missing 'SSHSIG' magic");
+      throw ComponentsError.ssh("SSHSignature: missing 'SSHSIG' magic");
     }
     const reader = new SshBufferReader(blob.subarray(MAGIC.length));
     const version = reader.readUint32();
     if (version !== SUPPORTED_VERSION) {
-      throw new Error(
+      throw ComponentsError.general(
         `SSHSignature: unsupported SSHSIG version ${version} (expected ${SUPPORTED_VERSION})`,
       );
     }
@@ -108,11 +109,11 @@ export class SSHSignature {
     const reserved = reader.readString();
     const hashAlgRaw = decodeUtf8(reader.readString());
     if (hashAlgRaw !== "sha256" && hashAlgRaw !== "sha512") {
-      throw new Error(`SSHSignature: unsupported hash algorithm '${hashAlgRaw}'`);
+      throw ComponentsError.general(`SSHSignature: unsupported hash algorithm '${hashAlgRaw}'`);
     }
     const sigBlob = reader.readString();
     if (!reader.isAtEnd()) {
-      throw new Error("SSHSignature: trailing bytes after signature blob");
+      throw ComponentsError.ssh("SSHSignature: trailing bytes after signature blob");
     }
     const signatureBytes = decodeAlgorithmSignature(publicKey.algorithm, sigBlob);
     return new SSHSignature(publicKey, namespace, reserved, hashAlgRaw, signatureBytes);
@@ -211,7 +212,7 @@ function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array):
   const algoName = decodeUtf8(r.readString());
   const expected = sshAlgorithmName(algorithm);
   if (algoName !== expected) {
-    throw new Error(
+    throw ComponentsError.ssh(
       `SSHSignature: signature algorithm '${algoName}' does not match key algorithm '${expected}'`,
     );
   }
@@ -219,10 +220,10 @@ function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array):
     case "ed25519": {
       const sig = r.readString();
       if (!r.isAtEnd()) {
-        throw new Error("SSHSignature ed25519: trailing bytes after raw signature");
+        throw ComponentsError.ssh("SSHSignature ed25519: trailing bytes after raw signature");
       }
       if (sig.length !== ED25519_SIGNATURE_LEN) {
-        throw new Error(
+        throw ComponentsError.ssh(
           `SSHSignature ed25519: expected ${ED25519_SIGNATURE_LEN}-byte signature, got ${sig.length}`,
         );
       }
@@ -231,14 +232,14 @@ function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array):
     case "ecdsa": {
       const inner = r.readString();
       if (!r.isAtEnd()) {
-        throw new Error("SSHSignature ecdsa: trailing bytes after inner signature blob");
+        throw ComponentsError.ssh("SSHSignature ecdsa: trailing bytes after inner signature blob");
       }
       const innerR = new SshBufferReader(inner);
       const scalarLen = sshEcdsaScalarLen(algorithm.curve);
       const rBytes = stripAndPad(innerR.readMpint(), scalarLen, "ecdsa");
       const sBytes = stripAndPad(innerR.readMpint(), scalarLen, "ecdsa");
       if (!innerR.isAtEnd()) {
-        throw new Error("SSHSignature ecdsa: trailing bytes after r,s");
+        throw ComponentsError.ssh("SSHSignature ecdsa: trailing bytes after r,s");
       }
       const out = new Uint8Array(scalarLen * 2);
       out.set(rBytes, 0);
@@ -248,10 +249,10 @@ function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array):
     case "dsa": {
       const sig = r.readString();
       if (!r.isAtEnd()) {
-        throw new Error("SSHSignature dsa: trailing bytes after raw signature");
+        throw ComponentsError.ssh("SSHSignature dsa: trailing bytes after raw signature");
       }
       if (sig.length !== DSA_SIGNATURE_LEN) {
-        throw new Error(
+        throw ComponentsError.ssh(
           `SSHSignature dsa: expected ${DSA_SIGNATURE_LEN}-byte signature, got ${sig.length}`,
         );
       }
@@ -266,7 +267,7 @@ function encodeAlgorithmSignature(algorithm: SshAlgorithm, signatureBytes: Uint8
   switch (algorithm.kind) {
     case "ed25519": {
       if (signatureBytes.length !== ED25519_SIGNATURE_LEN) {
-        throw new Error(
+        throw ComponentsError.ssh(
           `SSHSignature ed25519: signatureBytes length ${signatureBytes.length} != ${ED25519_SIGNATURE_LEN}`,
         );
       }
@@ -277,7 +278,7 @@ function encodeAlgorithmSignature(algorithm: SshAlgorithm, signatureBytes: Uint8
       const scalarLen = sshEcdsaScalarLen(algorithm.curve);
       const expectedLen = scalarLen * 2;
       if (signatureBytes.length !== expectedLen) {
-        throw new Error(
+        throw ComponentsError.ssh(
           `SSHSignature ecdsa: signatureBytes length ${signatureBytes.length} != ${expectedLen} (r||s)`,
         );
       }
@@ -289,7 +290,7 @@ function encodeAlgorithmSignature(algorithm: SshAlgorithm, signatureBytes: Uint8
     }
     case "dsa": {
       if (signatureBytes.length !== DSA_SIGNATURE_LEN) {
-        throw new Error(
+        throw ComponentsError.ssh(
           `SSHSignature dsa: signatureBytes length ${signatureBytes.length} != ${DSA_SIGNATURE_LEN} (r||s)`,
         );
       }
@@ -304,7 +305,9 @@ function stripAndPad(mpint: Uint8Array, len: number, label: string): Uint8Array 
   // EC signature components (r, s) are < curve order, so they fit in `len` bytes.
   const stripped = mpint[0] === 0x00 ? mpint.subarray(1) : mpint;
   if (stripped.length > len) {
-    throw new Error(`SSHSignature ${label}: r/s component too large (${stripped.length} bytes)`);
+    throw ComponentsError.ssh(
+      `SSHSignature ${label}: r/s component too large (${stripped.length} bytes)`,
+    );
   }
   if (stripped.length === len) return new Uint8Array(stripped);
   const out = new Uint8Array(len);

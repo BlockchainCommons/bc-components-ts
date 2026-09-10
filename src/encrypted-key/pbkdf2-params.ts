@@ -27,6 +27,7 @@ import { HashType, hashTypeToCbor, hashTypeFromCbor, hashTypeToString } from "./
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import { SALT_LEN } from "./hkdf-params.js";
 import type { KeyDerivation } from "./key-derivation.js";
+import { ComponentsError } from "../error.js";
 
 /** Default number of iterations for PBKDF2 */
 export const DEFAULT_PBKDF2_ITERATIONS = 100_000;
@@ -125,7 +126,7 @@ export class PBKDF2Params implements KeyDerivation {
           dkLen: 32,
         });
       default:
-        throw new Error(`Unknown hash type: ${String(this._hashType)}`);
+        throw ComponentsError.invalidData(`Unknown hash type: ${String(this._hashType)}`);
     }
   }
 
@@ -178,12 +179,16 @@ export class PBKDF2Params implements KeyDerivation {
     const array = expectArray(cborValue);
 
     if (array.length !== 4) {
-      throw new Error(`Invalid PBKDF2Params: expected 4 elements, got ${array.length}`);
+      throw ComponentsError.invalidData(
+        `Invalid PBKDF2Params: expected 4 elements, got ${array.length}`,
+      );
     }
 
     const index = expectNumber(array[0]);
     if (index !== PBKDF2Params.INDEX) {
-      throw new Error(`Invalid PBKDF2Params index: expected ${PBKDF2Params.INDEX}, got ${index}`);
+      throw ComponentsError.invalidData(
+        `Invalid PBKDF2Params index: expected ${PBKDF2Params.INDEX}, got ${index}`,
+      );
     }
 
     const salt = Salt.fromTaggedCbor(array[1]);

@@ -13,7 +13,7 @@ import {
   deriveSigningPrivateKey,
   ED25519_PRIVATE_KEY_SIZE,
 } from "@blockchaincommons/crypto";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { Ed25519PublicKey } from "./ed25519-public-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
@@ -23,7 +23,7 @@ export class Ed25519PrivateKey {
 
   private constructor(seed: Uint8Array) {
     if (seed.length !== ED25519_PRIVATE_KEY_SIZE) {
-      throw CryptoError.invalidSize(ED25519_PRIVATE_KEY_SIZE, seed.length);
+      throw ComponentsError.invalidSize(ED25519_PRIVATE_KEY_SIZE, seed.length);
     }
     this.seed = new Uint8Array(seed);
   }
@@ -116,7 +116,7 @@ export class Ed25519PrivateKey {
       const signature = ed25519.sign(this.seed, message);
       return new Uint8Array(signature);
     } catch (e) {
-      throw CryptoError.cryptoOperation(`Ed25519 signing failed: ${String(e)}`);
+      throw ComponentsError.crypto(`Ed25519 signing failed: ${String(e)}`);
     }
   }
 

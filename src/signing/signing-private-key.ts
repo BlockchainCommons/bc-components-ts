@@ -62,6 +62,7 @@ import type { Signer, Verifier } from "./signer.js";
 import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
 import { UR } from "@blockchaincommons/uniform-resources";
+import { ComponentsError } from "../error.js";
 
 /**
  * A private key used for creating digital signatures.
@@ -168,7 +169,7 @@ export class SigningPrivateKey
         scheme = SignatureScheme.MLDSA87;
         break;
       default:
-        throw new Error(`Unknown MLDSA level: ${key.level()}`);
+        throw ComponentsError.invalidData(`Unknown MLDSA level: ${key.level()}`);
     }
     return new SigningPrivateKey(scheme, undefined, undefined, undefined, key);
   }
@@ -404,25 +405,25 @@ export class SigningPrivateKey
     switch (this._type) {
       case SignatureScheme.Schnorr: {
         if (this._ecKey === undefined) {
-          throw new Error("EC private key is missing");
+          throw ComponentsError.invalidData("EC private key is missing");
         }
         return SigningPublicKey.fromSchnorr(this._ecKey.schnorrPublicKey());
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecKey === undefined) {
-          throw new Error("EC private key is missing");
+          throw ComponentsError.invalidData("EC private key is missing");
         }
         return SigningPublicKey.fromEcdsa(this._ecKey.publicKey());
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
-          throw new Error("Ed25519 private key is missing");
+          throw ComponentsError.invalidData("Ed25519 private key is missing");
         }
         return SigningPublicKey.fromEd25519(this._ed25519Key.publicKey());
       }
       case SignatureScheme.Sr25519: {
         if (this._sr25519Key === undefined) {
-          throw new Error("Sr25519 private key is missing");
+          throw ComponentsError.invalidData("Sr25519 private key is missing");
         }
         return SigningPublicKey.fromSr25519(this._sr25519Key.publicKey());
       }
@@ -430,7 +431,7 @@ export class SigningPrivateKey
       case SignatureScheme.MLDSA65:
       case SignatureScheme.MLDSA87: {
         if (this._mldsaKey === undefined) {
-          throw new Error("MLDSA private key is missing");
+          throw ComponentsError.invalidData("MLDSA private key is missing");
         }
         return SigningPublicKey.fromMldsa(this._mldsaKey.publicKey());
       }
@@ -439,7 +440,7 @@ export class SigningPrivateKey
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384: {
         if (this._sshKey === undefined) {
-          throw new Error("SSH private key is missing");
+          throw ComponentsError.invalidData("SSH private key is missing");
         }
         return SigningPublicKey.fromSsh(this._sshKey.publicKey());
       }
@@ -575,7 +576,7 @@ export class SigningPrivateKey
     switch (this._type) {
       case SignatureScheme.Schnorr: {
         if (this._ecKey === undefined) {
-          throw new Error("EC private key is missing");
+          throw ComponentsError.invalidData("EC private key is missing");
         }
         // If Schnorr options with custom RNG are provided, use them
         if (options?.type === "Schnorr") {
@@ -588,21 +589,21 @@ export class SigningPrivateKey
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecKey === undefined) {
-          throw new Error("EC private key is missing");
+          throw ComponentsError.invalidData("EC private key is missing");
         }
         const sigData = this._ecKey.ecdsaSign(message);
         return Signature.ecdsaFromData(sigData);
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
-          throw new Error("Ed25519 private key is missing");
+          throw ComponentsError.invalidData("Ed25519 private key is missing");
         }
         const sigData = this._ed25519Key.sign(message);
         return Signature.ed25519FromData(sigData);
       }
       case SignatureScheme.Sr25519: {
         if (this._sr25519Key === undefined) {
-          throw new Error("Sr25519 private key is missing");
+          throw ComponentsError.invalidData("Sr25519 private key is missing");
         }
         const sigData = this._sr25519Key.sign(message);
         return Signature.sr25519FromData(sigData);
@@ -611,7 +612,7 @@ export class SigningPrivateKey
       case SignatureScheme.MLDSA65:
       case SignatureScheme.MLDSA87: {
         if (this._mldsaKey === undefined) {
-          throw new Error("MLDSA private key is missing");
+          throw ComponentsError.invalidData("MLDSA private key is missing");
         }
         const mldsaSig = this._mldsaKey.sign(message);
         return Signature.mldsaFromSignature(mldsaSig);
@@ -621,12 +622,12 @@ export class SigningPrivateKey
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384: {
         if (this._sshKey === undefined) {
-          throw new Error("SSH private key is missing");
+          throw ComponentsError.invalidData("SSH private key is missing");
         }
         if (options?.type !== "Ssh") {
           // Mirror Rust error message verbatim
           // (`signing_private_key.rs:796`).
-          throw new Error("Missing namespace and hash algorithm for SSH signing");
+          throw ComponentsError.invalidData("Missing namespace and hash algorithm for SSH signing");
         }
         const sshSig = this._sshKey.sign(options.namespace, options.hashAlg, message);
         return Signature.fromSsh(sshSig);
@@ -690,7 +691,7 @@ export class SigningPrivateKey
   schnorrSign(message: Uint8Array, rng: RandomNumberGenerator): Signature {
     const privateKey = this.toSchnorr();
     if (privateKey === null) {
-      throw new Error("Invalid key type for Schnorr signing");
+      throw ComponentsError.invalidData("Invalid key type for Schnorr signing");
     }
     const sigData = privateKey.schnorrSignUsing(message, rng);
     return Signature.schnorrFromData(sigData);
@@ -708,7 +709,7 @@ export class SigningPrivateKey
   ecdsaSign(message: Uint8Array): Signature {
     const privateKey = this.toEcdsa();
     if (privateKey === null) {
-      throw new Error("Invalid key type for ECDSA signing");
+      throw ComponentsError.invalidData("Invalid key type for ECDSA signing");
     }
     const sigData = privateKey.ecdsaSign(message);
     return Signature.ecdsaFromData(sigData);
@@ -726,7 +727,7 @@ export class SigningPrivateKey
   ed25519Sign(message: Uint8Array): Signature {
     const privateKey = this.toEd25519();
     if (privateKey === null) {
-      throw new Error("Invalid key type for Ed25519 signing");
+      throw ComponentsError.invalidData("Invalid key type for Ed25519 signing");
     }
     const sigData = privateKey.sign(message);
     return Signature.ed25519FromData(sigData);
@@ -744,7 +745,7 @@ export class SigningPrivateKey
   sr25519Sign(message: Uint8Array): Signature {
     const privateKey = this.toSr25519();
     if (privateKey === null) {
-      throw new Error("Invalid key type for SR25519 signing");
+      throw ComponentsError.invalidData("Invalid key type for SR25519 signing");
     }
     const sigData = privateKey.sign(message);
     return Signature.sr25519FromData(sigData);
@@ -762,7 +763,7 @@ export class SigningPrivateKey
   mldsaSign(message: Uint8Array): Signature {
     const privateKey = this.toMldsa();
     if (privateKey === null) {
-      throw new Error("Invalid key type for MLDSA signing");
+      throw ComponentsError.invalidData("Invalid key type for MLDSA signing");
     }
     const mldsaSig = privateKey.sign(message);
     return Signature.mldsaFromSignature(mldsaSig);
@@ -793,26 +794,26 @@ export class SigningPrivateKey
     switch (this._type) {
       case SignatureScheme.Schnorr: {
         if (this._ecKey === undefined) {
-          throw new Error("EC private key is missing");
+          throw ComponentsError.invalidData("EC private key is missing");
         }
         // Rust: CBOR::to_byte_string(key.data()) - bare byte string
         return cbor(this._ecKey.toData());
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecKey === undefined) {
-          throw new Error("EC private key is missing");
+          throw ComponentsError.invalidData("EC private key is missing");
         }
         return cbor([1, cbor(this._ecKey.toData())]);
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
-          throw new Error("Ed25519 private key is missing");
+          throw ComponentsError.invalidData("Ed25519 private key is missing");
         }
         return cbor([2, cbor(this._ed25519Key.toData())]);
       }
       case SignatureScheme.Sr25519: {
         if (this._sr25519Key === undefined) {
-          throw new Error("Sr25519 private key is missing");
+          throw ComponentsError.invalidData("Sr25519 private key is missing");
         }
         return cbor([3, cbor(this._sr25519Key.toData())]);
       }
@@ -820,7 +821,7 @@ export class SigningPrivateKey
       case SignatureScheme.MLDSA65:
       case SignatureScheme.MLDSA87: {
         if (this._mldsaKey === undefined) {
-          throw new Error("MLDSA private key is missing");
+          throw ComponentsError.invalidData("MLDSA private key is missing");
         }
         // Rust: delegates to MLDSAPrivateKey (which produces tagged CBOR)
         return this._mldsaKey.taggedCbor();
@@ -830,7 +831,7 @@ export class SigningPrivateKey
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384: {
         if (this._sshKey === undefined) {
-          throw new Error("SSH private key is missing");
+          throw ComponentsError.invalidData("SSH private key is missing");
         }
         // Mirror Rust `SigningPrivateKey::SSH` untagged CBOR encoding:
         // `CBOR::to_tagged_value(TAG_SSH_TEXT_PRIVATE_KEY, key.to_openssh())`.
@@ -879,7 +880,7 @@ export class SigningPrivateKey
       const elements = expectArray(cborValue);
 
       if (elements.length !== 2) {
-        throw new Error("SigningPrivateKey array must have 2 elements");
+        throw ComponentsError.invalidData("SigningPrivateKey array must have 2 elements");
       }
 
       const discriminator = expectUnsigned(elements[0]);
@@ -893,7 +894,9 @@ export class SigningPrivateKey
         case 3: // Sr25519
           return SigningPrivateKey.newSr25519(Sr25519PrivateKey.from(keyData));
         default:
-          throw new Error(`Unknown SigningPrivateKey discriminator: ${discriminator}`);
+          throw ComponentsError.invalidData(
+            `Unknown SigningPrivateKey discriminator: ${discriminator}`,
+          );
       }
     }
 
@@ -911,7 +914,7 @@ export class SigningPrivateKey
       }
     }
 
-    throw new Error(
+    throw ComponentsError.invalidData(
       "SigningPrivateKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
     );
   }
@@ -1033,7 +1036,9 @@ export class SigningPrivateKey
    */
   toSshOpenssh(): string {
     if (this._sshKey === undefined) {
-      throw new Error(`SigningPrivateKey is not an SSH key (scheme: ${this._type})`);
+      throw ComponentsError.invalidData(
+        `SigningPrivateKey is not an SSH key (scheme: ${this._type})`,
+      );
     }
     return this._sshKey.toOpenssh();
   }

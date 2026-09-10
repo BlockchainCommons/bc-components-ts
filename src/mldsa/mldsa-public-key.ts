@@ -52,6 +52,7 @@ import {
 } from "./mldsa-level.js";
 import type { MLDSASignature } from "./mldsa-signature.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * MLDSAPublicKey - Post-quantum signature verification key using ML-DSA.
@@ -65,7 +66,7 @@ export class MLDSAPublicKey
   private constructor(level: MLDSALevel, data: Uint8Array) {
     const expectedSize = mldsaPublicKeySize(level);
     if (data.length !== expectedSize) {
-      throw new Error(
+      throw ComponentsError.postQuantum(
         `MLDSAPublicKey (${mldsaLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
       );
     }
@@ -201,7 +202,9 @@ export class MLDSAPublicKey
   fromUntaggedCbor(cborValue: Cbor): MLDSAPublicKey {
     const elements = expectArray(cborValue);
     if (elements.length !== 2) {
-      throw new Error(`MLDSAPublicKey CBOR must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.postQuantum(
+        `MLDSAPublicKey CBOR must have 2 elements, got ${elements.length}`,
+      );
     }
     const levelValue = Number(expectInteger(elements[0]));
     const level = mldsaLevelFromValue(levelValue);
@@ -256,7 +259,7 @@ export class MLDSAPublicKey
   ur(): UR {
     const name = TAG_MLDSA_PUBLIC_KEY.name;
     if (name === undefined) {
-      throw new Error("MLDSA_PUBLIC_KEY tag name is undefined");
+      throw ComponentsError.postQuantum("MLDSA_PUBLIC_KEY tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -273,7 +276,9 @@ export class MLDSAPublicKey
    */
   static fromUR(ur: UR): MLDSAPublicKey {
     if (ur.type.name !== TAG_MLDSA_PUBLIC_KEY.name) {
-      throw new Error(`Expected UR type ${TAG_MLDSA_PUBLIC_KEY.name}, got ${ur.type.name}`);
+      throw ComponentsError.postQuantum(
+        `Expected UR type ${TAG_MLDSA_PUBLIC_KEY.name}, got ${ur.type.name}`,
+      );
     }
     const dummyData = new Uint8Array(mldsaPublicKeySize(MLDSALevel.MLDSA44));
     const dummy = new MLDSAPublicKey(MLDSALevel.MLDSA44, dummyData);

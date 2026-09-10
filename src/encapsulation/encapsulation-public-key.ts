@@ -55,6 +55,7 @@ import { MLKEMPublicKey } from "../mlkem/mlkem-public-key.js";
 import { MLKEMLevel } from "../mlkem/mlkem-level.js";
 import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Convert MLKEMLevel to EncapsulationScheme
@@ -173,7 +174,7 @@ export class EncapsulationPublicKey
    */
   x25519PublicKey(): X25519PublicKey {
     if (this._x25519PublicKey === undefined) {
-      throw new Error("Not an X25519 public key");
+      throw ComponentsError.invalidData("Not an X25519 public key");
     }
     return this._x25519PublicKey;
   }
@@ -184,7 +185,7 @@ export class EncapsulationPublicKey
    */
   mlkemPublicKey(): MLKEMPublicKey {
     if (this._mlkemPublicKey === undefined) {
-      throw new Error("Not an MLKEM public key");
+      throw ComponentsError.invalidData("Not an MLKEM public key");
     }
     return this._mlkemPublicKey;
   }
@@ -209,14 +210,14 @@ export class EncapsulationPublicKey
   data(): Uint8Array {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
-      if (pk === undefined) throw new Error("X25519 public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
       return pk.data();
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
-      if (pk === undefined) throw new Error("MLKEM public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM public key not set");
       return pk.data();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -242,7 +243,7 @@ export class EncapsulationPublicKey
   encapsulateNewSharedSecret(): [SymmetricKey, EncapsulationCiphertext] {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
-      if (pk === undefined) throw new Error("X25519 public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
       // Generate ephemeral key pair
       const [ephemeralPrivate, ephemeralPublic] = X25519PrivateKey.keypair();
 
@@ -255,7 +256,7 @@ export class EncapsulationPublicKey
       return [sharedSecret, ciphertext];
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
-      if (pk === undefined) throw new Error("MLKEM public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM public key not set");
 
       // Encapsulate using MLKEM
       const { sharedSecret, ciphertext: mlkemCiphertext } = pk.encapsulate();
@@ -265,7 +266,7 @@ export class EncapsulationPublicKey
 
       return [sharedSecret, ciphertext];
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -336,7 +337,7 @@ export class EncapsulationPublicKey
     } else if (isMlkemScheme(this._scheme)) {
       return tagsForValues([TAG_MLKEM_PUBLIC_KEY.value]);
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -345,14 +346,14 @@ export class EncapsulationPublicKey
   untaggedCbor(): Cbor {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
-      if (pk === undefined) throw new Error("X25519 public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
       return cbor(pk.data());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
-      if (pk === undefined) throw new Error("MLKEM public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM public key not set");
       return pk.untaggedCbor();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -401,7 +402,7 @@ export class EncapsulationPublicKey
       return EncapsulationPublicKey.fromMlkem(mlkemPublic);
     }
 
-    throw new Error(`Unknown public key tag: ${tag}`);
+    throw ComponentsError.invalidData(`Unknown public key tag: ${tag}`);
   }
 
   /**
@@ -443,14 +444,15 @@ export class EncapsulationPublicKey
   ur(): UR {
     if (this._scheme === EncapsulationScheme.X25519) {
       const name = TAG_X25519_PUBLIC_KEY.name;
-      if (name === undefined) throw new Error("TAG_X25519_PUBLIC_KEY.name is undefined");
+      if (name === undefined)
+        throw ComponentsError.invalidData("TAG_X25519_PUBLIC_KEY.name is undefined");
       return UR.from(name, this.untaggedCbor());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
-      if (pk === undefined) throw new Error("MLKEM public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM public key not set");
       return pk.ur();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -477,7 +479,9 @@ export class EncapsulationPublicKey
       return EncapsulationPublicKey.fromMlkem(mlkemPublic);
     }
 
-    throw new Error(`Unknown UR type for EncapsulationPublicKey: ${ur.type.name}`);
+    throw ComponentsError.invalidData(
+      `Unknown UR type for EncapsulationPublicKey: ${ur.type.name}`,
+    );
   }
 
   /**

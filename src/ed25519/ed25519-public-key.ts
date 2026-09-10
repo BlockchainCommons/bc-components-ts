@@ -13,7 +13,7 @@ import {
   ED25519_SIGNATURE_SIZE,
 } from "@blockchaincommons/crypto";
 import { Digest } from "../digest.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
 export class Ed25519PublicKey {
@@ -21,7 +21,7 @@ export class Ed25519PublicKey {
 
   private constructor(data: Uint8Array) {
     if (data.length !== ED25519_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(ED25519_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ED25519_PUBLIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -45,7 +45,7 @@ export class Ed25519PublicKey {
    */
   static fromDataRef(data: Uint8Array): Ed25519PublicKey {
     if (data.length !== ED25519_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(ED25519_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ED25519_PUBLIC_KEY_SIZE, data.length);
     }
     return new Ed25519PublicKey(data);
   }
@@ -92,11 +92,11 @@ export class Ed25519PublicKey {
   verify(message: Uint8Array, signature: Uint8Array): boolean {
     try {
       if (signature.length !== ED25519_SIGNATURE_SIZE) {
-        throw CryptoError.invalidSize(ED25519_SIGNATURE_SIZE, signature.length);
+        throw ComponentsError.invalidSize(ED25519_SIGNATURE_SIZE, signature.length);
       }
       return ed25519.verify(this._data, signature, message);
     } catch (e) {
-      throw CryptoError.cryptoOperation(`Ed25519 verification failed: ${String(e)}`);
+      throw ComponentsError.crypto(`Ed25519 verification failed: ${String(e)}`);
     }
   }
 

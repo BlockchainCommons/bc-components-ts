@@ -55,6 +55,7 @@ import {
 import { MLDSAPublicKey } from "./mldsa-public-key.js";
 import { MLDSASignature } from "./mldsa-signature.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * MLDSAPrivateKey - Post-quantum signing private key using ML-DSA.
@@ -68,7 +69,7 @@ export class MLDSAPrivateKey
   private constructor(level: MLDSALevel, data: Uint8Array) {
     const expectedSize = mldsaPrivateKeySize(level);
     if (data.length !== expectedSize) {
-      throw new Error(
+      throw ComponentsError.postQuantum(
         `MLDSAPrivateKey (${mldsaLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
       );
     }
@@ -217,7 +218,7 @@ export class MLDSAPrivateKey
     // b) Require users to keep track of both
 
     // For MVP, we'll throw an error suggesting to use keypair()
-    throw new Error(
+    throw ComponentsError.general(
       "MLDSAPrivateKey.publicKey() is not supported. Use MLDSAPrivateKey.keypair() to generate both keys together.",
     );
   }
@@ -290,7 +291,9 @@ export class MLDSAPrivateKey
   fromUntaggedCbor(cborValue: Cbor): MLDSAPrivateKey {
     const elements = expectArray(cborValue);
     if (elements.length !== 2) {
-      throw new Error(`MLDSAPrivateKey CBOR must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.postQuantum(
+        `MLDSAPrivateKey CBOR must have 2 elements, got ${elements.length}`,
+      );
     }
     const levelValue = Number(expectInteger(elements[0]));
     const level = mldsaLevelFromValue(levelValue);
@@ -345,7 +348,7 @@ export class MLDSAPrivateKey
   ur(): UR {
     const name = TAG_MLDSA_PRIVATE_KEY.name;
     if (name === undefined) {
-      throw new Error("MLDSA_PRIVATE_KEY tag name is undefined");
+      throw ComponentsError.postQuantum("MLDSA_PRIVATE_KEY tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -362,7 +365,9 @@ export class MLDSAPrivateKey
    */
   static fromUR(ur: UR): MLDSAPrivateKey {
     if (ur.type.name !== TAG_MLDSA_PRIVATE_KEY.name) {
-      throw new Error(`Expected UR type ${TAG_MLDSA_PRIVATE_KEY.name}, got ${ur.type.name}`);
+      throw ComponentsError.postQuantum(
+        `Expected UR type ${TAG_MLDSA_PRIVATE_KEY.name}, got ${ur.type.name}`,
+      );
     }
     const dummyData = new Uint8Array(mldsaPrivateKeySize(MLDSALevel.MLDSA44));
     const dummy = new MLDSAPrivateKey(MLDSALevel.MLDSA44, dummyData);

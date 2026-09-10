@@ -53,6 +53,7 @@ import {
 import { MLKEMCiphertext } from "./mlkem-ciphertext.js";
 import { SymmetricKey } from "../symmetric/symmetric-key.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Result of encapsulation operation.
@@ -76,7 +77,7 @@ export class MLKEMPublicKey
   private constructor(level: MLKEMLevel, data: Uint8Array) {
     const expectedSize = mlkemPublicKeySize(level);
     if (data.length !== expectedSize) {
-      throw new Error(
+      throw ComponentsError.postQuantum(
         `MLKEMPublicKey (${mlkemLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
       );
     }
@@ -214,7 +215,9 @@ export class MLKEMPublicKey
   fromUntaggedCbor(cborValue: Cbor): MLKEMPublicKey {
     const elements = expectArray(cborValue);
     if (elements.length !== 2) {
-      throw new Error(`MLKEMPublicKey CBOR must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.postQuantum(
+        `MLKEMPublicKey CBOR must have 2 elements, got ${elements.length}`,
+      );
     }
     const levelValue = Number(expectInteger(elements[0]));
     const level = mlkemLevelFromValue(levelValue);
@@ -269,7 +272,7 @@ export class MLKEMPublicKey
   ur(): UR {
     const name = TAG_MLKEM_PUBLIC_KEY.name;
     if (name === undefined) {
-      throw new Error("MLKEM_PUBLIC_KEY tag name is undefined");
+      throw ComponentsError.postQuantum("MLKEM_PUBLIC_KEY tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -286,7 +289,9 @@ export class MLKEMPublicKey
    */
   static fromUR(ur: UR): MLKEMPublicKey {
     if (ur.type.name !== TAG_MLKEM_PUBLIC_KEY.name) {
-      throw new Error(`Expected UR type ${TAG_MLKEM_PUBLIC_KEY.name}, got ${ur.type.name}`);
+      throw ComponentsError.postQuantum(
+        `Expected UR type ${TAG_MLKEM_PUBLIC_KEY.name}, got ${ur.type.name}`,
+      );
     }
     const dummyData = new Uint8Array(mlkemPublicKeySize(MLKEMLevel.MLKEM512));
     const dummy = new MLKEMPublicKey(MLKEMLevel.MLKEM512, dummyData);

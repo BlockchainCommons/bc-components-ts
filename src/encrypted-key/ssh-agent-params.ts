@@ -23,7 +23,7 @@ import type { SymmetricKey } from "../symmetric/symmetric-key.js";
 import type { EncryptedMessage } from "../symmetric/encrypted-message.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import type { KeyDerivation } from "./key-derivation.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 
 /** Default salt length for SSH agent key derivation */
 export const SALT_LEN = 16;
@@ -99,10 +99,10 @@ export class SSHAgentParams implements KeyDerivation {
    * implemented in this TypeScript port. Use an alternative key derivation
    * method or implement SSH agent communication for your environment.
    *
-   * @throws CryptoError - SSH agent support is not available
+   * @throws ComponentsError - SSH agent support is not available
    */
   lock(_contentKey: SymmetricKey, _secret: Uint8Array): EncryptedMessage {
-    throw CryptoError.sshAgent(
+    throw ComponentsError.sshAgent(
       "SSH agent key derivation is not yet implemented in this TypeScript port. " +
         "Use HKDF, PBKDF2, Scrypt, or Argon2id instead.",
     );
@@ -115,10 +115,10 @@ export class SSHAgentParams implements KeyDerivation {
    * implemented in this TypeScript port. Use an alternative key derivation
    * method or implement SSH agent communication for your environment.
    *
-   * @throws CryptoError - SSH agent support is not available
+   * @throws ComponentsError - SSH agent support is not available
    */
   unlock(_encryptedMessage: EncryptedMessage, _secret: Uint8Array): SymmetricKey {
-    throw CryptoError.sshAgent(
+    throw ComponentsError.sshAgent(
       "SSH agent key derivation is not yet implemented in this TypeScript port. " +
         "Use HKDF, PBKDF2, Scrypt, or Argon2id instead.",
     );
@@ -164,12 +164,14 @@ export class SSHAgentParams implements KeyDerivation {
     const array = expectArray(cborValue);
 
     if (array.length !== 3) {
-      throw new Error(`Invalid SSHAgentParams: expected 3 elements, got ${array.length}`);
+      throw ComponentsError.invalidData(
+        `Invalid SSHAgentParams: expected 3 elements, got ${array.length}`,
+      );
     }
 
     const index = expectNumber(array[0]);
     if (index !== SSHAgentParams.INDEX) {
-      throw new Error(
+      throw ComponentsError.invalidData(
         `Invalid SSHAgentParams index: expected ${SSHAgentParams.INDEX}, got ${index}`,
       );
     }

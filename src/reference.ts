@@ -35,7 +35,7 @@ import { shortIdentifier } from "@blockchaincommons/uniform-resources/bytewords"
 
 import { Digest } from "./digest.js";
 import type { DigestProvider } from "./digest-provider.js";
-import { CryptoError } from "./error.js";
+import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 
 /** Encoding format for short Reference identifiers. */
@@ -92,7 +92,7 @@ export class Reference
   /** Create a Reference from exactly 32 bytes. Mirrors Rust `Reference::from_data`. */
   static fromData(data: Uint8Array): Reference {
     if (data.length !== Reference.REFERENCE_SIZE) {
-      throw CryptoError.invalidSize(Reference.REFERENCE_SIZE, data.length);
+      throw ComponentsError.invalidSize(Reference.REFERENCE_SIZE, data.length);
     }
     return new Reference(new Uint8Array(data));
   }
@@ -217,7 +217,7 @@ export class Reference
         return shortIdentifier(this.refDataShort(), { style: "bytemoji" });
       default: {
         const _exhaustive: never = format;
-        throw CryptoError.invalidFormat(`Unknown reference format: ${String(_exhaustive)}`);
+        throw ComponentsError.invalidFormat(`Unknown reference format: ${String(_exhaustive)}`);
       }
     }
   }

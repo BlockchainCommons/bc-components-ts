@@ -13,6 +13,7 @@ import { EncapsulationPrivateKey } from "./encapsulation-private-key.js";
 import type { EncapsulationPublicKey } from "./encapsulation-public-key.js";
 import { MLKEMLevel } from "../mlkem/mlkem-level.js";
 import { EncapsulationScheme } from "./encapsulation-scheme.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Generate a new keypair for the given encapsulation scheme.
@@ -57,7 +58,7 @@ export function createEncapsulationKeypairUsing(
     case EncapsulationScheme.MLKEM768:
     case EncapsulationScheme.MLKEM1024:
       // MLKEM doesn't support deterministic keypair generation (matching Rust behavior)
-      throw new Error(
+      throw ComponentsError.general(
         "Deterministic keypair generation not supported for this encapsulation scheme",
       );
   }

@@ -51,6 +51,7 @@ import {
   type SshAlgorithm,
   type SshEcdsaCurve,
 } from "./ssh-algorithm.js";
+import { ComponentsError } from "../error.js";
 
 const ED25519_PUBLIC_KEY_LEN = 32;
 
@@ -88,7 +89,7 @@ export class SSHPublicKey {
         return { kind: "ecdsa", curve: data.curve };
       default: {
         const _exhaustive: never = data;
-        throw new Error(`SSHPublicKey: unreachable kind ${String(_exhaustive)}`);
+        throw ComponentsError.ssh(`SSHPublicKey: unreachable kind ${String(_exhaustive)}`);
       }
     }
   }
@@ -99,7 +100,7 @@ export class SSHPublicKey {
 
   static ed25519(keyBytes: Uint8Array, comment = ""): SSHPublicKey {
     if (keyBytes.length !== ED25519_PUBLIC_KEY_LEN) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPublicKey ed25519: expected ${ED25519_PUBLIC_KEY_LEN} bytes, got ${keyBytes.length}`,
       );
     }
@@ -117,7 +118,7 @@ export class SSHPublicKey {
   static ecdsa(curve: SshEcdsaCurve, uncompressedPoint: Uint8Array, comment = ""): SSHPublicKey {
     const expected = sshEcdsaPointLen(curve);
     if (uncompressedPoint.length !== expected || uncompressedPoint[0] !== 0x04) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPublicKey ecdsa-${curve}: expected ${expected}-byte uncompressed SEC1 point (0x04 prefix), got ${uncompressedPoint.length} bytes prefix=0x${uncompressedPoint[0]?.toString(16) ?? "?"}`,
       );
     }
@@ -164,11 +165,11 @@ export class SSHPublicKey {
   static fromOpenssh(text: string): SSHPublicKey {
     const trimmed = text.trim();
     if (trimmed.length === 0) {
-      throw new Error("SSHPublicKey.fromOpenssh: empty input");
+      throw ComponentsError.ssh("SSHPublicKey.fromOpenssh: empty input");
     }
     const firstSpace = trimmed.indexOf(" ");
     if (firstSpace < 0) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPublicKey.fromOpenssh: expected '<algo> <base64> [comment]', got '${trimmed}'`,
       );
     }
@@ -190,7 +191,7 @@ export class SSHPublicKey {
     const blob = base64.decode(blobB64);
     const parsed = SSHPublicKey.fromBlob(blob, comment);
     if (sshAlgorithmName(parsed.algorithm) !== algoName) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPublicKey.fromOpenssh: outer algorithm '${algoName}' does not match inner '${sshAlgorithmName(parsed.algorithm)}'`,
       );
     }
@@ -217,7 +218,9 @@ export class SSHPublicKey {
       case "ed25519": {
         const pub = reader.readString();
         if (!reader.isAtEnd()) {
-          throw new Error("SSHPublicKey.fromBlob ed25519: trailing bytes after public key");
+          throw ComponentsError.ssh(
+            "SSHPublicKey.fromBlob ed25519: trailing bytes after public key",
+          );
         }
         return SSHPublicKey.ed25519(pub, comment);
       }
@@ -227,20 +230,22 @@ export class SSHPublicKey {
         const g = stripDsaMpint(reader.readMpint());
         const y = stripDsaMpint(reader.readMpint());
         if (!reader.isAtEnd()) {
-          throw new Error("SSHPublicKey.fromBlob dsa: trailing bytes after y");
+          throw ComponentsError.ssh("SSHPublicKey.fromBlob dsa: trailing bytes after y");
         }
         return SSHPublicKey.dsa(p, q, g, y, comment);
       }
       case "ecdsa": {
         const curveName = decodeUtf8(reader.readString());
         if (curveName !== sshCurveName(algorithm.curve)) {
-          throw new Error(
+          throw ComponentsError.ssh(
             `SSHPublicKey.fromBlob ecdsa: blob curve '${curveName}' does not match algorithm '${sshCurveName(algorithm.curve)}'`,
           );
         }
         const point = reader.readString();
         if (!reader.isAtEnd()) {
-          throw new Error("SSHPublicKey.fromBlob ecdsa: trailing bytes after public point");
+          throw ComponentsError.ssh(
+            "SSHPublicKey.fromBlob ecdsa: trailing bytes after public point",
+          );
         }
         return SSHPublicKey.ecdsa(algorithm.curve, point, comment);
       }
@@ -316,12 +321,12 @@ export class SSHPublicKey {
       case "ecdsa":
         return data.point;
       case "dsa":
-        throw new Error(
+        throw ComponentsError.ssh(
           "SSHPublicKey.keyBytes is not defined for DSA — use `data.p/q/g/y` instead",
         );
       default: {
         const _exhaustive: never = data;
-        throw new Error(`SSHPublicKey: unreachable kind ${String(_exhaustive)}`);
+        throw ComponentsError.ssh(`SSHPublicKey: unreachable kind ${String(_exhaustive)}`);
       }
     }
   }

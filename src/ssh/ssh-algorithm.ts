@@ -1,3 +1,4 @@
+import { ComponentsError } from "../error.js";
 /**
  * Copyright © 2025-2026 Parity Technologies
  *
@@ -60,7 +61,7 @@ export function parseSshAlgorithm(name: string): SshAlgorithm {
     case SSH_ALGO_ECDSA_NISTP384:
       return { kind: "ecdsa", curve: "nistp384" };
     default:
-      throw new Error(
+      throw ComponentsError.general(
         `Unsupported SSH algorithm '${name}'. v1.1 supports ${SSH_ALGO_ED25519}, ${SSH_ALGO_DSA}, ${SSH_ALGO_ECDSA_NISTP256}, ${SSH_ALGO_ECDSA_NISTP384} (see SSH_PLAN.md V2 for RSA / P-521).`,
       );
   }

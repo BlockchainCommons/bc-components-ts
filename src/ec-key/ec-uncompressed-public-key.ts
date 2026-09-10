@@ -49,7 +49,7 @@ import {
 import { UR } from "@blockchaincommons/uniform-resources";
 import { EC_KEY as TAG_EC_KEY, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import type { ECKeyBase } from "./ec-key-base.js";
 
@@ -66,7 +66,7 @@ export class ECUncompressedPublicKey
 
   private constructor(data: Uint8Array) {
     if (data.length !== ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -88,7 +88,7 @@ export class ECUncompressedPublicKey
    */
   static fromDataRef(data: Uint8Array): ECUncompressedPublicKey {
     if (data.length !== ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE, data.length);
     }
     return ECUncompressedPublicKey.fromData(data);
   }
@@ -223,14 +223,14 @@ export class ECUncompressedPublicKey
     // Check that key 2 is not present (would indicate private key)
     const isPrivate = mapGetBoolean(map, 2);
     if (isPrivate === true) {
-      throw new Error("Expected ECUncompressedPublicKey but found private key");
+      throw ComponentsError.invalidData("Expected ECUncompressedPublicKey but found private key");
     }
 
     // Get key data from key 3
     // CborMap.extract() returns native types (Uint8Array for byte strings)
     const keyData = mapGetBytes(map, 3);
     if (keyData === undefined || keyData.length === 0) {
-      throw new Error("ECUncompressedPublicKey CBOR must have key 3 (data)");
+      throw ComponentsError.invalidData("ECUncompressedPublicKey CBOR must have key 3 (data)");
     }
 
     return ECUncompressedPublicKey.fromDataRef(keyData);
@@ -281,7 +281,7 @@ export class ECUncompressedPublicKey
   ur(): UR {
     const name = TAG_EC_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_EC_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -299,7 +299,7 @@ export class ECUncompressedPublicKey
   static fromUR(ur: UR): ECUncompressedPublicKey {
     const name = TAG_EC_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_EC_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
     }
     ur.expectType(name);
     const dummy = new ECUncompressedPublicKey(new Uint8Array(ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE));

@@ -44,7 +44,7 @@ import { ENCRYPTED_KEY as TAG_ENCRYPTED_KEY } from "@blockchaincommons/tags";
 
 import { type SymmetricKey } from "../symmetric/symmetric-key.js";
 import { EncryptedMessage } from "../symmetric/encrypted-message.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import {
   type KeyDerivationParams,
@@ -127,7 +127,7 @@ export class EncryptedKey
         params = argon2idParams();
         break;
       case KeyDerivationMethod.SSHAgent:
-        throw new Error(
+        throw ComponentsError.invalidData(
           "SSH Agent key derivation cannot be used with lock() - use lockOpt() with sshAgentParams() instead",
         );
     }
@@ -183,13 +183,13 @@ export class EncryptedKey
    *
    * @param secret - The secret (password or key material) used to lock
    * @returns The decrypted symmetric key
-   * @throws CryptoError if decryption fails (wrong password, tampered data, etc.)
+   * @throws ComponentsError if decryption fails (wrong password, tampered data, etc.)
    */
   unlock(secret: Uint8Array): SymmetricKey {
     // Get the AAD from the encrypted message, which contains the derivation params
     const aad = this._encryptedMessage.aad();
     if (aad.length === 0) {
-      throw CryptoError.invalidData("Missing AAD in EncryptedKey");
+      throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
     }
 
     // Parse the derivation parameters from AAD
@@ -272,7 +272,7 @@ export class EncryptedKey
     // Parse the derivation parameters from AAD
     const aad = encryptedMessage.aad();
     if (aad.length === 0) {
-      throw CryptoError.invalidData("Missing AAD in EncryptedKey");
+      throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
     }
     const paramsCbor = decodeCbor(aad);
     const params = keyDerivationParamsFromCbor(paramsCbor);
@@ -341,7 +341,7 @@ export class EncryptedKey
   ur(): UR {
     const name = TAG_ENCRYPTED_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_ENCRYPTED_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_ENCRYPTED_KEY.name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -359,7 +359,7 @@ export class EncryptedKey
   static fromUR(ur: UR): EncryptedKey {
     const name = TAG_ENCRYPTED_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_ENCRYPTED_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_ENCRYPTED_KEY.name is undefined");
     }
     ur.expectType(name);
     return EncryptedKey.fromUntaggedCborData(ur.cbor.toData());

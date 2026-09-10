@@ -53,7 +53,7 @@ import {
 import { XID as TAG_XID } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
 import { shortIdentifier } from "@blockchaincommons/uniform-resources/bytewords";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
 import { Digest } from "../digest.js";
 import { Reference, type ReferenceProvider } from "../reference.js";
@@ -110,7 +110,7 @@ export class XID
 
   private constructor(data: Uint8Array) {
     if (data.length !== XID_SIZE) {
-      throw CryptoError.invalidSize(XID_SIZE, data.length);
+      throw ComponentsError.invalidSize(XID_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -133,7 +133,7 @@ export class XID
    */
   static fromDataRef(data: Uint8Array): XID {
     if (data.length !== XID_SIZE) {
-      throw CryptoError.invalidSize(XID_SIZE, data.length);
+      throw ComponentsError.invalidSize(XID_SIZE, data.length);
     }
     return XID.fromData(data);
   }
@@ -150,7 +150,7 @@ export class XID
    */
   static fromHex(hex: string): XID {
     if (hex.length !== 64) {
-      throw CryptoError.invalidFormat(`XID hex must be 64 characters, got ${hex.length}`);
+      throw ComponentsError.invalidFormat(`XID hex must be 64 characters, got ${hex.length}`);
     }
     const data = new Uint8Array(32);
     for (let i = 0; i < 32; i++) {

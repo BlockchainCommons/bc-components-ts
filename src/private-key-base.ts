@@ -64,6 +64,7 @@ import {
 } from "./ssh/ssh-algorithm.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { p256, p384 } from "@noble/curves/nist.js";
+import { ComponentsError } from "./error.js";
 
 /** Default size of PrivateKeyBase key material in bytes (used for random generation) */
 const PRIVATE_KEY_BASE_DEFAULT_SIZE = 32;
@@ -84,7 +85,7 @@ export class PrivateKeyBase
 
   private constructor(data: Uint8Array) {
     if (data.length === 0) {
-      throw new Error("PrivateKeyBase must have non-zero length");
+      throw ComponentsError.invalidData("PrivateKeyBase must have non-zero length");
     }
     this._data = new Uint8Array(data);
   }
@@ -305,7 +306,7 @@ export class PrivateKeyBase
         }
         const point = curve.getPublicKey(scalar, false);
         if (point.length !== pointLen || point[0] !== 0x04) {
-          throw new Error(
+          throw ComponentsError.invalidData(
             `sshSigningPrivateKey ecdsa-${algorithm.curve}: noble returned non-uncompressed point`,
           );
         }
@@ -318,7 +319,7 @@ export class PrivateKeyBase
         break;
       }
       case "dsa":
-        throw new Error(
+        throw ComponentsError.invalidData(
           "SSH DSA key generation is not yet implemented in TS. Rust's " +
             "`bc-components-rust` ships byte-deterministic DSA-1024 keygen " +
             "via the `dsa` crate's FIPS 186-4 prime search, which has not " +
@@ -472,7 +473,7 @@ export class PrivateKeyBase
   ur(): UR {
     const name = TAG_PRIVATE_KEY_BASE.name;
     if (name === undefined) {
-      throw new Error("PRIVATE_KEY_BASE tag name is undefined");
+      throw ComponentsError.invalidData("PRIVATE_KEY_BASE tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -489,7 +490,9 @@ export class PrivateKeyBase
    */
   static fromUR(ur: UR): PrivateKeyBase {
     if (ur.type.name !== TAG_PRIVATE_KEY_BASE.name) {
-      throw new Error(`Expected UR type ${TAG_PRIVATE_KEY_BASE.name}, got ${ur.type.name}`);
+      throw ComponentsError.invalidData(
+        `Expected UR type ${TAG_PRIVATE_KEY_BASE.name}, got ${ur.type.name}`,
+      );
     }
     const dummy = new PrivateKeyBase(new Uint8Array(PRIVATE_KEY_BASE_DEFAULT_SIZE));
     return dummy.fromUntaggedCbor(ur.cbor);

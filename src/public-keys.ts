@@ -52,6 +52,7 @@ import type { Verifier } from "./signing/signer.js";
 import type { Encrypter } from "./encrypter.js";
 import { Reference, type ReferenceProvider } from "./reference.js";
 import { Digest } from "./digest.js";
+import { ComponentsError } from "./error.js";
 
 /**
  * Trait for types that provide access to a PublicKeys container.
@@ -245,7 +246,7 @@ export class PublicKeys
     const elements = expectArray(cborValue);
 
     if (elements.length !== 2) {
-      throw new Error(`PublicKeys must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.invalidData(`PublicKeys must have 2 elements, got ${elements.length}`);
     }
 
     const signingPublicKey = SigningPublicKey.fromTaggedCbor(elements[0]);
@@ -321,7 +322,7 @@ export class PublicKeys
   ur(): UR {
     const name = TAG_PUBLIC_KEYS.name;
     if (name === undefined) {
-      throw new Error("PUBLIC_KEYS tag name is undefined");
+      throw ComponentsError.invalidData("PUBLIC_KEYS tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -338,7 +339,9 @@ export class PublicKeys
    */
   static fromUR(ur: UR): PublicKeys {
     if (ur.type.name !== TAG_PUBLIC_KEYS.name) {
-      throw new Error(`Expected UR type ${TAG_PUBLIC_KEYS.name}, got ${ur.type.name}`);
+      throw ComponentsError.invalidData(
+        `Expected UR type ${TAG_PUBLIC_KEYS.name}, got ${ur.type.name}`,
+      );
     }
     // We need a dummy instance to call instance methods
     const signingKeyPrefix = new Uint8Array([0x82, 0x02, 0x58, 0x20]);

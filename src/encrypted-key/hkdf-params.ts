@@ -27,6 +27,7 @@ import { type EncryptedMessage } from "../symmetric/encrypted-message.js";
 import { HashType, hashTypeToCbor, hashTypeFromCbor, hashTypeToString } from "./hash-type.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import type { KeyDerivation } from "./key-derivation.js";
+import { ComponentsError } from "../error.js";
 
 /** Default salt length for key derivation */
 export const SALT_LEN = 16;
@@ -111,7 +112,7 @@ export class HKDFParams implements KeyDerivation {
       case HashType.SHA512:
         return hkdfSha512(secret, this._salt.asBytes(), 32);
       default:
-        throw new Error(`Unknown hash type: ${String(this._hashType)}`);
+        throw ComponentsError.invalidData(`Unknown hash type: ${String(this._hashType)}`);
     }
   }
 
@@ -155,12 +156,16 @@ export class HKDFParams implements KeyDerivation {
     const array = expectArray(cborValue);
 
     if (array.length !== 3) {
-      throw new Error(`Invalid HKDFParams: expected 3 elements, got ${array.length}`);
+      throw ComponentsError.invalidData(
+        `Invalid HKDFParams: expected 3 elements, got ${array.length}`,
+      );
     }
 
     const index = expectNumber(array[0]);
     if (index !== HKDFParams.INDEX) {
-      throw new Error(`Invalid HKDFParams index: expected ${HKDFParams.INDEX}, got ${index}`);
+      throw ComponentsError.invalidData(
+        `Invalid HKDFParams index: expected ${HKDFParams.INDEX}, got ${index}`,
+      );
     }
 
     const salt = Salt.fromTaggedCbor(array[1]);

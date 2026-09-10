@@ -52,7 +52,7 @@ import {
 import { UR } from "@blockchaincommons/uniform-resources";
 import { EC_KEY as TAG_EC_KEY, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { ECPublicKey } from "./ec-public-key.js";
 import { SchnorrPublicKey } from "./schnorr-public-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
@@ -69,7 +69,7 @@ export class ECPrivateKey
 
   private constructor(data: Uint8Array) {
     if (data.length !== ECDSA_PRIVATE_KEY_SIZE) {
-      throw CryptoError.invalidSize(ECDSA_PRIVATE_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ECDSA_PRIVATE_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -142,7 +142,7 @@ export class ECPrivateKey
    */
   static fromDataRef(data: Uint8Array): ECPrivateKey {
     if (data.length !== ECDSA_PRIVATE_KEY_SIZE) {
-      throw CryptoError.invalidSize(ECDSA_PRIVATE_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(ECDSA_PRIVATE_KEY_SIZE, data.length);
     }
     return ECPrivateKey.fromData(data);
   }
@@ -232,7 +232,7 @@ export class ECPrivateKey
     try {
       return ecdsa.sign(this._data, message);
     } catch (e) {
-      throw CryptoError.cryptoOperation(`ECDSA signing failed: ${String(e)}`);
+      throw ComponentsError.crypto(`ECDSA signing failed: ${String(e)}`);
     }
   }
 
@@ -246,7 +246,7 @@ export class ECPrivateKey
     try {
       return schnorr.sign(this._data, message);
     } catch (e) {
-      throw CryptoError.cryptoOperation(`Schnorr signing failed: ${String(e)}`);
+      throw ComponentsError.crypto(`Schnorr signing failed: ${String(e)}`);
     }
   }
 
@@ -261,7 +261,7 @@ export class ECPrivateKey
     try {
       return schnorr.sign(this._data, message, { rng });
     } catch (e) {
-      throw CryptoError.cryptoOperation(`Schnorr signing failed: ${String(e)}`);
+      throw ComponentsError.crypto(`Schnorr signing failed: ${String(e)}`);
     }
   }
 
@@ -335,14 +335,14 @@ export class ECPrivateKey
     // Check for key 2 (isPrivate = true)
     const isPrivate = mapGetBoolean(map, 2);
     if (isPrivate !== true) {
-      throw new Error("ECPrivateKey CBOR must have key 2 set to true");
+      throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 2 set to true");
     }
 
     // Get key data from key 3
     // CborMap.extract() returns native types (Uint8Array for byte strings)
     const keyData = mapGetBytes(map, 3);
     if (keyData === undefined || keyData.length === 0) {
-      throw new Error("ECPrivateKey CBOR must have key 3 (data)");
+      throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 3 (data)");
     }
 
     return ECPrivateKey.fromDataRef(keyData);
@@ -393,7 +393,7 @@ export class ECPrivateKey
   ur(): UR {
     const name = TAG_EC_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_EC_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -411,7 +411,7 @@ export class ECPrivateKey
   static fromUR(ur: UR): ECPrivateKey {
     const name = TAG_EC_KEY.name;
     if (name === undefined) {
-      throw new Error("TAG_EC_KEY.name is undefined");
+      throw ComponentsError.invalidData("TAG_EC_KEY.name is undefined");
     }
     ur.expectType(name);
     const dummy = new ECPrivateKey(new Uint8Array(ECDSA_PRIVATE_KEY_SIZE));

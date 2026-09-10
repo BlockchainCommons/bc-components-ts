@@ -38,7 +38,7 @@ import {
 import { type CborTaggedEncodable, type CborTaggedDecodable, taggedCborOf } from "../codable.js";
 import { SYMMETRIC_KEY as TAG_SYMMETRIC_KEY } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import { Nonce } from "../nonce.js";
 import { EncryptedMessage } from "./encrypted-message.js";
@@ -52,7 +52,7 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
 
   private constructor(data: Uint8Array) {
     if (data.length !== SYMMETRIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(SYMMETRIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(SYMMETRIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -80,7 +80,7 @@ export class SymmetricKey implements CborTaggedEncodable, CborTaggedDecodable<Sy
    */
   static fromDataRef(data: Uint8Array): SymmetricKey {
     if (data.length !== SYMMETRIC_KEY_SIZE) {
-      throw CryptoError.invalidSize(SYMMETRIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize(SYMMETRIC_KEY_SIZE, data.length);
     }
     return SymmetricKey.fromData(data);
   }

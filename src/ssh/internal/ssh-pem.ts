@@ -13,6 +13,7 @@
  */
 
 import { base64 } from "@scure/base";
+import { ComponentsError } from "../../error.js";
 
 const BEGIN = "-----BEGIN ";
 const END = "-----END ";
@@ -33,15 +34,15 @@ export function parsePem(text: string, expectedLabel?: string): PemBlock {
   let i = 0;
   while (i < lines.length && lines[i].trim() === "") i++;
   if (i >= lines.length) {
-    throw new Error("PEM: empty input");
+    throw ComponentsError.ssh("PEM: empty input");
   }
   const beginLine = lines[i];
   if (!beginLine.startsWith(BEGIN) || !beginLine.endsWith(SUFFIX)) {
-    throw new Error(`PEM: expected '-----BEGIN <label>-----' header, got '${beginLine}'`);
+    throw ComponentsError.ssh(`PEM: expected '-----BEGIN <label>-----' header, got '${beginLine}'`);
   }
   const label = beginLine.slice(BEGIN.length, beginLine.length - SUFFIX.length);
   if (expectedLabel !== undefined && label !== expectedLabel) {
-    throw new Error(`PEM: expected label '${expectedLabel}', got '${label}'`);
+    throw ComponentsError.ssh(`PEM: expected label '${expectedLabel}', got '${label}'`);
   }
   i++;
   // Skip any RFC 1421 headers (`Key:` lines before the blank-line separator).
@@ -61,14 +62,14 @@ export function parsePem(text: string, expectedLabel?: string): PemBlock {
     bodyLines.push(line);
   }
   if (endLine === undefined) {
-    throw new Error("PEM: missing '-----END <label>-----' footer");
+    throw ComponentsError.ssh("PEM: missing '-----END <label>-----' footer");
   }
   if (!endLine.endsWith(SUFFIX)) {
-    throw new Error(`PEM: malformed END line '${endLine}'`);
+    throw ComponentsError.ssh(`PEM: malformed END line '${endLine}'`);
   }
   const endLabel = endLine.slice(END.length, endLine.length - SUFFIX.length);
   if (endLabel !== label) {
-    throw new Error(`PEM: BEGIN/END label mismatch ('${label}' vs '${endLabel}')`);
+    throw ComponentsError.ssh(`PEM: BEGIN/END label mismatch ('${label}' vs '${endLabel}')`);
   }
 
   const body = bodyLines.join("").replace(/\s+/g, "");

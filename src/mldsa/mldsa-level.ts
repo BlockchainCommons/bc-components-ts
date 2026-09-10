@@ -24,6 +24,7 @@
 
 import { ml_dsa44, ml_dsa65, ml_dsa87 } from "@noble/post-quantum/ml-dsa.js";
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
+import { ComponentsError } from "../error.js";
 
 /**
  * ML-DSA security levels.
@@ -112,7 +113,7 @@ export function mldsaLevelFromValue(value: number): MLDSALevel {
     case 5:
       return MLDSALevel.MLDSA87;
     default:
-      throw new Error(`Invalid MLDSA level value: ${value}`);
+      throw ComponentsError.postQuantum(`Invalid MLDSA level value: ${value}`);
   }
 }
 

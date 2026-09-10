@@ -49,7 +49,7 @@ import {
 } from "../codable.js";
 import { UUID as TAG_UUID } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
 
 const UUID_SIZE = 16;
@@ -61,7 +61,7 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
 
   private constructor(data: Uint8Array) {
     if (data.length !== UUID_SIZE) {
-      throw CryptoError.invalidSize(UUID_SIZE, data.length);
+      throw ComponentsError.invalidSize(UUID_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -89,7 +89,7 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
    */
   static fromDataRef(data: Uint8Array): UUID {
     if (data.length !== UUID_SIZE) {
-      throw CryptoError.invalidSize(UUID_SIZE, data.length);
+      throw ComponentsError.invalidSize(UUID_SIZE, data.length);
     }
     return UUID.fromData(data);
   }
@@ -106,7 +106,7 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
    */
   static fromHex(hex: string): UUID {
     if (hex.length !== 32) {
-      throw CryptoError.invalidFormat(`UUID hex must be 32 characters, got ${hex.length}`);
+      throw ComponentsError.invalidFormat(`UUID hex must be 32 characters, got ${hex.length}`);
     }
     const data = new Uint8Array(16);
     for (let i = 0; i < 16; i++) {
@@ -122,7 +122,7 @@ export class UUID implements CborTaggedEncodable, CborTaggedDecodable<UUID>, URE
   static fromString(uuidString: string): UUID {
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(uuidString)) {
-      throw CryptoError.invalidFormat(`Invalid UUID format: ${uuidString}`);
+      throw ComponentsError.invalidFormat(`Invalid UUID format: ${uuidString}`);
     }
     const hex = uuidString.replace(/-/g, "");
     return UUID.fromHex(hex);

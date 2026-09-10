@@ -57,6 +57,7 @@ import { MLKEMPublicKey } from "./mlkem-public-key.js";
 import type { MLKEMCiphertext } from "./mlkem-ciphertext.js";
 import { SymmetricKey } from "../symmetric/symmetric-key.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * MLKEMPrivateKey - Post-quantum key decapsulation private key using ML-KEM.
@@ -70,7 +71,7 @@ export class MLKEMPrivateKey
   private constructor(level: MLKEMLevel, data: Uint8Array) {
     const expectedSize = mlkemPrivateKeySize(level);
     if (data.length !== expectedSize) {
-      throw new Error(
+      throw ComponentsError.postQuantum(
         `MLKEMPrivateKey (${mlkemLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
       );
     }
@@ -181,7 +182,7 @@ export class MLKEMPrivateKey
    */
   decapsulate(ciphertext: MLKEMCiphertext): SymmetricKey {
     if (ciphertext.level() !== this._level) {
-      throw new Error(
+      throw ComponentsError.postQuantum(
         `Ciphertext level (${mlkemLevelToString(ciphertext.level())}) does not match key level (${mlkemLevelToString(this._level)})`,
       );
     }
@@ -270,7 +271,9 @@ export class MLKEMPrivateKey
   fromUntaggedCbor(cborValue: Cbor): MLKEMPrivateKey {
     const elements = expectArray(cborValue);
     if (elements.length !== 2) {
-      throw new Error(`MLKEMPrivateKey CBOR must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.postQuantum(
+        `MLKEMPrivateKey CBOR must have 2 elements, got ${elements.length}`,
+      );
     }
     const levelValue = Number(expectInteger(elements[0]));
     const level = mlkemLevelFromValue(levelValue);
@@ -325,7 +328,7 @@ export class MLKEMPrivateKey
   ur(): UR {
     const name = TAG_MLKEM_PRIVATE_KEY.name;
     if (name === undefined) {
-      throw new Error("MLKEM_PRIVATE_KEY tag name is undefined");
+      throw ComponentsError.postQuantum("MLKEM_PRIVATE_KEY tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -342,7 +345,9 @@ export class MLKEMPrivateKey
    */
   static fromUR(ur: UR): MLKEMPrivateKey {
     if (ur.type.name !== TAG_MLKEM_PRIVATE_KEY.name) {
-      throw new Error(`Expected UR type ${TAG_MLKEM_PRIVATE_KEY.name}, got ${ur.type.name}`);
+      throw ComponentsError.postQuantum(
+        `Expected UR type ${TAG_MLKEM_PRIVATE_KEY.name}, got ${ur.type.name}`,
+      );
     }
     const dummyData = new Uint8Array(mlkemPrivateKeySize(MLKEMLevel.MLKEM512));
     const dummy = new MLKEMPrivateKey(MLKEMLevel.MLKEM512, dummyData);

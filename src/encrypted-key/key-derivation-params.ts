@@ -22,6 +22,7 @@ import { PBKDF2Params } from "./pbkdf2-params.js";
 import { ScryptParams } from "./scrypt-params.js";
 import { Argon2idParams } from "./argon2id-params.js";
 import { SSHAgentParams } from "./ssh-agent-params.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Union type representing key derivation parameters.
@@ -192,14 +193,14 @@ export function keyDerivationParamsToString(kdp: KeyDerivationParams): string {
 export function keyDerivationParamsFromCbor(cborValue: Cbor): KeyDerivationParams {
   const array = expectArray(cborValue);
   if (array.length === 0) {
-    throw new Error("Invalid KeyDerivationParams: empty array");
+    throw ComponentsError.invalidData("Invalid KeyDerivationParams: empty array");
   }
 
   const index = expectNumber(array[0]);
   const method = keyDerivationMethodFromIndex(Number(index));
 
   if (method === undefined) {
-    throw new Error(`Invalid KeyDerivationMethod index: ${index}`);
+    throw ComponentsError.invalidData(`Invalid KeyDerivationMethod index: ${index}`);
   }
 
   switch (method) {

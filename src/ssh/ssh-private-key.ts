@@ -68,6 +68,7 @@ import {
 } from "./ssh-algorithm.js";
 import { SSHPublicKey } from "./ssh-public-key.js";
 import { SSHSignature, type SshHashAlgorithm } from "./ssh-signature.js";
+import { ComponentsError } from "../error.js";
 
 const PEM_LABEL = "OPENSSH PRIVATE KEY";
 const PEM_LINE_WIDTH = 70;
@@ -156,7 +157,7 @@ export class SSHPrivateKey {
         return { kind: "ecdsa", curve: data.curve };
       default: {
         const _exhaustive: never = data;
-        throw new Error(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
+        throw ComponentsError.ssh(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
       }
     }
   }
@@ -174,12 +175,12 @@ export class SSHPrivateKey {
       case "ecdsa":
         return data.point;
       case "dsa":
-        throw new Error(
+        throw ComponentsError.ssh(
           "SSHPrivateKey.publicBytes is not defined for DSA — use `data.p/q/g/y` instead",
         );
       default: {
         const _exhaustive: never = data;
-        throw new Error(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
+        throw ComponentsError.ssh(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
       }
     }
   }
@@ -192,10 +193,12 @@ export class SSHPrivateKey {
       case "ecdsa":
         return data.scalar;
       case "dsa":
-        throw new Error("SSHPrivateKey.privateBytes is not defined for DSA — use `data.x` instead");
+        throw ComponentsError.ssh(
+          "SSHPrivateKey.privateBytes is not defined for DSA — use `data.x` instead",
+        );
       default: {
         const _exhaustive: never = data;
-        throw new Error(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
+        throw ComponentsError.ssh(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
       }
     }
   }
@@ -211,36 +214,36 @@ export class SSHPrivateKey {
 
   static fromBlob(blob: Uint8Array): SSHPrivateKey {
     if (blob.length < MAGIC.length || !bytesEqual(blob.subarray(0, MAGIC.length), MAGIC)) {
-      throw new Error("SSHPrivateKey: missing 'openssh-key-v1' magic");
+      throw ComponentsError.ssh("SSHPrivateKey: missing 'openssh-key-v1' magic");
     }
     const reader = new SshBufferReader(blob.subarray(MAGIC.length));
 
     const ciphername = decodeUtf8(reader.readString());
     const kdfname = decodeUtf8(reader.readString());
     if (ciphername !== CIPHER_NONE || kdfname !== KDF_NONE) {
-      throw new Error(
+      throw ComponentsError.general(
         `SSHPrivateKey: encrypted keys are not supported in v1 (ciphername='${ciphername}', kdfname='${kdfname}'). See SSH_PLAN.md V2.B.`,
       );
     }
     const kdfoptions = reader.readString();
     if (kdfoptions.length !== 0) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPrivateKey: expected empty kdfoptions for ciphername='none', got ${kdfoptions.length} bytes`,
       );
     }
     const nkeys = reader.readUint32();
     if (nkeys !== NKEYS) {
-      throw new Error(`SSHPrivateKey: expected exactly ${NKEYS} key, got ${nkeys}`);
+      throw ComponentsError.ssh(`SSHPrivateKey: expected exactly ${NKEYS} key, got ${nkeys}`);
     }
     const publicKeyBlob = reader.readString();
     const publicKey = SSHPublicKey.fromBlob(publicKeyBlob);
 
     const encryptedBlob = reader.readString();
     if (!reader.isAtEnd()) {
-      throw new Error("SSHPrivateKey: trailing bytes after encrypted section");
+      throw ComponentsError.ssh("SSHPrivateKey: trailing bytes after encrypted section");
     }
     if (encryptedBlob.length % BLOCK_SIZE_NONE !== 0) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPrivateKey: encrypted section length ${encryptedBlob.length} is not a multiple of ${BLOCK_SIZE_NONE}`,
       );
     }
@@ -249,7 +252,7 @@ export class SSHPrivateKey {
     const checkint1 = innerReader.readUint32();
     const checkint2 = innerReader.readUint32();
     if (checkint1 !== checkint2) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPrivateKey: checkint mismatch (0x${checkint1.toString(16)} vs 0x${checkint2.toString(16)}) — file is corrupted or encrypted`,
       );
     }
@@ -257,7 +260,7 @@ export class SSHPrivateKey {
     const algoName = decodeUtf8(innerReader.readString());
     const algorithm = parseSshAlgorithm(algoName);
     if (sshAlgorithmName(publicKey.algorithm) !== algoName) {
-      throw new Error(
+      throw ComponentsError.ssh(
         `SSHPrivateKey: outer/inner algorithm mismatch ('${sshAlgorithmName(publicKey.algorithm)}' vs '${algoName}')`,
       );
     }
@@ -267,22 +270,22 @@ export class SSHPrivateKey {
       case "ed25519": {
         const pubBytes = innerReader.readString();
         if (pubBytes.length !== ED25519_PUBLIC_LEN) {
-          throw new Error(
+          throw ComponentsError.ssh(
             `SSHPrivateKey ed25519: public key length ${pubBytes.length} != ${ED25519_PUBLIC_LEN}`,
           );
         }
         if (publicKey.data.kind !== "ed25519" || !bytesEqual(pubBytes, publicKey.data.pubBytes)) {
-          throw new Error("SSHPrivateKey ed25519: outer/inner public-key mismatch");
+          throw ComponentsError.ssh("SSHPrivateKey ed25519: outer/inner public-key mismatch");
         }
         const combined = innerReader.readString();
         if (combined.length !== ED25519_SEED_LEN + ED25519_PUBLIC_LEN) {
-          throw new Error(
+          throw ComponentsError.ssh(
             `SSHPrivateKey ed25519: combined seed||public length ${combined.length} != ${ED25519_SEED_LEN + ED25519_PUBLIC_LEN}`,
           );
         }
         const tail = combined.subarray(ED25519_SEED_LEN);
         if (!bytesEqual(tail, pubBytes)) {
-          throw new Error(
+          throw ComponentsError.ssh(
             "SSHPrivateKey ed25519: combined-blob public tail does not match public field",
           );
         }
@@ -297,19 +300,19 @@ export class SSHPrivateKey {
         const expectedCurve = sshCurveName(algorithm.curve);
         const curveName = decodeUtf8(innerReader.readString());
         if (curveName !== expectedCurve) {
-          throw new Error(
+          throw ComponentsError.ssh(
             `SSHPrivateKey ecdsa: blob curve '${curveName}' does not match algorithm '${expectedCurve}'`,
           );
         }
         const point = innerReader.readString();
         const expectedPointLen = sshEcdsaPointLen(algorithm.curve);
         if (point.length !== expectedPointLen || point[0] !== 0x04) {
-          throw new Error(
+          throw ComponentsError.ssh(
             `SSHPrivateKey ecdsa: expected ${expectedPointLen}-byte uncompressed point (0x04 prefix), got ${point.length} bytes prefix=0x${point[0]?.toString(16) ?? "?"}`,
           );
         }
         if (publicKey.data.kind !== "ecdsa" || !bytesEqual(point, publicKey.data.point)) {
-          throw new Error("SSHPrivateKey ecdsa: outer/inner public-key mismatch");
+          throw ComponentsError.ssh("SSHPrivateKey ecdsa: outer/inner public-key mismatch");
         }
         const mpint = innerReader.readMpint();
         const stripped = stripMpintSignByte(mpint);
@@ -329,7 +332,7 @@ export class SSHPrivateKey {
         const y = stripPositiveMpint(innerReader.readMpint());
         const x = stripPositiveMpint(innerReader.readMpint());
         if (publicKey.data.kind !== "dsa") {
-          throw new Error("SSHPrivateKey dsa: outer key is not DSA");
+          throw ComponentsError.ssh("SSHPrivateKey dsa: outer key is not DSA");
         }
         // Re-stated public params must match the outer pubkey blob.
         if (
@@ -338,7 +341,7 @@ export class SSHPrivateKey {
           !bytesEqual(g, publicKey.data.g) ||
           !bytesEqual(y, publicKey.data.y)
         ) {
-          throw new Error("SSHPrivateKey dsa: outer/inner public-parameter mismatch");
+          throw ComponentsError.ssh("SSHPrivateKey dsa: outer/inner public-parameter mismatch");
         }
         data = { kind: "dsa", p, q, g, y, x };
         break;
@@ -352,7 +355,7 @@ export class SSHPrivateKey {
     while (!innerReader.isAtEnd()) {
       const b = innerReader.readByte();
       if (b !== pad) {
-        throw new Error(
+        throw ComponentsError.ssh(
           `SSHPrivateKey: bad padding byte at offset ${innerReader.position()} (expected 0x${pad.toString(16)}, got 0x${b.toString(16)})`,
         );
       }

@@ -52,6 +52,7 @@ import type { SigningOptions } from "./signing/signature-scheme.js";
 import type { Decrypter } from "./encrypter.js";
 import { Reference, type ReferenceProvider } from "./reference.js";
 import { Digest } from "./digest.js";
+import { ComponentsError } from "./error.js";
 
 /**
  * Trait for types that provide access to a PrivateKeys container.
@@ -271,7 +272,7 @@ export class PrivateKeys
     const elements = expectArray(cborValue);
 
     if (elements.length !== 2) {
-      throw new Error(`PrivateKeys must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.invalidData(`PrivateKeys must have 2 elements, got ${elements.length}`);
     }
 
     const signingPrivateKey = SigningPrivateKey.fromTaggedCbor(elements[0]);
@@ -325,7 +326,7 @@ export class PrivateKeys
   ur(): UR {
     const name = TAG_PRIVATE_KEYS.name;
     if (name === undefined) {
-      throw new Error("PRIVATE_KEYS tag name is undefined");
+      throw ComponentsError.invalidData("PRIVATE_KEYS tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -342,7 +343,9 @@ export class PrivateKeys
    */
   static fromUR(ur: UR): PrivateKeys {
     if (ur.type.name !== TAG_PRIVATE_KEYS.name) {
-      throw new Error(`Expected UR type ${TAG_PRIVATE_KEYS.name}, got ${ur.type.name}`);
+      throw ComponentsError.invalidData(
+        `Expected UR type ${TAG_PRIVATE_KEYS.name}, got ${ur.type.name}`,
+      );
     }
     const dummy = PrivateKeys.new();
     return dummy.fromUntaggedCbor(ur.cbor);

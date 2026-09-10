@@ -50,6 +50,7 @@ import {
   mldsaSignatureSize,
 } from "./mldsa-level.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * MLDSASignature - Post-quantum digital signature using ML-DSA.
@@ -63,7 +64,7 @@ export class MLDSASignature
   private constructor(level: MLDSALevel, data: Uint8Array) {
     const expectedSize = mldsaSignatureSize(level);
     if (data.length !== expectedSize) {
-      throw new Error(
+      throw ComponentsError.postQuantum(
         `MLDSASignature (${mldsaLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
       );
     }
@@ -185,7 +186,9 @@ export class MLDSASignature
   fromUntaggedCbor(cborValue: Cbor): MLDSASignature {
     const elements = expectArray(cborValue);
     if (elements.length !== 2) {
-      throw new Error(`MLDSASignature CBOR must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.postQuantum(
+        `MLDSASignature CBOR must have 2 elements, got ${elements.length}`,
+      );
     }
     const levelValue = Number(expectInteger(elements[0]));
     const level = mldsaLevelFromValue(levelValue);
@@ -240,7 +243,7 @@ export class MLDSASignature
   ur(): UR {
     const name = TAG_MLDSA_SIGNATURE.name;
     if (name === undefined) {
-      throw new Error("MLDSA_SIGNATURE tag name is undefined");
+      throw ComponentsError.postQuantum("MLDSA_SIGNATURE tag name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -257,7 +260,9 @@ export class MLDSASignature
    */
   static fromUR(ur: UR): MLDSASignature {
     if (ur.type.name !== TAG_MLDSA_SIGNATURE.name) {
-      throw new Error(`Expected UR type ${TAG_MLDSA_SIGNATURE.name}, got ${ur.type.name}`);
+      throw ComponentsError.postQuantum(
+        `Expected UR type ${TAG_MLDSA_SIGNATURE.name}, got ${ur.type.name}`,
+      );
     }
     const dummyData = new Uint8Array(mldsaSignatureSize(MLDSALevel.MLDSA44));
     const dummy = new MLDSASignature(MLDSALevel.MLDSA44, dummyData);

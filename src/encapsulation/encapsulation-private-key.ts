@@ -52,7 +52,7 @@ import { type EncapsulationCiphertext } from "./encapsulation-ciphertext.js";
 import { EncapsulationPublicKey } from "./encapsulation-public-key.js";
 import { MLKEMPrivateKey } from "../mlkem/mlkem-private-key.js";
 import { MLKEMLevel } from "../mlkem/mlkem-level.js";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex } from "../utils.js";
 import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
@@ -258,7 +258,7 @@ export class EncapsulationPrivateKey
    */
   x25519PrivateKey(): X25519PrivateKey {
     if (this._x25519PrivateKey === undefined) {
-      throw new Error("Not an X25519 private key");
+      throw ComponentsError.invalidData("Not an X25519 private key");
     }
     return this._x25519PrivateKey;
   }
@@ -269,7 +269,7 @@ export class EncapsulationPrivateKey
    */
   mlkemPrivateKey(): MLKEMPrivateKey {
     if (this._mlkemPrivateKey === undefined) {
-      throw new Error("Not an MLKEM private key");
+      throw ComponentsError.invalidData("Not an MLKEM private key");
     }
     return this._mlkemPrivateKey;
   }
@@ -294,14 +294,14 @@ export class EncapsulationPrivateKey
   data(): Uint8Array {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PrivateKey;
-      if (pk === undefined) throw new Error("X25519 private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 private key not set");
       return pk.data();
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
-      if (pk === undefined) throw new Error("MLKEM private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
       return pk.data();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -310,16 +310,16 @@ export class EncapsulationPrivateKey
   publicKey(): EncapsulationPublicKey {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PrivateKey;
-      if (pk === undefined) throw new Error("X25519 private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 private key not set");
       const x25519Public = pk.publicKey();
       return EncapsulationPublicKey.fromX25519PublicKey(x25519Public);
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
-      if (pk === undefined) throw new Error("MLKEM private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
       const mlkemPublic = pk.publicKey();
       return EncapsulationPublicKey.fromMlkem(mlkemPublic);
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -327,19 +327,19 @@ export class EncapsulationPrivateKey
    *
    * @param ciphertext - The ciphertext from encapsulation
    * @returns The decapsulated shared secret
-   * @throws CryptoError if the scheme doesn't match
+   * @throws ComponentsError if the scheme doesn't match
    */
   decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey {
     // Verify scheme matches
     if (ciphertext.encapsulationScheme() !== this._scheme) {
-      throw CryptoError.invalidData(
+      throw ComponentsError.invalidData(
         `Scheme mismatch: expected ${String(this._scheme)}, got ${String(ciphertext.encapsulationScheme())}`,
       );
     }
 
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PrivateKey;
-      if (pk === undefined) throw new Error("X25519 private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 private key not set");
       // Get the ephemeral public key from ciphertext
       const ephemeralPublic = ciphertext.x25519PublicKey();
 
@@ -347,13 +347,13 @@ export class EncapsulationPrivateKey
       return pk.sharedKeyWith(ephemeralPublic);
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
-      if (pk === undefined) throw new Error("MLKEM private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
       // Get the MLKEM ciphertext and decapsulate
       const mlkemCiphertext = ciphertext.mlkemCiphertext();
       return pk.decapsulate(mlkemCiphertext);
     }
 
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -415,7 +415,7 @@ export class EncapsulationPrivateKey
     } else if (isMlkemScheme(this._scheme)) {
       return tagsForValues([TAG_MLKEM_PRIVATE_KEY.value]);
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -424,14 +424,14 @@ export class EncapsulationPrivateKey
   untaggedCbor(): Cbor {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PrivateKey;
-      if (pk === undefined) throw new Error("X25519 private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 private key not set");
       return cbor(pk.data());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
-      if (pk === undefined) throw new Error("MLKEM private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
       return pk.untaggedCbor();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -480,7 +480,7 @@ export class EncapsulationPrivateKey
       return EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
     }
 
-    throw new Error(`Unknown private key tag: ${tag}`);
+    throw ComponentsError.invalidData(`Unknown private key tag: ${tag}`);
   }
 
   /**
@@ -522,14 +522,15 @@ export class EncapsulationPrivateKey
   ur(): UR {
     if (this._scheme === EncapsulationScheme.X25519) {
       const name = TAG_X25519_PRIVATE_KEY.name;
-      if (name === undefined) throw new Error("TAG_X25519_PRIVATE_KEY.name is undefined");
+      if (name === undefined)
+        throw ComponentsError.invalidData("TAG_X25519_PRIVATE_KEY.name is undefined");
       return UR.from(name, this.untaggedCbor());
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
-      if (pk === undefined) throw new Error("MLKEM private key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
       return pk.ur();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -556,7 +557,9 @@ export class EncapsulationPrivateKey
       return EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
     }
 
-    throw new Error(`Unknown UR type for EncapsulationPrivateKey: ${ur.type.name}`);
+    throw ComponentsError.invalidData(
+      `Unknown UR type for EncapsulationPrivateKey: ${ur.type.name}`,
+    );
   }
 
   /**

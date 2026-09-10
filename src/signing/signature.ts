@@ -51,7 +51,7 @@ import {
   MLDSA_SIGNATURE as TAG_MLDSA_SIGNATURE,
   SSH_TEXT_SIGNATURE as TAG_SSH_TEXT_SIGNATURE,
 } from "@blockchaincommons/tags";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes } from "../utils.js";
 import { SignatureScheme, isMldsaScheme } from "./signature-scheme.js";
 import { MLDSASignature } from "../mldsa/mldsa-signature.js";
@@ -99,7 +99,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
    */
   static schnorrFromData(data: Uint8Array): Signature {
     if (data.length !== SCHNORR_SIGNATURE_SIZE) {
-      throw CryptoError.invalidSize(SCHNORR_SIGNATURE_SIZE, data.length);
+      throw ComponentsError.invalidSize(SCHNORR_SIGNATURE_SIZE, data.length);
     }
     return new Signature(SignatureScheme.Schnorr, data);
   }
@@ -122,7 +122,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
    */
   static ecdsaFromData(data: Uint8Array): Signature {
     if (data.length !== ECDSA_SIGNATURE_SIZE) {
-      throw CryptoError.invalidSize(ECDSA_SIGNATURE_SIZE, data.length);
+      throw ComponentsError.invalidSize(ECDSA_SIGNATURE_SIZE, data.length);
     }
     return new Signature(SignatureScheme.Ecdsa, data);
   }
@@ -145,7 +145,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
    */
   static ed25519FromData(data: Uint8Array): Signature {
     if (data.length !== ED25519_SIGNATURE_SIZE) {
-      throw CryptoError.invalidSize(ED25519_SIGNATURE_SIZE, data.length);
+      throw ComponentsError.invalidSize(ED25519_SIGNATURE_SIZE, data.length);
     }
     return new Signature(SignatureScheme.Ed25519, data);
   }
@@ -168,7 +168,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
    */
   static sr25519FromData(data: Uint8Array): Signature {
     if (data.length !== SR25519_SIGNATURE_SIZE) {
-      throw CryptoError.invalidSize(SR25519_SIGNATURE_SIZE, data.length);
+      throw ComponentsError.invalidSize(SR25519_SIGNATURE_SIZE, data.length);
     }
     return new Signature(SignatureScheme.Sr25519, data);
   }
@@ -203,7 +203,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
         scheme = SignatureScheme.MLDSA87;
         break;
       default:
-        throw new Error(`Unknown MLDSA level: ${sig.level()}`);
+        throw ComponentsError.invalidData(`Unknown MLDSA level: ${sig.level()}`);
     }
     return new Signature(scheme, sig.data(), sig);
   }
@@ -473,7 +473,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
       case SignatureScheme.MLDSA65:
       case SignatureScheme.MLDSA87: {
         if (this._mldsaSignature === undefined) {
-          throw new Error("MLDSA signature is missing");
+          throw ComponentsError.invalidData("MLDSA signature is missing");
         }
         // Rust: delegates to MLDSASignature (which produces tagged CBOR)
         return this._mldsaSignature.taggedCbor();
@@ -483,7 +483,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384: {
         if (this._sshSig === undefined) {
-          throw new Error("SSH signature is missing");
+          throw ComponentsError.invalidData("SSH signature is missing");
         }
         // Mirror Rust `Signature::SSH(sig) => to_tagged_value(TAG_SSH_TEXT_SIGNATURE, pem)`
         // (`signature.rs:643-646`).
@@ -531,7 +531,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
       const elements = expectArray(cborValue);
 
       if (elements.length !== 2) {
-        throw new Error("Signature array must have 2 elements");
+        throw ComponentsError.invalidData("Signature array must have 2 elements");
       }
 
       const discriminator = expectUnsigned(elements[0]);
@@ -545,7 +545,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
         case 3: // Sr25519
           return Signature.sr25519FromData(signatureData);
         default:
-          throw new Error(`Unknown signature discriminator: ${discriminator}`);
+          throw ComponentsError.invalidData(`Unknown signature discriminator: ${discriminator}`);
       }
     }
 
@@ -563,7 +563,7 @@ export class Signature implements CborTaggedEncodable, CborTaggedDecodable<Signa
       }
     }
 
-    throw new Error(
+    throw ComponentsError.invalidData(
       "Signature must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
     );
   }

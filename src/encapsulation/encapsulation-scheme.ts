@@ -16,6 +16,7 @@
  */
 
 import { MLKEMLevel } from "../mlkem/mlkem-level.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Available key encapsulation schemes.
@@ -68,7 +69,7 @@ export function isMlkemScheme(scheme: EncapsulationScheme): boolean {
 export function schemeToMlkemLevel(scheme: EncapsulationScheme): MLKEMLevel {
   switch (scheme) {
     case EncapsulationScheme.X25519:
-      throw new Error(`Not an MLKEM scheme: ${String(scheme)}`);
+      throw ComponentsError.invalidData(`Not an MLKEM scheme: ${String(scheme)}`);
     case EncapsulationScheme.MLKEM512:
       return MLKEMLevel.MLKEM512;
     case EncapsulationScheme.MLKEM768:

@@ -61,7 +61,7 @@ import {
 } from "./codable.js";
 import { DIGEST as TAG_DIGEST } from "@blockchaincommons/tags";
 import { UR } from "@blockchaincommons/uniform-resources";
-import { CryptoError } from "./error.js";
+import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { DigestProvider } from "./digest-provider.js";
 
@@ -74,7 +74,7 @@ export class Digest
 
   private constructor(data: Uint8Array) {
     if (data.length !== Digest.DIGEST_SIZE) {
-      throw CryptoError.invalidSize(Digest.DIGEST_SIZE, data.length);
+      throw ComponentsError.invalidSize(Digest.DIGEST_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }

@@ -37,6 +37,7 @@ import { EncapsulationScheme } from "./encapsulation-scheme.js";
 import { MLKEMCiphertext } from "../mlkem/mlkem-ciphertext.js";
 import { MLKEMLevel } from "../mlkem/mlkem-level.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * Convert MLKEMLevel to EncapsulationScheme
@@ -152,7 +153,7 @@ export class EncapsulationCiphertext
    */
   x25519PublicKey(): X25519PublicKey {
     if (this._x25519PublicKey === undefined) {
-      throw new Error("Not an X25519 ciphertext");
+      throw ComponentsError.invalidData("Not an X25519 ciphertext");
     }
     return this._x25519PublicKey;
   }
@@ -163,7 +164,7 @@ export class EncapsulationCiphertext
    */
   mlkemCiphertext(): MLKEMCiphertext {
     if (this._mlkemCiphertext === undefined) {
-      throw new Error("Not an MLKEM ciphertext");
+      throw ComponentsError.invalidData("Not an MLKEM ciphertext");
     }
     return this._mlkemCiphertext;
   }
@@ -188,14 +189,14 @@ export class EncapsulationCiphertext
   data(): Uint8Array {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
-      if (pk === undefined) throw new Error("X25519 public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
       return pk.data();
     } else if (isMlkemScheme(this._scheme)) {
       const ct = this._mlkemCiphertext;
-      if (ct === undefined) throw new Error("MLKEM ciphertext not set");
+      if (ct === undefined) throw ComponentsError.invalidData("MLKEM ciphertext not set");
       return ct.data();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -242,7 +243,7 @@ export class EncapsulationCiphertext
     } else if (isMlkemScheme(this._scheme)) {
       return tagsForValues([TAG_MLKEM_CIPHERTEXT.value]);
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -251,14 +252,14 @@ export class EncapsulationCiphertext
   untaggedCbor(): Cbor {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
-      if (pk === undefined) throw new Error("X25519 public key not set");
+      if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
       return cbor(pk.data());
     } else if (isMlkemScheme(this._scheme)) {
       const ct = this._mlkemCiphertext;
-      if (ct === undefined) throw new Error("MLKEM ciphertext not set");
+      if (ct === undefined) throw ComponentsError.invalidData("MLKEM ciphertext not set");
       return ct.untaggedCbor();
     }
-    throw new Error(`Unsupported scheme: ${String(this._scheme)}`);
+    throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
 
   /**
@@ -307,7 +308,7 @@ export class EncapsulationCiphertext
       return EncapsulationCiphertext.fromMlkem(mlkemCiphertext);
     }
 
-    throw new Error(`Unknown ciphertext tag: ${tag}`);
+    throw ComponentsError.invalidData(`Unknown ciphertext tag: ${tag}`);
   }
 
   /**

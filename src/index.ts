@@ -9,13 +9,14 @@
  */
 
 // Error handling
-export { ErrorKind, CryptoError, isError, isCryptoError, isCryptoErrorKind } from "./error.js";
+export { ComponentsError, COMPONENTS_ERROR_CODES } from "./error.js";
 export type {
-  Result,
-  ErrorData,
-  InvalidSizeData,
-  InvalidDataData,
-  DataTooShortData,
+  ComponentsErrorCode,
+  ComponentsErrorDetails,
+  InvalidSizeDetails,
+  InvalidDataDetails,
+  DataTooShortDetails,
+  MessageDetails,
 } from "./error.js";
 
 // PrivateKeyDataProvider interface

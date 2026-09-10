@@ -21,7 +21,7 @@
  */
 
 import { type Cbor, cbor, expectBytes, decodeCbor } from "@blockchaincommons/dcbor";
-import { CryptoError } from "../error.js";
+import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 
 const AUTHENTICATION_TAG_SIZE = 16;
@@ -33,7 +33,7 @@ export class AuthenticationTag {
 
   private constructor(data: Uint8Array) {
     if (data.length !== AUTHENTICATION_TAG_SIZE) {
-      throw CryptoError.invalidSize(AUTHENTICATION_TAG_SIZE, data.length);
+      throw ComponentsError.invalidSize(AUTHENTICATION_TAG_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -54,7 +54,7 @@ export class AuthenticationTag {
    */
   static fromDataRef(data: Uint8Array): AuthenticationTag {
     if (data.length !== AUTHENTICATION_TAG_SIZE) {
-      throw CryptoError.invalidSize(AUTHENTICATION_TAG_SIZE, data.length);
+      throw ComponentsError.invalidSize(AUTHENTICATION_TAG_SIZE, data.length);
     }
     return AuthenticationTag.fromData(data);
   }

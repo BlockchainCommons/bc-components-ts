@@ -26,16 +26,27 @@ const here = dirname(fileURLToPath(import.meta.url));
 const BASELINE_SHA256 = "e586b600317b4e2acdd9853bea449e641fefabe6f6049e90cc0b1087af9946b9";
 
 /**
- * Tombstones: the only allowed differences. T1 (landed with the dcbor port):
- * a map value of the wrong CBOR type is rejected by typed extraction
- * (`InvalidData`) where the compat bundle's untyped `extract` produced an
- * incidental `DataTooShort`.
+ * Tombstones: the only allowed differences.
+ * T1 (landed with the dcbor port): a map value of the wrong CBOR type is
+ *    rejected by typed extraction (`InvalidData`) where the compat bundle's
+ *    untyped `extract` produced an incidental `DataTooShort`.
+ * T2 (landed with W1): every bare `Error` throw became a `ComponentsError`
+ *    with a code; the baseline's `throw:Error` is any `throw:<code>` now.
  */
-const TOMBSTONES: { id: string; landed: boolean; matches: (r: Recipe) => boolean }[] = [
+const TOMBSTONES: {
+  id: string;
+  landed: boolean;
+  matches: (r: Recipe, baselineOutcome: string, currentOutcome: string) => boolean;
+}[] = [
   {
     id: "T1",
     landed: true,
     matches: (r) => r.k === "decode" && r.type === "seed" && r.hex.includes("a10161"),
+  },
+  {
+    id: "T2",
+    landed: true,
+    matches: (_r, a, b) => a === "throw:Error" && b.startsWith("throw:") && b !== "throw:Error",
   },
 ];
 
@@ -64,7 +75,7 @@ describe("differential: baseline vs working tree", () => {
         n++;
         const a = stable(recipe, materialize(baseline, recipe));
         const b = stable(recipe, materialize(current, recipe));
-        const tomb = TOMBSTONES.find((t) => t.matches(recipe));
+        const tomb = TOMBSTONES.find((t) => t.matches(recipe, a, b));
         if (a !== b && tomb?.landed !== true)
           diffs.push(`${recipeName(recipe)}: ${a.slice(0, 90)} !== ${b.slice(0, 90)}`);
       }

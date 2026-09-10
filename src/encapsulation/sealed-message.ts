@@ -69,6 +69,7 @@ import { type EncapsulationPublicKey } from "./encapsulation-public-key.js";
 import { type EncapsulationPrivateKey } from "./encapsulation-private-key.js";
 import { X25519PublicKey } from "../x25519/x25519-public-key.js";
 import { bytesToHex } from "../utils.js";
+import { ComponentsError } from "../error.js";
 
 /**
  * A sealed message providing anonymous authenticated encryption.
@@ -250,7 +251,9 @@ export class SealedMessage
     const elements = expectArray(cborValue);
 
     if (elements.length !== 2) {
-      throw new Error(`SealedMessage must have 2 elements, got ${elements.length}`);
+      throw ComponentsError.invalidData(
+        `SealedMessage must have 2 elements, got ${elements.length}`,
+      );
     }
 
     // Decode the encrypted message (tagged)
@@ -325,7 +328,7 @@ export class SealedMessage
   ur(): UR {
     const name = TAG_SEALED_MESSAGE.name;
     if (name === undefined) {
-      throw new Error("TAG_SEALED_MESSAGE.name is undefined");
+      throw ComponentsError.invalidData("TAG_SEALED_MESSAGE.name is undefined");
     }
     return UR.from(name, this.untaggedCbor());
   }
@@ -343,7 +346,7 @@ export class SealedMessage
   static fromUR(ur: UR): SealedMessage {
     const name = TAG_SEALED_MESSAGE.name;
     if (name === undefined) {
-      throw new Error("TAG_SEALED_MESSAGE.name is undefined");
+      throw ComponentsError.invalidData("TAG_SEALED_MESSAGE.name is undefined");
     }
     ur.expectType(name);
     return SealedMessage.fromUntaggedCborData(ur.cbor.toData());
