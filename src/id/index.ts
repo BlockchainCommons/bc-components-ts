@@ -4,7 +4,6 @@
  *
  *
  * Identifier types module
- * Ported from bc-components-rust/src/id/mod.rs
  */
 
 export { ARID } from "./arid.js";

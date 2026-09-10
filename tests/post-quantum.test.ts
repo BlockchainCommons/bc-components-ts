@@ -9,7 +9,10 @@ import { describe, it, expect } from "vitest";
 
 import {
   // ML-DSA
-  MLDSALevel,
+  MLDSALevel, // ML-KEM
+  MLKEMLevel,
+} from "../src/index.js";
+import {
   MLDSA_KEY_SIZES,
   mldsaPrivateKeySize,
   mldsaPublicKeySize,
@@ -19,8 +22,6 @@ import {
   MLDSAPrivateKey,
   MLDSAPublicKey,
   MLDSASignature,
-  // ML-KEM
-  MLKEMLevel,
   MLKEM_KEY_SIZES,
   mlkemPrivateKeySize,
   mlkemPublicKeySize,
@@ -31,7 +32,7 @@ import {
   MLKEMPrivateKey,
   MLKEMPublicKey,
   MLKEMCiphertext,
-} from "../src/index.js";
+} from "../src/pq.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 

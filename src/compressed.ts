@@ -5,7 +5,6 @@
  *
  * A compressed binary object with integrity verification.
  *
- * Ported from bc-components-rust/src/compressed.rs
  *
  * `Compressed` provides a way to efficiently store and transmit binary data
  * using the DEFLATE compression algorithm. It includes built-in integrity
@@ -59,6 +58,9 @@ import type { DigestProvider } from "./digest-provider.js";
 import { ComponentsError } from "./error.js";
 import { bytesToHex } from "./utils.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let COMPRESSED_CODEC: ComponentCodec<Compressed> | undefined;
 
 /**
  * A compressed binary object with integrity verification.
@@ -139,7 +141,7 @@ export class Compressed implements ToCbor, DigestProvider {
    */
   static fromDecompressedData(decompressedData: Uint8Array, digest?: Digest): Compressed {
     // Raw DEFLATE (RFC 1951, no zlib header/trailer) at level 6 — matches
-    // Rust `miniz_oxide::deflate::compress_to_vec(data, 6)`.
+    // The reference uses `miniz_oxide::deflate::compress_to_vec(data, 6)`.
     const compressedData = deflateRaw(decompressedData, { level: 6 });
     const checksum = crc32(decompressedData);
     const decompressedSize = decompressedData.length;
@@ -298,32 +300,34 @@ export class Compressed implements ToCbor, DigestProvider {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<Compressed> = defineCodec({
-    tags: [TAG_COMPRESSED],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
-      if (elements.length < 3 || elements.length > 4) {
-        throw ComponentsError.invalidData("invalid number of elements in compressed");
-      }
+  static get codec(): ComponentCodec<Compressed> {
+    return (COMPRESSED_CODEC ??= defineCodec({
+      tags: [TAG_COMPRESSED],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
+        if (elements.length < 3 || elements.length > 4) {
+          throw ComponentsError.invalidData("invalid number of elements in compressed");
+        }
 
-      const checksum = expectInteger(elements[0]);
-      const decompressedSize = expectInteger(elements[1]);
-      const compressedData = expectBytes(elements[2]);
+        const checksum = expectInteger(elements[0]);
+        const decompressedSize = expectInteger(elements[1]);
+        const compressedData = expectBytes(elements[2]);
 
-      let digest: Digest | undefined;
-      if (elements.length === 4) {
-        digest = Digest.fromCbor(elements[3]);
-      }
+        let digest: Digest | undefined;
+        if (elements.length === 4) {
+          digest = Digest.fromCbor(elements[3]);
+        }
 
-      return Compressed.fromParts({
-        checksum: Number(checksum),
-        decompressedSize: Number(decompressedSize),
-        compressedData,
-        digest,
-      });
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return Compressed.fromParts({
+          checksum: Number(checksum),
+          decompressedSize: Number(decompressedSize),
+          compressedData,
+          digest,
+        });
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...Compressed.codec.tags];

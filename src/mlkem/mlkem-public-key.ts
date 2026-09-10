@@ -19,7 +19,6 @@
  *
  * UR type: `mlkem-public-key`
  *
- * Ported from bc-components-rust/src/mlkem/mlkem_public_key.rs
  */
 
 import {
@@ -56,6 +55,9 @@ export interface MLKEMEncapsulationPair {
   /** The ciphertext to send to the private key holder */
   ciphertext: MLKEMCiphertext;
 }
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let M_L_K_E_M_PUBLIC_KEY_CODEC: ComponentCodec<MLKEMPublicKey> | undefined;
 
 /**
  * MLKEMPublicKey - Post-quantum key encapsulation public key using ML-KEM.
@@ -155,22 +157,24 @@ export class MLKEMPublicKey implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<MLKEMPublicKey> = defineCodec({
-    tags: [TAG_MLKEM_PUBLIC_KEY],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
-      if (elements.length !== 2) {
-        throw ComponentsError.postQuantum(
-          `MLKEMPublicKey CBOR must have 2 elements, got ${elements.length}`,
-        );
-      }
-      const levelValue = Number(expectInteger(elements[0]));
-      const level = mlkemLevelFromValue(levelValue);
-      const data = expectBytes(elements[1]);
-      return MLKEMPublicKey.fromBytes(level, data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<MLKEMPublicKey> {
+    return (M_L_K_E_M_PUBLIC_KEY_CODEC ??= defineCodec({
+      tags: [TAG_MLKEM_PUBLIC_KEY],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
+        if (elements.length !== 2) {
+          throw ComponentsError.postQuantum(
+            `MLKEMPublicKey CBOR must have 2 elements, got ${elements.length}`,
+          );
+        }
+        const levelValue = Number(expectInteger(elements[0]));
+        const level = mlkemLevelFromValue(levelValue);
+        const data = expectBytes(elements[1]);
+        return MLKEMPublicKey.fromBytes(level, data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...MLKEMPublicKey.codec.tags];

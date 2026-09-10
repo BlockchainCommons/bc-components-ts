@@ -10,7 +10,6 @@
  * to verify that a signature was created by a corresponding signer for a
  * specific message.
  *
- * Ported from bc-components-rust/src/signing/signer.rs
  */
 
 import type { Signature } from "./signature.js";

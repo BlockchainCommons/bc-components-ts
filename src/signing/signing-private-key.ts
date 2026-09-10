@@ -14,13 +14,12 @@
  *
  * `SigningPrivateKey` is serialized to CBOR with tag 40021.
  *
- * The CBOR encoding (matching Rust bc-components):
+ * The CBOR encoding:
  * - Schnorr: `#6.40021(h'<32-byte-private-key>')` (bare byte string)
  * - ECDSA:   `#6.40021([1, h'<32-byte-private-key>'])`
  * - Ed25519: `#6.40021([2, h'<32-byte-private-key>'])`
  * - SR25519: `#6.40021([3, h'<32-byte-seed>'])`
  *
- * Ported from bc-components-rust/src/signing/signing_private_key.rs
  */
 
 import type { RandomNumberGenerator } from "@blockchaincommons/rand";
@@ -60,6 +59,9 @@ import { Digest } from "../digest.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 import { secureRng } from "@blockchaincommons/rand";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let SIGNING_PRIVATE_KEY_CODEC: ComponentCodec<SigningPrivateKey> | undefined;
 
 /**
  * A private key used for creating digital signatures.
@@ -167,8 +169,6 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   /**
    * Creates a new SSH signing private key from an SSHPrivateKey.
    *
-   * Mirrors Rust `SigningPrivateKey::new_ssh`
-   * (`bc-components-rust/src/signing/signing_private_key.rs:317`).
    *
    * @param key - The SSH private key to wrap
    * @returns A new SSH signing private key
@@ -437,8 +437,6 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   /**
    * Returns the underlying SSH private key if this is an SSH key.
    *
-   * Mirrors Rust `SigningPrivateKey::to_ssh`
-   * (`bc-components-rust/src/signing/signing_private_key.rs:387`).
    *
    * @returns The SSHPrivateKey if this is an SSH key, undefined otherwise
    */
@@ -485,8 +483,6 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   }
 
   /**
-   * Mirror of Rust `Display for SigningPrivateKey`
-   * (`bc-components-rust/src/signing/signing_private_key.rs:1048-1095`):
    *   `SigningPrivateKey(<refHexShort>, <inner>)`
    * where `<inner>` is:
    *   - `SchnorrPrivateKey(<refHexShort>)` / `ECDSAPrivateKey(<refHexShort>)`
@@ -612,7 +608,6 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
           throw ComponentsError.invalidData("SSH private key is missing");
         }
         if (options?.type !== "Ssh") {
-          // Mirror Rust error message verbatim
           // (`signing_private_key.rs:796`).
           throw ComponentsError.invalidData("Missing namespace and hash algorithm for SSH signing");
         }
@@ -635,13 +630,12 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   }
 
   // ============================================================================
-  // Verifier Interface (Schnorr-only — matches Rust)
+  // Verifier Interface (Schnorr-only)
   // ============================================================================
 
   /**
    * Verifies a signature against a message using the derived public key.
    *
-   * Mirrors Rust's `Verifier for SigningPrivateKey`: only Schnorr keys
    * actually verify; every other scheme returns `false`. Callers needing
    * verification for Ed25519 / ECDSA / Sr25519 / MLDSA should derive the
    * public key first via `publicKey().verify(...)`.
@@ -761,60 +755,62 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<SigningPrivateKey> = defineCodec({
-    tags: [TAG_SIGNING_PRIVATE_KEY],
-    decodeUntagged: (cborValue) => {
-      // Rust format: Schnorr is a bare byte string
-      if (isBytes(cborValue)) {
-        const keyData = expectBytes(cborValue);
-        return SigningPrivateKey.fromSchnorr(ECPrivateKey.from(keyData));
-      }
-
-      // Array format for ECDSA, Ed25519, Sr25519
-      if (isArray(cborValue)) {
-        const elements = expectArray(cborValue);
-
-        if (elements.length !== 2) {
-          throw ComponentsError.invalidData("SigningPrivateKey array must have 2 elements");
+  static get codec(): ComponentCodec<SigningPrivateKey> {
+    return (SIGNING_PRIVATE_KEY_CODEC ??= defineCodec({
+      tags: [TAG_SIGNING_PRIVATE_KEY],
+      decodeUntagged: (cborValue) => {
+        // Wire format: Schnorr is a bare byte string
+        if (isBytes(cborValue)) {
+          const keyData = expectBytes(cborValue);
+          return SigningPrivateKey.fromSchnorr(ECPrivateKey.from(keyData));
         }
 
-        const discriminator = expectUnsigned(elements[0]);
-        const keyData = expectBytes(elements[1]);
+        // Array format for ECDSA, Ed25519, Sr25519
+        if (isArray(cborValue)) {
+          const elements = expectArray(cborValue);
 
-        switch (Number(discriminator)) {
-          case 1: // ECDSA
-            return SigningPrivateKey.fromEcdsa(ECPrivateKey.from(keyData));
-          case 2: // Ed25519
-            return SigningPrivateKey.fromEd25519(Ed25519PrivateKey.from(keyData));
-          case 3: // Sr25519
-            return SigningPrivateKey.fromSr25519(Sr25519PrivateKey.from(keyData));
-          default:
-            throw ComponentsError.invalidData(
-              `Unknown SigningPrivateKey discriminator: ${discriminator}`,
-            );
-        }
-      }
+          if (elements.length !== 2) {
+            throw ComponentsError.invalidData("SigningPrivateKey array must have 2 elements");
+          }
 
-      // Tagged format for MLDSA / SSH
-      if (isTagged(cborValue)) {
-        const tagged = asTaggedValue(cborValue);
-        if (tagged?.[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
-          const mldsaKey = MLDSAPrivateKey.fromCbor(cborValue);
-          return SigningPrivateKey.fromMldsa(mldsaKey);
-        }
-        if (tagged?.[0].value === TAG_SSH_TEXT_PRIVATE_KEY.value) {
-          const text = expectText(tagged[1]);
-          const sshKey = SSHPrivateKey.fromOpenssh(text);
-          return SigningPrivateKey.fromSsh(sshKey);
-        }
-      }
+          const discriminator = expectUnsigned(elements[0]);
+          const keyData = expectBytes(elements[1]);
 
-      throw ComponentsError.invalidData(
-        "SigningPrivateKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
-      );
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+          switch (Number(discriminator)) {
+            case 1: // ECDSA
+              return SigningPrivateKey.fromEcdsa(ECPrivateKey.from(keyData));
+            case 2: // Ed25519
+              return SigningPrivateKey.fromEd25519(Ed25519PrivateKey.from(keyData));
+            case 3: // Sr25519
+              return SigningPrivateKey.fromSr25519(Sr25519PrivateKey.from(keyData));
+            default:
+              throw ComponentsError.invalidData(
+                `Unknown SigningPrivateKey discriminator: ${discriminator}`,
+              );
+          }
+        }
+
+        // Tagged format for MLDSA / SSH
+        if (isTagged(cborValue)) {
+          const tagged = asTaggedValue(cborValue);
+          if (tagged?.[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
+            const mldsaKey = MLDSAPrivateKey.fromCbor(cborValue);
+            return SigningPrivateKey.fromMldsa(mldsaKey);
+          }
+          if (tagged?.[0].value === TAG_SSH_TEXT_PRIVATE_KEY.value) {
+            const text = expectText(tagged[1]);
+            const sshKey = SSHPrivateKey.fromOpenssh(text);
+            return SigningPrivateKey.fromSsh(sshKey);
+          }
+        }
+
+        throw ComponentsError.invalidData(
+          "SigningPrivateKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
+        );
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...SigningPrivateKey.codec.tags];
@@ -823,7 +819,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   /**
    * Returns the untagged CBOR encoding.
    *
-   * Format (matching Rust bc-components):
+   * Format:
    * - Schnorr: h'<32-byte-private-key>' (bare byte string)
    * - ECDSA:   [1, h'<32-byte-private-key>']
    * - Ed25519: [2, h'<32-byte-private-key>']
@@ -836,7 +832,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
         if (this._ecKey === undefined) {
           throw ComponentsError.invalidData("EC private key is missing");
         }
-        // Rust: CBOR::to_byte_string(key.bytes) - bare byte string
+        // CBOR::to_byte_string(key.bytes) - bare byte string
         return cbor(this._ecKey.bytes);
       }
       case SignatureScheme.Ecdsa: {
@@ -863,7 +859,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
         if (this._mldsaKey === undefined) {
           throw ComponentsError.invalidData("MLDSA private key is missing");
         }
-        // Rust: delegates to MLDSAPrivateKey (which produces tagged CBOR)
+        // delegates to MLDSAPrivateKey (which produces tagged CBOR)
         return this._mldsaKey.toCbor();
       }
       case SignatureScheme.SshEd25519:
@@ -873,7 +869,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
         if (this._sshKey === undefined) {
           throw ComponentsError.invalidData("SSH private key is missing");
         }
-        // Mirror Rust `SigningPrivateKey::SSH` untagged CBOR encoding:
+        // untagged CBOR encoding:
         // `CBOR::to_tagged_value(TAG_SSH_TEXT_PRIVATE_KEY, key.to_openssh())`.
         return taggedValue(TAG_SSH_TEXT_PRIVATE_KEY, this._sshKey.toOpenssh());
       }
@@ -912,7 +908,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    *
    * Only valid when this `SigningPrivateKey` wraps an `SSHPrivateKey`
    * (i.e. one of the four `SignatureScheme.SshXxx` variants). Mirrors
-   * Rust's `SigningPrivateKey::SSH(key) => key.to_openssh(LineEnding::LF)`
+   * the reference implementation's `SigningPrivateKey::SSH(key) => key.to_openssh(LineEnding::LF)`
    * usage at `signing_private_key.rs:896`.
    */
   toSshOpenssh(): string {

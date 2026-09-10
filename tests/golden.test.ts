@@ -2,7 +2,13 @@
  * Golden snapshots (Phase 0.2): one block per class over fixed inputs and
  * the seeded generator, plus the rejection table.
  */
-import * as src from "../src";
+import * as root from "../src/index.js";
+import * as ssh from "../src/ssh/index.js";
+import * as pq from "../src/pq.js";
+import * as kdf from "../src/kdf.js";
+import * as sskr from "../src/sskr.js";
+
+const src = { ...root, ...ssh, ...pq, ...kdf, ...sskr };
 import * as rand from "@blockchaincommons/rand";
 import { materialize, redesignedAdapterFor, type Recipe } from "./vectors/recipes";
 import { categories, SEEDS, FAKE } from "./corpus/corpus";

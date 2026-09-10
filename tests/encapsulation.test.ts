@@ -8,7 +8,6 @@ import {
   SealedMessage,
   defaultEncapsulationScheme,
   createEncapsulationKeypair,
-  createEncapsulationKeypairUsing,
   X25519PrivateKey,
   X25519PublicKey,
   Nonce,
@@ -594,8 +593,8 @@ describe("createEncapsulationKeypair helpers", () => {
     const seed: [bigint, bigint, bigint, bigint] = [9n, 10n, 11n, 12n];
     const rng1 = new SeededRng(seed);
     const rng2 = new SeededRng(seed);
-    const [priv1, pub1] = createEncapsulationKeypairUsing(rng1);
-    const [priv2, pub2] = createEncapsulationKeypairUsing(rng2);
+    const [priv1, pub1] = createEncapsulationKeypair(EncapsulationScheme.X25519, { rng: rng1 });
+    const [priv2, pub2] = createEncapsulationKeypair(EncapsulationScheme.X25519, { rng: rng2 });
     expect(priv1.equals(priv2)).toBe(true);
     expect(pub1.equals(pub2)).toBe(true);
   });

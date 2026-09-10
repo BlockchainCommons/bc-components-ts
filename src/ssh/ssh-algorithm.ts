@@ -4,8 +4,7 @@ import { ComponentsError } from "../error.js";
  *
  * SSH key algorithm identifiers.
  *
- * Mirrors the relevant subset of `ssh_key::Algorithm` (Rust crate
- * `ssh-key` v0.6.7). v1.1 supports the four algorithms `bc-components-rust`
+ * `ssh-key` v0.6.7). v1.1 supports the four algorithms the reference implementation
  * actually wires through `SignatureScheme`:
  *
  *   - Ed25519 (`ssh-ed25519`)

@@ -14,7 +14,6 @@
  * HKDFParams = [0, Salt, HashType]
  * ```
  *
- * Ported from bc-components-rust/src/encrypted_key/hkdf_params.rs
  */
 
 import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";

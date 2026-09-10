@@ -17,7 +17,6 @@
  * This implementation follows the Poly1305 MAC algorithm as specified in
  * [RFC-8439](https://datatracker.ietf.org/doc/html/rfc8439).
  *
- * Ported from bc-components-rust/src/symmetric/authentication_tag.rs
  */
 
 import { type Cbor, cbor, expectBytes, decodeCbor } from "@blockchaincommons/dcbor";

@@ -20,7 +20,6 @@
  * For X25519, the private key is serialized with tag 40010.
  * For MLKEM, the private key is serialized with tag 40100.
  *
- * Ported from bc-components-rust/src/encapsulation/encapsulation_private_key.rs
  */
 
 import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
@@ -67,6 +66,9 @@ function isMlkemScheme(scheme: EncapsulationScheme): boolean {
     scheme === EncapsulationScheme.MLKEM1024
   );
 }
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let ENCAPSULATION_PRIVATE_KEY_CODEC: ComponentCodec<EncapsulationPrivateKey> | undefined;
 
 /**
  * Represents a private key for key encapsulation.
@@ -339,17 +341,19 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
   // ============================================================================
 
   /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
-  static readonly codec: ComponentCodec<EncapsulationPrivateKey> = defineCodec({
-    tags: [TAG_X25519_PRIVATE_KEY, TAG_MLKEM_PRIVATE_KEY],
-    decodeUntagged: (cborValue) =>
-      EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.from(expectBytes(cborValue))),
-    decodeTagged: (tag, content, whole) =>
-      tag.value === TAG_MLKEM_PRIVATE_KEY.value
-        ? EncapsulationPrivateKey.fromMlkem(MLKEMPrivateKey.fromCbor(whole))
-        : EncapsulationPrivateKey.codec.decodeUntagged(content),
-    encodeUntagged: (value) => value.untaggedCbor(),
-    encode: (value) => value.toCbor(),
-  });
+  static get codec(): ComponentCodec<EncapsulationPrivateKey> {
+    return (ENCAPSULATION_PRIVATE_KEY_CODEC ??= defineCodec({
+      tags: [TAG_X25519_PRIVATE_KEY, TAG_MLKEM_PRIVATE_KEY],
+      decodeUntagged: (cborValue) =>
+        EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.from(expectBytes(cborValue))),
+      decodeTagged: (tag, content, whole) =>
+        tag.value === TAG_MLKEM_PRIVATE_KEY.value
+          ? EncapsulationPrivateKey.fromMlkem(MLKEMPrivateKey.fromCbor(whole))
+          : EncapsulationPrivateKey.codec.decodeUntagged(content),
+      encodeUntagged: (value) => value.untaggedCbor(),
+      encode: (value) => value.toCbor(),
+    }));
+  }
 
   /**
    * Returns the CBOR tags associated with this private key.

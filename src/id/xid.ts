@@ -62,7 +62,6 @@ const XID_SIZE = 32;
 /**
  * Trait-style interface for objects that can produce a XID.
  *
- * Mirrors Rust's `XIDProvider` trait. `XID` itself implements this; any
  * other type that maps cleanly to a single XID (e.g. `SigningPublicKey`,
  * `PublicKeys`) may also implement it.
  */
@@ -70,6 +69,9 @@ export interface XIDProvider {
   /** Returns the XID for this object. */
   xid(): XID;
 }
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let X_I_D_CODEC: ComponentCodec<XID> | undefined;
 
 /**
  * Type guard for {@link XIDProvider}.
@@ -131,7 +133,6 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   }
 
   /**
-   * Mirror of Rust's `From<&SigningPublicKey> for XID`.
    * Derived from the SHA-256 digest of the key's tagged CBOR.
    */
   static fromSigningPublicKey(signingPublicKey: SigningPublicKey): XID {
@@ -139,7 +140,6 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   }
 
   /**
-   * Mirror of Rust's `From<&PublicKeys> for XID`.
    * The XID is derived from the bundle's signing public key.
    */
   static fromPublicKeys(publicKeys: PublicKeys): XID {
@@ -147,7 +147,6 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   }
 
   /**
-   * Mirror of Rust's `From<&PrivateKeyBase> for XID` (secp256k1 feature).
    * The XID is derived from the schnorr signing public key.
    */
   static fromPrivateKeyBase(base: PrivateKeyBase): XID {
@@ -155,7 +154,6 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   }
 
   /**
-   * Mirror of Rust's `TryFrom<&SigningPrivateKey> for XID`.
    * The XID is derived from the corresponding public key.
    */
   static tryFromSigningPrivateKey(signingPrivateKey: SigningPrivateKey): XID {
@@ -170,7 +168,7 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
    * Validate the XID against the given public key.
    *
    * Returns true if the SHA-256 hash of the key's CBOR encoding matches
-   * the XID data. This matches Rust's `XID::validate(&self, key: &SigningPublicKey)`.
+   * the XID data. This matches the reference implementation's `XID::validate(&self, key: &SigningPublicKey)`.
    */
   validate(signingPublicKey: SigningPublicKey): boolean {
     const keyData = signingPublicKey.toCbor().toData();
@@ -184,7 +182,7 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   }
 
   /**
-   * Get hex string representation (lowercase, matching Rust implementation).
+   * Get hex string representation (lowercase, as the reference implementation does implementation).
    */
   toHex(): string {
     return bytesToHex(this._data);
@@ -236,7 +234,6 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   /**
    * XIDProvider impl — returns this XID.
    *
-   * Mirrors Rust's blanket `impl XIDProvider for XID`.
    */
   xid(): XID {
     return this;
@@ -246,7 +243,6 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
    * ReferenceProvider impl — produces a Reference whose 32 bytes are the
    * raw XID data.
    *
-   * Mirrors Rust's `impl ReferenceProvider for XID { fn reference(&self) ->
    * Reference { Reference::from_data(*self.bytes) } }` — note this is a
    * direct wrap, not a SHA-256 hash of the XID.
    */
@@ -266,7 +262,7 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   }
 
   /**
-   * Get string representation (short format, matching Rust Display).
+   * Get string representation (short format, as the reference implementation does Display).
    * Uses first 4 bytes of the XID as hex, e.g., "XID(71274df1)".
    */
   toString(): string {
@@ -278,14 +274,16 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<XID> = defineCodec({
-    tags: [TAG_XID],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return XID.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<XID> {
+    return (X_I_D_CODEC ??= defineCodec({
+      tags: [TAG_XID],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return XID.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...XID.codec.tags];

@@ -20,7 +20,6 @@
  *
  * `SymmetricKey` is serialized to CBOR with tag 40023.
  *
- * Ported from bc-components-rust/src/symmetric/symmetric_key.rs
  */
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
@@ -35,6 +34,9 @@ import { Nonce } from "../nonce.js";
 import { EncryptedMessage } from "./encrypted-message.js";
 
 const SYMMETRIC_KEY_SIZE = 32;
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let SYMMETRIC_KEY_CODEC: ComponentCodec<SymmetricKey> | undefined;
 
 export class SymmetricKey implements ToCbor {
   static readonly SYMMETRIC_KEY_SIZE: number = SYMMETRIC_KEY_SIZE;
@@ -157,14 +159,16 @@ export class SymmetricKey implements ToCbor {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<SymmetricKey> = defineCodec({
-    tags: [TAG_SYMMETRIC_KEY],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return SymmetricKey.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<SymmetricKey> {
+    return (SYMMETRIC_KEY_CODEC ??= defineCodec({
+      tags: [TAG_SYMMETRIC_KEY],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return SymmetricKey.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...SymmetricKey.codec.tags];

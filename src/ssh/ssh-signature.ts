@@ -10,7 +10,7 @@
  * Outer PEM:
  *
  *     -----BEGIN SSH SIGNATURE-----
- *     <base64, 76-char wrap, LF newlines>
+ *     <base64, 70-char wrap, LF newlines>
  *     -----END SSH SIGNATURE-----
  *
  * Inner blob (`PROTOCOL.sshsig` §2):
@@ -51,7 +51,8 @@ import { SSHPublicKey } from "./ssh-public-key.js";
 import { ComponentsError } from "../error.js";
 
 const PEM_LABEL = "SSH SIGNATURE";
-const PEM_LINE_WIDTH = 76;
+// OpenSSH (`sshbuf_dtob64`, wrap = 1) and the reference wrap at 70 columns.
+const PEM_LINE_WIDTH = 70;
 const MAGIC = new TextEncoder().encode("SSHSIG");
 const SUPPORTED_VERSION = 1;
 export type SshHashAlgorithm = "sha256" | "sha512";

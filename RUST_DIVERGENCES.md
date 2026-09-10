@@ -14,7 +14,7 @@ Every entry below is checked by `tests/rust-validation`, a Rust program that
 pins `bc-components = 0.31.1` (features `ssh`, `pqcrypto`) and replays
 `tests/vectors/vectors.json` through the reference. A vector either matches
 byte for byte, is listed here as an expected divergence, or fails the run.
-The current run: **386 vectors — 290 match, 96 expected divergences, 0
+The current run: **386 vectors — 294 match, 92 expected divergences, 0
 mismatches.**
 
 This document has three kinds of entry:
@@ -46,13 +46,6 @@ TypeScript bytes are the frozen behaviour.
 (noble's default); the reference (via `ssh-key`/`p256`) does not normalise.
 Both signatures verify on both sides, and every other field of the signature
 (the namespace, the `sshsig` framing, the public key) matches.
-
-### T2. `sshsig` PEM line width (6 vectors) — **pending fix**
-
-The TypeScript `SSHSignature` text form wraps its base64 body at 76 columns;
-the reference and OpenSSH wrap at 70. The base64 bodies are identical and both
-sides parse either width. This is a bug on the TypeScript side and is fixed in
-Phase 3; the harness records it as a tombstone until then.
 
 ## 2. JS-only input domain
 

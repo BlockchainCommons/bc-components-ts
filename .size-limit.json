@@ -2,7 +2,21 @@
   {
     "name": "ESM root entry (import *), minified + gzipped",
     "path": "dist/index.mjs",
-    "limit": "112 kB"
+    "limit": "90 kB"
+  },
+  {
+    "name": "root entry, Digest + SymmetricKey + EncryptedMessage only (tree-shaken, siblings external)",
+    "path": "dist/index.mjs",
+    "import": "{ Digest, SymmetricKey, EncryptedMessage }",
+    "ignore": [
+      "@blockchaincommons/crypto",
+      "@blockchaincommons/dcbor",
+      "@blockchaincommons/rand",
+      "@blockchaincommons/sskr",
+      "@blockchaincommons/tags",
+      "@blockchaincommons/uniform-resources"
+    ],
+    "limit": "8 kB"
   },
   {
     "name": "root entry, package's own code (siblings external)",

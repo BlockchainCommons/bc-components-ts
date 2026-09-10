@@ -5,27 +5,30 @@
  * - PrivateKeyBase
  * - PrivateKeys
  * - PublicKeys
- * - SSKRShareCbor
+ * - SskrShare
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
 import { registerTags } from "@blockchaincommons/tags";
-import { Secret, GroupSpec, Spec } from "@blockchaincommons/sskr";
+import {
+  Secret,
+  GroupSpec,
+  Spec,
+  generateShares,
+  shareBytes,
+  combineShares,
+} from "@blockchaincommons/sskr";
 
 import {
   PrivateKeyBase,
   PrivateKeys,
   PublicKeys,
-  SSKRShareCbor,
-  sskrGenerateShares,
-  sskrCombineShares,
-  sskrGenerate,
-  sskrCombine,
   SigningPrivateKey,
   SigningPublicKey,
   EncapsulationPrivateKey,
   EncapsulationPublicKey,
 } from "../src/index.js";
+import { SskrShare } from "../src/sskr.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
@@ -525,10 +528,10 @@ describe("PublicKeys", () => {
 });
 
 // ============================================================================
-// SSKRShareCbor Tests
+// SskrShare Tests
 // ============================================================================
 
-describe("SSKRShareCbor", () => {
+describe("SskrShare", () => {
   // Generate a test share
   const testSecret = new Uint8Array(16).fill(0x42);
   let testShareData: Uint8Array;
@@ -537,33 +540,33 @@ describe("SSKRShareCbor", () => {
     const secret = Secret.from(testSecret);
     const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 }); // 2 of 3
     const spec = Spec.from({ groupThreshold: 1, groups: [group] }); // 1 of 1 group
-    const groups = sskrGenerate(spec, secret);
-    testShareData = groups[0][0];
+    const groups = generateShares(spec, secret);
+    testShareData = shareBytes(groups[0][0]!);
   });
 
   describe("creation", () => {
     it("should create from data", () => {
-      const share = SSKRShareCbor.from(testShareData);
-      expect(share).toBeInstanceOf(SSKRShareCbor);
+      const share = SskrShare.from(testShareData);
+      expect(share).toBeInstanceOf(SskrShare);
     });
 
     it("should create from hex", () => {
       const hex = Array.from(testShareData)
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
-      const share = SSKRShareCbor.fromHex(hex);
+      const share = SskrShare.fromHex(hex);
       expect(share.bytes).toEqual(testShareData);
     });
 
     it("should reject data too short", () => {
       const shortData = new Uint8Array(3);
-      expect(() => SSKRShareCbor.from(shortData)).toThrow();
+      expect(() => SskrShare.from(shortData)).toThrow();
     });
   });
 
   describe("metadata accessors", () => {
     it("should return identifier", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       const id = share.identifier;
       expect(typeof id).toBe("number");
       expect(id).toBeGreaterThanOrEqual(0);
@@ -571,61 +574,61 @@ describe("SSKRShareCbor", () => {
     });
 
     it("should return identifier as hex", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       const hex = share.identifierHex();
       expect(hex).toHaveLength(4);
     });
 
     it("should return group threshold", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       expect(share.groupThreshold).toBe(1);
     });
 
     it("should return group count", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       expect(share.groupCount).toBe(1);
     });
 
     it("should return group index", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       expect(share.groupIndex).toBe(0);
     });
 
     it("should return member threshold", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       expect(share.memberThreshold).toBe(2);
     });
 
     it("should return member index", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       const idx = share.memberIndex;
       expect(idx).toBeGreaterThanOrEqual(0);
       expect(idx).toBeLessThanOrEqual(15);
     });
 
     it("should return share value", () => {
-      const share = SSKRShareCbor.from(testShareData);
-      const value = share.shareValue;
+      const share = SskrShare.from(testShareData);
+      const value = share.value;
       expect(value.length).toBeGreaterThan(0);
     });
   });
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       expect(share.equals(share)).toBe(true);
     });
 
     it("should be equal to another with same data", () => {
-      const share1 = SSKRShareCbor.from(testShareData);
-      const share2 = SSKRShareCbor.from(new Uint8Array(testShareData));
+      const share1 = SskrShare.from(testShareData);
+      const share2 = SskrShare.from(new Uint8Array(testShareData));
       expect(share1.equals(share2)).toBe(true);
     });
   });
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       const tags = share.cborTags();
       // Returns both current tag (40309) and legacy tag (309) for backward compatibility
       expect(tags).toHaveLength(2);
@@ -634,18 +637,18 @@ describe("SSKRShareCbor", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       const cborData = share.toCbor().toData();
-      const recovered = SSKRShareCbor.fromCbor(decodeCbor(cborData));
+      const recovered = SskrShare.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(share)).toBe(true);
     });
   });
 
   describe("string representation", () => {
     it("should provide meaningful toString", () => {
-      const share = SSKRShareCbor.from(testShareData);
+      const share = SskrShare.from(testShareData);
       const str = share.toString();
-      expect(str).toContain("SSKRShare");
+      expect(str).toContain("SskrShare");
       expect(str).toContain("group");
       expect(str).toContain("member");
     });
@@ -668,16 +671,16 @@ describe("SSKR Integration", () => {
       const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 }); // 2 of 3
       const spec = Spec.from({ groupThreshold: 1, groups: [group] }); // 1 of 1 group
 
-      const groups = sskrGenerateShares(spec, secret);
+      const groups = SskrShare.generate(spec, secret);
       expect(groups).toHaveLength(1);
       expect(groups[0]).toHaveLength(3);
 
       // Recover with first 2 shares
-      const recoveredSecret = sskrCombineShares([groups[0][0], groups[0][1]]);
+      const recoveredSecret = SskrShare.combine([groups[0][0], groups[0][1]]);
       expect(recoveredSecret.bytes).toEqual(secretData);
 
       // Recover with last 2 shares
-      const recoveredSecret2 = sskrCombineShares([groups[0][1], groups[0][2]]);
+      const recoveredSecret2 = SskrShare.combine([groups[0][1], groups[0][2]]);
       expect(recoveredSecret2.bytes).toEqual(secretData);
     });
 
@@ -692,21 +695,21 @@ describe("SSKR Integration", () => {
       const group2 = GroupSpec.from({ memberThreshold: 3, memberCount: 5 }); // 3 of 5
       const spec = Spec.from({ groupThreshold: 2, groups: [group1, group2] }); // 2 of 2 groups
 
-      const groups = sskrGenerateShares(spec, secret);
+      const groups = SskrShare.generate(spec, secret);
       expect(groups).toHaveLength(2);
       expect(groups[0]).toHaveLength(3);
       expect(groups[1]).toHaveLength(5);
 
-      // All shares should be valid SSKRShareCbor instances
+      // All shares should be valid SskrShare instances
       for (const group of groups) {
         for (const share of group) {
-          expect(share).toBeInstanceOf(SSKRShareCbor);
+          expect(share).toBeInstanceOf(SskrShare);
           expect(share.groupCount).toBe(2);
         }
       }
 
       // Recover with shares from both groups
-      const recoveredSecret = sskrCombineShares([
+      const recoveredSecret = SskrShare.combine([
         groups[0][0],
         groups[0][1],
         groups[1][0],
@@ -722,16 +725,16 @@ describe("SSKR Integration", () => {
       const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 });
       const spec = Spec.from({ groupThreshold: 1, groups: [group] });
 
-      const groups = sskrGenerateShares(spec, secret);
+      const groups = SskrShare.generate(spec, secret);
 
       // Serialize all shares to CBOR and back
       const recoveredShares = groups[0].map((share) => {
         const cborData = share.toCbor().toData();
-        return SSKRShareCbor.fromCbor(decodeCbor(cborData));
+        return SskrShare.fromCbor(decodeCbor(cborData));
       });
 
       // Should still recover the secret
-      const recovered = sskrCombineShares([recoveredShares[0], recoveredShares[1]]);
+      const recovered = SskrShare.combine([recoveredShares[0], recoveredShares[1]]);
       expect(recovered.bytes).toEqual(secretData);
     });
   });
@@ -743,14 +746,15 @@ describe("SSKR Integration", () => {
       const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 });
       const spec = Spec.from({ groupThreshold: 1, groups: [group] });
 
-      const groups = sskrGenerate(spec, secret);
+      const groups = generateShares(spec, secret);
       expect(groups).toHaveLength(1);
       expect(groups[0]).toHaveLength(3);
 
-      // Raw shares are Uint8Array
-      expect(groups[0][0]).toBeInstanceOf(Uint8Array);
+      // The sskr package's shares are parsed objects; the component wraps them.
+      expect(shareBytes(groups[0][0]!)).toBeInstanceOf(Uint8Array);
+      expect(SskrShare.from(groups[0][0]!).bytes).toEqual(shareBytes(groups[0][0]!));
 
-      const recovered = sskrCombine([groups[0][0], groups[0][1]]);
+      const recovered = combineShares([groups[0][0]!, groups[0][1]!]);
       expect(recovered.bytes).toEqual(secretData);
     });
   });
@@ -771,10 +775,10 @@ describe("PrivateKeyBase + SSKR Integration", () => {
     const group = GroupSpec.from({ memberThreshold: 2, memberCount: 3 });
     const spec = Spec.from({ groupThreshold: 1, groups: [group] });
 
-    const groups = sskrGenerateShares(spec, secret);
+    const groups = SskrShare.generate(spec, secret);
 
     // Recover with 2 shares
-    const recovered = sskrCombineShares([groups[0][0], groups[0][1]]);
+    const recovered = SskrShare.combine([groups[0][0], groups[0][1]]);
 
     // Create new PrivateKeyBase from recovered data
     const recoveredPkb = PrivateKeyBase.from(recovered.bytes);

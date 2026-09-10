@@ -2,7 +2,6 @@
  * Copyright © 2025-2026 Parity Technologies
  *
  * SSH key/signature/certificate types — Ed25519 + ECDSA P-256 v1.
- * Mirrors the SSH support in Rust `bc-components-rust` feature `ssh`.
  */
 
 export { SSHPublicKey, type SshPublicKeyData } from "./ssh-public-key.js";

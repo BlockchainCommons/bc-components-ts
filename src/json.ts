@@ -3,33 +3,32 @@
  * Copyright © 2025-2026 Parity Technologies
  *
  *
- * A CBOR-tagged container for UTF-8 JSON text.
+ * A CBOR-tagged container for UTF-8 CborJson text.
  *
- * Ported from bc-components-rust/src/json.rs
  *
- * The `JSON` type wraps UTF-8 JSON text as a CBOR byte string with tag 262.
- * This allows JSON data to be embedded within CBOR structures while
+ * The `CborJson` type wraps UTF-8 CborJson text as a CBOR byte string with tag 262.
+ * This allows CborJson data to be embedded within CBOR structures while
  * maintaining type information through the tag.
  *
  * This implementation does not validate that the contained data is well-formed
- * JSON. It simply provides a type-safe wrapper around byte data that is
- * intended to contain JSON text.
+ * CborJson. It simply provides a type-safe wrapper around byte data that is
+ * intended to contain CborJson text.
  *
  * # CBOR Serialization
  *
- * `JSON` implements the CBOR tagged encoding interfaces, which means it can be
+ * `CborJson` implements the CBOR tagged encoding interfaces, which means it can be
  * serialized to and deserialized from CBOR with tag 262 (`TAG_JSON`).
  *
  * @example
  * ```typescript
- * import { JSON } from '@blockchaincommons/components';
+ * import { CborJson } from '@blockchaincommons/components';
  *
- * // Create JSON from a string
- * const json = JSON.fromString('{"key": "value"}');
+ * // Create CborJson from a string
+ * const json = CborJson.fromString('{"key": "value"}');
  * console.log(json.asStr()); // {"key": "value"}
  *
- * // Create JSON from bytes
- * const json2 = JSON.from(new TextEncoder().encode('[1, 2, 3]'));
+ * // Create CborJson from bytes
+ * const json2 = CborJson.from(new TextEncoder().encode('[1, 2, 3]'));
  * console.log(json2.byteLength); // 9
  * ```
  */
@@ -40,14 +39,17 @@ import { JSON as TAG_JSON } from "@blockchaincommons/tags";
 import { bytesToHex, hexToBytes } from "./utils.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 
+// The codec is built on first use so that an unused class tree-shakes away.
+let CBOR_JSON_CODEC: ComponentCodec<CborJson> | undefined;
+
 /**
- * A CBOR-tagged container for UTF-8 JSON text.
+ * A CBOR-tagged container for UTF-8 CborJson text.
  *
- * Wraps UTF-8 JSON text as a CBOR byte string with tag 262.
- * This allows JSON data to be embedded within CBOR structures while
+ * Wraps UTF-8 CborJson text as a CBOR byte string with tag 262.
+ * This allows CborJson data to be embedded within CBOR structures while
  * maintaining type information through the tag.
  */
-export class JSON implements ToCbor {
+export class CborJson implements ToCbor {
   private readonly _data: Uint8Array;
 
   private constructor(data: Uint8Array) {
@@ -59,25 +61,25 @@ export class JSON implements ToCbor {
   // ============================================================================
 
   /**
-   * Create a new JSON instance from byte data.
+   * Create a new CborJson instance from byte data.
    */
-  static from(data: Uint8Array): JSON {
-    return new JSON(data);
+  static from(data: Uint8Array): CborJson {
+    return new CborJson(data);
   }
 
   /**
-   * Create a new JSON instance from a string.
+   * Create a new CborJson instance from a string.
    */
-  static fromString(s: string): JSON {
+  static fromString(s: string): CborJson {
     const encoder = new TextEncoder();
-    return new JSON(encoder.encode(s));
+    return new CborJson(encoder.encode(s));
   }
 
   /**
-   * Create a new JSON instance from a hexadecimal string.
+   * Create a new CborJson instance from a hexadecimal string.
    */
-  static fromHex(hex: string): JSON {
-    return new JSON(hexToBytes(hex));
+  static fromHex(hex: string): CborJson {
+    return new CborJson(hexToBytes(hex));
   }
 
   // ============================================================================
@@ -90,7 +92,7 @@ export class JSON implements ToCbor {
   }
 
   /**
-   * Return true if the JSON data is empty.
+   * Return true if the CborJson data is empty.
    */
   isEmpty(): boolean {
     return this._data.length === 0;
@@ -119,9 +121,9 @@ export class JSON implements ToCbor {
   }
 
   /**
-   * Compare with another JSON.
+   * Compare with another CborJson.
    */
-  equals(other: JSON): boolean {
+  equals(other: CborJson): boolean {
     if (this._data.length !== other._data.length) return false;
     for (let i = 0; i < this._data.length; i++) {
       if (this._data[i] !== other._data[i]) return false;
@@ -133,7 +135,7 @@ export class JSON implements ToCbor {
    * Get string representation.
    */
   toString(): string {
-    return `JSON(${this.asStr()})`;
+    return `CborJson(${this.asStr()})`;
   }
 
   // ============================================================================
@@ -141,17 +143,19 @@ export class JSON implements ToCbor {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<JSON> = defineCodec({
-    tags: [TAG_JSON],
-    decodeUntagged: (cborValue) => {
-      const data = expectBytes(cborValue);
-      return JSON.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<CborJson> {
+    return (CBOR_JSON_CODEC ??= defineCodec({
+      tags: [TAG_JSON],
+      decodeUntagged: (cborValue) => {
+        const data = expectBytes(cborValue);
+        return CborJson.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
-    return [...JSON.codec.tags];
+    return [...CborJson.codec.tags];
   }
 
   /**
@@ -172,8 +176,8 @@ export class JSON implements ToCbor {
   }
 
   /** Decode tagged or untagged CBOR. */
-  static fromCbor(cborValue: Cbor): JSON {
-    return JSON.codec.decode(cborValue);
+  static fromCbor(cborValue: Cbor): CborJson {
+    return CborJson.codec.decode(cborValue);
   }
 
   // ============================================================================

@@ -6,7 +6,13 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import * as src from "../src";
+import * as root from "../src/index.js";
+import * as ssh from "../src/ssh/index.js";
+import * as pq from "../src/pq.js";
+import * as kdf from "../src/kdf.js";
+import * as sskr from "../src/sskr.js";
+
+const src = { ...root, ...ssh, ...pq, ...kdf, ...sskr };
 import * as rand from "@blockchaincommons/rand";
 import { materialize, redesignedAdapterFor, type Recipe, type Outcome } from "./vectors/recipes";
 

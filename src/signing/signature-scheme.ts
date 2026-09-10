@@ -8,7 +8,6 @@
  * This enum represents the various signature schemes supported in this crate,
  * including Ed25519, SR25519, ECDSA, Schnorr, post-quantum ML-DSA, and SSH-based signatures.
  *
- * Ported from bc-components-rust/src/signing/signature_scheme.rs
  */
 
 import type { RandomNumberGenerator } from "@blockchaincommons/rand";
@@ -36,72 +35,75 @@ import type { RandomNumberGenerator } from "@blockchaincommons/rand";
  * `SigningPrivateKey`, `SigningPublicKey` — so this is a stylistic
  * difference, not a parity gap.
  */
-export enum SignatureScheme {
+export const SignatureScheme = {
   /**
    * BIP-340 Schnorr signature scheme (secp256k1)
-   * Default scheme (matching Rust bc-components default when secp256k1 is enabled)
+   * Default scheme
    */
-  Schnorr = "Schnorr",
+  Schnorr: "Schnorr",
 
   /**
    * ECDSA signature scheme (secp256k1)
    */
-  Ecdsa = "Ecdsa",
+  Ecdsa: "Ecdsa",
 
   /**
    * Ed25519 signature scheme (RFC 8032)
    */
-  Ed25519 = "Ed25519",
+  Ed25519: "Ed25519",
 
   /**
    * SR25519 signature scheme (Schnorr over Ristretto25519)
    * Used by Polkadot/Substrate
    */
-  Sr25519 = "Sr25519",
+  Sr25519: "Sr25519",
 
   /**
    * ML-DSA44 post-quantum signature scheme (NIST level 2)
    */
-  MLDSA44 = "MLDSA44",
+  MLDSA44: "MLDSA44",
 
   /**
    * ML-DSA65 post-quantum signature scheme (NIST level 3)
    */
-  MLDSA65 = "MLDSA65",
+  MLDSA65: "MLDSA65",
 
   /**
    * ML-DSA87 post-quantum signature scheme (NIST level 5)
    */
-  MLDSA87 = "MLDSA87",
+  MLDSA87: "MLDSA87",
 
   /**
    * Ed25519 signature via SSH agent.
    * Requires SSH agent daemon support.
    */
-  SshEd25519 = "SshEd25519",
+  SshEd25519: "SshEd25519",
 
   /**
    * DSA signature via SSH agent.
    * Requires SSH agent daemon support.
    */
-  SshDsa = "SshDsa",
+  SshDsa: "SshDsa",
 
   /**
    * ECDSA P-256 signature via SSH agent.
    * Requires SSH agent daemon support.
    */
-  SshEcdsaP256 = "SshEcdsaP256",
+  SshEcdsaP256: "SshEcdsaP256",
 
   /**
    * ECDSA P-384 signature via SSH agent.
    * Requires SSH agent daemon support.
    */
-  SshEcdsaP384 = "SshEcdsaP384",
-}
+  SshEcdsaP384: "SshEcdsaP384",
+} as const;
+
+/** One of the `SignatureScheme` values. */
+export type SignatureScheme = (typeof SignatureScheme)[keyof typeof SignatureScheme];
 
 /**
  * Get the default signature scheme.
- * Defaults to Schnorr (matching Rust bc-components default when secp256k1 is enabled).
+ * Defaults to Schnorr.
  */
 export function defaultSignatureScheme(): SignatureScheme {
   return SignatureScheme.Schnorr;

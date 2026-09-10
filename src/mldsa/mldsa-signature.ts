@@ -19,7 +19,6 @@
  *
  * UR type: `mldsa-signature`
  *
- * Ported from bc-components-rust/src/mldsa/mldsa_signature.rs
  */
 
 import {
@@ -43,6 +42,9 @@ import {
 } from "./mldsa-level.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let M_L_D_S_A_SIGNATURE_CODEC: ComponentCodec<MLDSASignature> | undefined;
 
 /**
  * MLDSASignature - Post-quantum digital signature using ML-DSA.
@@ -126,22 +128,24 @@ export class MLDSASignature implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<MLDSASignature> = defineCodec({
-    tags: [TAG_MLDSA_SIGNATURE],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
-      if (elements.length !== 2) {
-        throw ComponentsError.postQuantum(
-          `MLDSASignature CBOR must have 2 elements, got ${elements.length}`,
-        );
-      }
-      const levelValue = Number(expectInteger(elements[0]));
-      const level = mldsaLevelFromValue(levelValue);
-      const data = expectBytes(elements[1]);
-      return MLDSASignature.fromBytes(level, data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<MLDSASignature> {
+    return (M_L_D_S_A_SIGNATURE_CODEC ??= defineCodec({
+      tags: [TAG_MLDSA_SIGNATURE],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
+        if (elements.length !== 2) {
+          throw ComponentsError.postQuantum(
+            `MLDSASignature CBOR must have 2 elements, got ${elements.length}`,
+          );
+        }
+        const levelValue = Number(expectInteger(elements[0]));
+        const level = mldsaLevelFromValue(levelValue);
+        const data = expectBytes(elements[1]);
+        return MLDSASignature.fromBytes(level, data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...MLDSASignature.codec.tags];

@@ -18,7 +18,6 @@
  * Note: Argon2id uses sensible defaults for memory, iterations, and parallelism.
  * Only the salt is configurable in the CBOR encoding for simplicity.
  *
- * Ported from bc-components-rust/src/encrypted_key/argon2id_params.rs
  */
 
 import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";

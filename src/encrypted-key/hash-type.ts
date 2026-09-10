@@ -14,7 +14,6 @@
  * SHA512 = 1
  * ```
  *
- * Ported from bc-components-rust/src/encrypted_key/hash_type.rs
  */
 
 import { type Cbor, cbor, expectNumber } from "@blockchaincommons/dcbor";
@@ -23,12 +22,15 @@ import { ComponentsError } from "../error.js";
 /**
  * Enum representing supported hash types for key derivation.
  */
-export enum HashType {
+export const HashType = {
   /** SHA-256 hash algorithm */
-  SHA256 = 0,
+  SHA256: 0,
   /** SHA-512 hash algorithm */
-  SHA512 = 1,
-}
+  SHA512: 1,
+} as const;
+
+/** One of the `HashType` values. */
+export type HashType = (typeof HashType)[keyof typeof HashType];
 
 /**
  * Convert HashType to its string representation.

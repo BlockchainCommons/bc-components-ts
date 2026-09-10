@@ -138,7 +138,7 @@ export class SSHPrivateKey {
    * Construct an `SSHPrivateKey` from already-decoded parts. Used by
    * `PrivateKeyBase.sshSigningPrivateKey` after generating key material
    * from an HKDF-seeded RNG. The `checkint` should be derived
-   * deterministically from the private bytes (matching Rust's
+   * deterministically from the private bytes (as the reference implementation does's
    * `ssh-key` 0.6.7 `KeypairData::checkint`).
    */
   static fromParts(data: SshPrivateKeyData, comment: string, checkint: number): SSHPrivateKey {
@@ -368,7 +368,6 @@ export class SSHPrivateKey {
   /**
    * Re-serialize to the canonical OpenSSH armored format.
    *
-   * Matches Rust `ssh_key::PrivateKey::to_openssh(LineEnding::LF)`.
    */
   toOpenssh(): string {
     return encodePem(PEM_LABEL, this.toBlob(), PEM_LINE_WIDTH);
@@ -485,7 +484,7 @@ export class SSHPrivateKey {
       }
       case "dsa": {
         // SSH-DSA always inner-hashes with SHA-1 regardless of the SSHSIG
-        // hash_algorithm. Matches Rust `ssh-key`/`dsa` 0.6.7.
+        // hash_algorithm./`dsa` 0.6.7.
         const innerDigest = sha1(signedData);
         signatureBytes = dsaSign({
           p: this.data.p,

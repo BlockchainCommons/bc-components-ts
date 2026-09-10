@@ -5,7 +5,6 @@
  *
  * A trait for types that can provide unique data for cryptographic key derivation.
  *
- * Ported from bc-components-rust/src/private_key_data_provider.rs
  *
  * Types implementing `PrivateKeyDataProvider` can be used as seed material for
  * cryptographic key derivation. The provided data should be sufficiently

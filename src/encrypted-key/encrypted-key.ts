@@ -22,7 +22,6 @@
  * KeyDerivation = HKDFParams / PBKDF2Params / ScryptParams / Argon2idParams
  * ```
  *
- * Ported from bc-components-rust/src/encrypted_key/encrypted_key_impl.rs
  */
 
 import { type Cbor, type Tag, decodeCbor, type ToCbor } from "@blockchaincommons/dcbor";
@@ -47,6 +46,9 @@ import {
   isPasswordBased,
   isSshAgent,
 } from "./key-derivation-params.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let ENCRYPTED_KEY_CODEC: ComponentCodec<EncryptedKey> | undefined;
 
 /**
  * Encrypted key providing secure storage of symmetric keys.
@@ -216,24 +218,26 @@ export class EncryptedKey implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<EncryptedKey> = defineCodec({
-    tags: [TAG_ENCRYPTED_KEY],
-    decodeUntagged: (cborValue) => {
-      // The untagged content is a tagged EncryptedMessage
-      const encryptedMessage = EncryptedMessage.fromCbor(cborValue);
+  static get codec(): ComponentCodec<EncryptedKey> {
+    return (ENCRYPTED_KEY_CODEC ??= defineCodec({
+      tags: [TAG_ENCRYPTED_KEY],
+      decodeUntagged: (cborValue) => {
+        // The untagged content is a tagged EncryptedMessage
+        const encryptedMessage = EncryptedMessage.fromCbor(cborValue);
 
-      // Parse the derivation parameters from AAD
-      const aad = encryptedMessage.aad;
-      if (aad.length === 0) {
-        throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
-      }
-      const paramsCbor = decodeCbor(aad);
-      const params = keyDerivationParamsFromCbor(paramsCbor);
+        // Parse the derivation parameters from AAD
+        const aad = encryptedMessage.aad;
+        if (aad.length === 0) {
+          throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
+        }
+        const paramsCbor = decodeCbor(aad);
+        const params = keyDerivationParamsFromCbor(paramsCbor);
 
-      return new EncryptedKey(params, encryptedMessage);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return new EncryptedKey(params, encryptedMessage);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...EncryptedKey.codec.tags];

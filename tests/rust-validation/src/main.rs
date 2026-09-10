@@ -386,21 +386,9 @@ fn expected_divergence(r: &J, got: &str, want: &str) -> Option<&'static str> {
     if r.get("method").and_then(|x| x.as_str()) == Some("sshAgent") { return Some("D2"); }
     // Compressed bytes: pako level 6 vs miniz_oxide level 6 differ; both
     // decompress the other's output (checked here on the TypeScript bytes).
-    // T2 (pending): the TypeScript sshsig PEM wraps at 76 columns, the
-    // reference (and OpenSSH) at 70; the base64 payloads are identical.
     if k == "sshFromSeed" || k == "sshFromPem" {
         let (g, w): (Vec<&str>, Vec<&str>) = (got.split('|').collect(), want.split('|').collect());
         if g.len() == w.len() {
-            let same = (0..g.len()).all(|i| g[i] == w[i] || (g[i].starts_with("d99c54d99f62") && w[i].starts_with("d99c54d99f62") && {
-                let pem = |hx: &str| -> Option<String> {
-                    let c = CBOR::try_from_data(hex::decode(hx).ok()?).ok()?;
-                    let (_, inner) = c.try_into_tagged_value().ok()?;
-                    let (_, text) = inner.try_into_tagged_value().ok()?;
-                    Some(text.try_into_text().ok()?.replace('\n', ""))
-                };
-                pem(g[i]).is_some() && pem(g[i]) == pem(w[i])
-            }));
-            if same { return Some("T2"); }
             // D4: ECDSA SSH signatures are low-s normalised in TypeScript (noble's
             // default) and not by the reference; both verify. Everything but the
             // signature field must still match.

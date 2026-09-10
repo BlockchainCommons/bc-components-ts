@@ -17,7 +17,6 @@
  * SSHAgent = 4
  * ```
  *
- * Ported from bc-components-rust/src/encrypted_key/key_derivation_method.rs
  */
 
 import { type Cbor, expectNumber } from "@blockchaincommons/dcbor";
@@ -26,18 +25,21 @@ import { ComponentsError } from "../error.js";
 /**
  * Enum representing supported key derivation methods.
  */
-export enum KeyDerivationMethod {
+export const KeyDerivationMethod = {
   /** HKDF (HMAC-based Key Derivation Function) - RFC 5869 */
-  HKDF = 0,
+  HKDF: 0,
   /** PBKDF2 (Password-Based Key Derivation Function 2) - RFC 8018 */
-  PBKDF2 = 1,
+  PBKDF2: 1,
   /** Scrypt - RFC 7914 */
-  Scrypt = 2,
+  Scrypt: 2,
   /** Argon2id - RFC 9106 (default, most secure for passwords) */
-  Argon2id = 3,
+  Argon2id: 3,
   /** SSH Agent - Uses SSH agent for key derivation */
-  SSHAgent = 4,
-}
+  SSHAgent: 4,
+} as const;
+
+/** One of the `KeyDerivationMethod` values. */
+export type KeyDerivationMethod = (typeof KeyDerivationMethod)[keyof typeof KeyDerivationMethod];
 
 /**
  * Returns the default key derivation method (Argon2id).

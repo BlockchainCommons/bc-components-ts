@@ -2,7 +2,7 @@
  * Copyright © 2025-2026 Parity Technologies
  *
  * SSH certificate (`cert-v01@openssh.com`) placeholder — parity with
- * Rust's `bc-components-rust/src/tags_registry.rs:231-238`, which
+ * the reference implementation's the reference implementation, which
  * registers a fixed `"SSHCertificate"` summarizer for
  * `TAG_SSH_TEXT_CERTIFICATE` (40803) with a `// todo: validation`
  * comment. The Rust side does *not* parse certificate fields either —
@@ -39,7 +39,7 @@ export class SSHCertificate {
     return this.text;
   }
 
-  /** Fixed summarizer string — matches Rust `tags_registry.rs:236`. */
+  /** Fixed summarizer string. */
   toString(): string {
     return "SSHCertificate";
   }

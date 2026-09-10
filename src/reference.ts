@@ -5,7 +5,6 @@
  *
  * A globally unique reference to a globally unique object.
  *
- * Ported from bc-components-rust/src/reference.rs
  *
  * `Reference` is a 32-byte fixed-size identifier — typically derived from a
  * SHA-256 digest of an object's serialized form, but Rust also exposes
@@ -35,7 +34,6 @@ export type ReferenceEncodingFormat = "hex" | "bytewords" | "bytemojis";
 /**
  * Implementers of this interface provide a globally unique reference to themselves.
  *
- * Mirrors Rust's `ReferenceProvider` trait. The reference is derived from a
  * cryptographic digest of the object's serialized form, ensuring that it
  * uniquely identifies the object's contents.
  */
@@ -56,16 +54,19 @@ export function isReferenceProvider(obj: unknown): obj is ReferenceProvider {
   );
 }
 
+// The codec is built on first use so that an unused class tree-shakes away.
+let REFERENCE_CODEC: ComponentCodec<Reference> | undefined;
+
 /**
  * A globally unique reference to a globally unique object.
  *
- * Internally stores 32 raw bytes (matches Rust's `Reference([u8; 32])`).
+ * Internally stores 32 raw bytes`).
  * Most callers obtain a `Reference` via `fromDigest`, but `XID` (and similar
  * content-addressable types whose bytes _are_ the reference) construct
  * via `fromData` directly.
  */
 export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
-  /** Reference data size in bytes — matches Rust `Reference::REFERENCE_SIZE`. */
+  /** Reference data size in bytes. */
   static readonly REFERENCE_SIZE = 32;
 
   private readonly _data: Uint8Array;
@@ -78,7 +79,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   // Factories
   // ============================================================================
 
-  /** Create a Reference from exactly 32 bytes. Mirrors Rust `Reference::from_data`. */
+  /** Create a Reference from exactly 32 bytes. */
   static from(data: Uint8Array): Reference {
     if (data.length !== Reference.REFERENCE_SIZE) {
       throw ComponentsError.invalidSize(Reference.REFERENCE_SIZE, data.length);
@@ -86,7 +87,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
     return new Reference(new Uint8Array(data));
   }
 
-  /** Alias of `fromData` for parity with Rust `from_data_ref`. */
+  /**  */
   /** Create a Reference from a Digest's underlying bytes. */
   static fromDigest(digest: Digest): Reference {
     return new Reference(new Uint8Array(digest.bytes));
@@ -103,7 +104,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
    *
    * @deprecated Prefer `Reference.fromDigest(Digest.fromImage(data))` for
    *   clarity, or `Reference.from(data)` if `data` is already 32 bytes
-   *   that should be wrapped without hashing (matches Rust `from_data`).
+   *   that should be wrapped without hashing.
    */
   static hash(data: Uint8Array): Reference {
     return Reference.fromDigest(Digest.fromImage(data));
@@ -200,7 +201,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   // ReferenceProvider / DigestProvider
   // ============================================================================
 
-  /** A Reference to this Reference (matches Rust's blanket `ReferenceProvider` impl). */
+  /** A Reference to this Reference. */
   reference(): Reference {
     return Reference.fromDigest(this.digest());
   }
@@ -208,7 +209,6 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   /**
    * SHA-256 of `taggedCbor().toCborData()`.
    *
-   * Matches Rust's `DigestProvider for Reference` —
    * `Digest::from_image(self.tagged_cbor().to_cbor_data())`.
    */
   digest(): Digest {
@@ -220,13 +220,15 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<Reference> = defineCodec({
-    tags: [TAG_REFERENCE],
-    decodeUntagged: (cbor) => {
-      return Reference.from(expectBytes(cbor));
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<Reference> {
+    return (REFERENCE_CODEC ??= defineCodec({
+      tags: [TAG_REFERENCE],
+      decodeUntagged: (cbor) => {
+        return Reference.from(expectBytes(cbor));
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...Reference.codec.tags];

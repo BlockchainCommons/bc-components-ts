@@ -28,20 +28,60 @@ bun add @blockchaincommons/components
 
 ```typescript
 import {
-  ErrorKind,
-  CryptoError,
-  isError,
-  isCryptoError,
-  isCryptoErrorKind,
-  isPrivateKeyDataProvider,
-  isEncrypter,
-  isDecrypter,
-  JSON,
-  Compressed,
+  Digest,
+  SymmetricKey,
+  PrivateKeyBase,
+  SealedMessage,
+  ComponentsError,
 } from "@blockchaincommons/components";
+import { decodeCbor } from "@blockchaincommons/dcbor";
+import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
+
+// Every value type: from(bytes), random({ rng? }), bytes, toHex(),
+// toCbor(), toUR(), fromCbor(cbor), and a `codec` for dcbor/UR helpers.
+const digest = Digest.fromImage(new TextEncoder().encode("hello world"));
+digest.toHex(); // "b94d27b9…"
+digest.toUR().toString(); // "ur:digest/hdcx…"
+Digest.fromCbor(decodeCbor(digest.toCbor().toData())).equals(digest); // true
+decodeURWith(UR.parse(digest.toUR().toString()), Digest.codec); // Digest
+
+// Symmetric encryption (ChaCha20-Poly1305 with a random nonce).
+const key = SymmetricKey.random();
+const message = key.encrypt(new TextEncoder().encode("secret"));
+key.decrypt(message); // Uint8Array "secret"
+
+// Keys from a seed: signing (Schnorr, ECDSA, Ed25519, …) and encapsulation.
+const base = PrivateKeyBase.random();
+const signer = base.schnorrSigningPrivateKey();
+const signature = signer.sign(new Uint8Array([1, 2, 3]));
+signer.publicKey().verify(signature, new Uint8Array([1, 2, 3])); // true
+
+// Public-key encryption to a recipient's encapsulation key.
+const recipient = base.encapsulationPrivateKey();
+const sealed = SealedMessage.seal(new TextEncoder().encode("for you"), recipient.publicKey());
+sealed.decrypt(recipient); // Uint8Array "for you"
+
+// Every failure is a ComponentsError with a code.
+try {
+  Digest.from(new Uint8Array(31));
+} catch (e) {
+  if (ComponentsError.isComponentsError(e) && e.code === "InvalidSize") {
+    console.log(e.details.expected, e.details.actual); // 32 31
+  }
+}
 ```
 
-Runnable examples live in the [`examples/`](https://github.com/BlockchainCommons/bc-components-ts/tree/master/examples) directory.
+The root entry carries the value types, symmetric encryption, the
+scheme-dispatching signing and encapsulation types, and the key bundles.
+Larger, optional families live on subpaths so unused ones stay out of your
+bundle:
+
+| Subpath | Contents |
+|---|---|
+| `@blockchaincommons/components/ssh` | `SSHPrivateKey`, `SSHPublicKey`, `SSHSignature`, `SSHCertificate` |
+| `@blockchaincommons/components/pq` | ML-DSA and ML-KEM keys, signatures and ciphertexts |
+| `@blockchaincommons/components/kdf` | `EncryptedKey`, the KDF parameter types, `HKDFRng` |
+| `@blockchaincommons/components/sskr` | `SskrShare` |
 
 ## Status - Beta
 

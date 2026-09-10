@@ -5,7 +5,6 @@
  *
  * A deterministic random number generator based on HKDF-HMAC-SHA256.
  *
- * Ported from bc-components-rust/src/hkdf_rng.rs
  *
  * `HKDFRng` uses the HMAC-based Key Derivation Function (HKDF) to generate
  * deterministic random numbers from a combination of key material and salt. It
@@ -158,7 +157,7 @@ export class HKDFRng implements RandomNumberGenerator {
   }
 
   // ============================================================================
-  // Additional Methods (matching Rust RngCore interface)
+  // Additional Methods
   // ============================================================================
 
   /**
@@ -169,7 +168,7 @@ export class HKDFRng implements RandomNumberGenerator {
   nextU32(): number {
     const bytes = this.nextBytes(4);
     // Little-endian byte order. The `>>> 0` coerces JS's signed 32-bit
-    // bitwise OR result back into an unsigned u32, matching Rust.
+    // bitwise OR result back into an unsigned u32, as the reference implementation does.
     return (bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[3] << 24)) >>> 0;
   }
 

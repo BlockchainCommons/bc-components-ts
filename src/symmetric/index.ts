@@ -18,7 +18,6 @@
  *   nonce, authentication tag, and optional additional authenticated data
  *   (AAD)
  *
- * Ported from bc-components-rust/src/symmetric/mod.rs
  */
 
 export { SymmetricKey } from "./symmetric-key.js";

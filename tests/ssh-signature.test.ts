@@ -56,7 +56,7 @@ describe("SSHSignature — SSHSIG parser/serializer parity", () => {
     expect(round.toPem()).toBe(pem);
   });
 
-  it("PEM body is wrapped at 76 columns", () => {
+  it("PEM body is wrapped at 70 columns", () => {
     const pub = SSHPublicKey.fromOpenssh(RUST_ED25519_PUBLIC);
     const sig = SSHSignature.fromParts(pub, "test", "sha256", new Uint8Array(64));
     const lines = sig.toPem().split("\n");
@@ -64,7 +64,7 @@ describe("SSHSignature — SSHSIG parser/serializer parity", () => {
     // must be exactly 76 chars wide per PROTOCOL.sshsig encoding rubric.
     const bodyLines = lines.slice(1, -2);
     for (const line of bodyLines.slice(0, -1)) {
-      expect(line.length).toBe(76);
+      expect(line.length).toBe(70);
     }
     const last = bodyLines[bodyLines.length - 1] ?? "";
     expect(last.length).toBeLessThanOrEqual(76);

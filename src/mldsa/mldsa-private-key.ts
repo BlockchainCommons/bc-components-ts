@@ -19,7 +19,6 @@
  *
  * UR type: `mldsa-private-key`
  *
- * Ported from bc-components-rust/src/mldsa/mldsa_private_key.rs
  */
 
 import {
@@ -48,6 +47,9 @@ import { MLDSAPublicKey } from "./mldsa-public-key.js";
 import { MLDSASignature } from "./mldsa-signature.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let M_L_D_S_A_PRIVATE_KEY_CODEC: ComponentCodec<MLDSAPrivateKey> | undefined;
 
 /**
  * MLDSAPrivateKey - Post-quantum signing private key using ML-DSA.
@@ -157,8 +159,8 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
     // 2. Re-generate from seed (but we don't have it)
     // 3. Use a deterministic derivation
 
-    // For now, we'll throw an error and require users to use keypair() instead.
-    // This matches the Rust implementation where public_key() uses the internal
+    // For now, we'll throw an error and require users to use generateKeypair() instead.
+    // This matches the reference implementation where public_key() uses the internal
     // key structure which may have the public key embedded.
 
     // Actually, looking at the noble implementation, we can't easily extract
@@ -167,7 +169,7 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
     // a) Store both keys together
     // b) Require users to keep track of both
 
-    // For MVP, we'll throw an error suggesting to use keypair()
+    // For MVP, we'll throw an error suggesting to use generateKeypair()
     throw ComponentsError.general(
       "MLDSAPrivateKey.publicKey() is not supported. Use MLDSAPrivateKey.keypair() to generate both keys together.",
     );
@@ -202,22 +204,24 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<MLDSAPrivateKey> = defineCodec({
-    tags: [TAG_MLDSA_PRIVATE_KEY],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
-      if (elements.length !== 2) {
-        throw ComponentsError.postQuantum(
-          `MLDSAPrivateKey CBOR must have 2 elements, got ${elements.length}`,
-        );
-      }
-      const levelValue = Number(expectInteger(elements[0]));
-      const level = mldsaLevelFromValue(levelValue);
-      const data = expectBytes(elements[1]);
-      return MLDSAPrivateKey.fromBytes(level, data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<MLDSAPrivateKey> {
+    return (M_L_D_S_A_PRIVATE_KEY_CODEC ??= defineCodec({
+      tags: [TAG_MLDSA_PRIVATE_KEY],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
+        if (elements.length !== 2) {
+          throw ComponentsError.postQuantum(
+            `MLDSAPrivateKey CBOR must have 2 elements, got ${elements.length}`,
+          );
+        }
+        const levelValue = Number(expectInteger(elements[0]));
+        const level = mldsaLevelFromValue(levelValue);
+        const data = expectBytes(elements[1]);
+        return MLDSAPrivateKey.fromBytes(level, data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...MLDSAPrivateKey.codec.tags];

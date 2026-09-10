@@ -6,9 +6,9 @@
  *
  *   - Wrap base64 at **70 columns** for OpenSSH private keys
  *     (`pem-rfc7468` default for that format).
- *   - Wrap base64 at **76 columns** for SSHSIG (`PROTOCOL.sshsig` rubric).
+ *   - Wrap base64 at **70 columns** for SSHSIG too (what OpenSSH emits).
  *   - LF newlines (matches `LineEnding::LF`, which is the rubric used for
- *     all parity fixtures in `bc-components-rust/src/lib.rs`).
+ *     all parity fixtures in the reference implementation.
  *   - Trailing newline after the END line.
  */
 
@@ -78,7 +78,7 @@ export function parsePem(text: string, expectedLabel?: string): PemBlock {
 
 /**
  * Encode a PEM block. `width` is the base64 column width (70 for OpenSSH
- * private keys; 76 for SSHSIG signatures). Trailing newline is included
+ * private keys and SSHSIG signatures alike). Trailing newline is included
  * to match the Rust fixtures.
  */
 export function encodePem(label: string, data: Uint8Array, width: number): string {

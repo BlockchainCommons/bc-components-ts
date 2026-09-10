@@ -24,7 +24,6 @@
  * Note: SchnorrPublicKey does not have CBOR serialization in the Rust
  * implementation, so we keep it simple here.
  *
- * Ported from bc-components-rust/src/ec_key/schnorr_public_key.rs
  */
 
 import { schnorr, SCHNORR_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
@@ -115,8 +114,6 @@ export class SchnorrPublicKey implements ECKeyBase {
   /**
    * Get string representation.
    *
-   * Mirrors Rust `Display for SchnorrPublicKey`
-   * (`bc-components-rust/src/ec_key/schnorr_public_key.rs:116-120`)
    * — the reference is computed from the **raw 32-byte key data**
    * (not the tagged-CBOR form): `Reference::from_digest(Digest::from_image(self.bytes))`.
    * `ref_hex_short()` returns the first 8 hex chars of that

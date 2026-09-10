@@ -4,7 +4,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { HKDFRng, bytesToHex } from "../src/index.js";
+import { bytesToHex } from "../src/index.js";
+import { HKDFRng } from "../src/kdf.js";
 
 describe("HKDFRng", () => {
   const KEY_MATERIAL = new TextEncoder().encode("key_material");

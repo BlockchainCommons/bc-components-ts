@@ -11,8 +11,6 @@
  * - `ECKey` - Keys that can derive a public key (publicKey)
  * - `ECPublicKeyBase` - Public keys that can provide uncompressed form
  *
- * Ported from bc-components-rust/src/ec_key/ec_key_base.rs
- * and bc-components-rust/src/ec_key/ec_public_key_base.rs
  */
 
 import type { ECPublicKey } from "./ec-public-key.js";

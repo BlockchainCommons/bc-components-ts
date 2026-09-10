@@ -1,11 +1,12 @@
 import { Cbor } from '@blockchaincommons/dcbor';
 import { CborCodec } from '@blockchaincommons/dcbor';
-import { RandomNumberGenerator } from '@blockchaincommons/rand';
-import { GroupSpec as SSKRGroupSpec } from '@blockchaincommons/sskr';
-import { Secret as SSKRSecret } from '@blockchaincommons/sskr';
-import { Spec as SSKRSpec } from '@blockchaincommons/sskr';
+import { GenerateOptions } from '@blockchaincommons/sskr';
+import { Secret } from '@blockchaincommons/sskr';
+import { Spec } from '@blockchaincommons/sskr';
+import { SskrShare as SskrShare_2 } from '@blockchaincommons/sskr';
 import { Tag } from '@blockchaincommons/dcbor';
 import { ToCbor } from '@blockchaincommons/dcbor';
+import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
 
 /** A codec over a tagged type; `decode` also accepts the untagged form. */
@@ -22,67 +23,41 @@ declare interface ComponentCodec<T> extends CborCodec<T> {
     encodeUntagged: (value: T) => Cbor;
 }
 
-export declare interface SimpleRng {
-    fillBytes(data: Uint8Array): void;
-}
-
-export declare function sskrCombine(shares: Uint8Array[]): SSKRSecret;
-
-export declare function sskrCombineShares(shares: SSKRShare[]): SSKRSecret;
-
-/** Raw share bytes per group, as sskr's `generateShares` + `shareBytes`. */
-export declare function sskrGenerate(spec: SSKRSpec, masterSecret: SSKRSecret): Uint8Array[][];
-
-export declare function sskrGenerateShares(spec: SSKRSpec, masterSecret: SSKRSecret): SSKRShare[][];
-
-export declare function sskrGenerateSharesUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: SimpleRng): SSKRShare[][];
-
-export declare function sskrGenerateUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: RandomNumberGenerator): Uint8Array[][];
-
-export { SSKRGroupSpec }
-
-export { SSKRSecret }
-
-export declare type SSKRShare = SSKRShareCbor;
-
-export declare const SSKRShare: {
-    fromData: (data: Uint8Array) => SSKRShareCbor;
-    fromHex: (hex: string) => SSKRShareCbor;
-    fromTaggedCbor: (cborValue: Cbor) => SSKRShareCbor;
-    fromTaggedCborData: (data: Uint8Array) => SSKRShareCbor;
-    fromUntaggedCborData: (data: Uint8Array) => SSKRShareCbor;
-};
-
-export declare class SSKRShareCbor implements ToCbor {
-    private readonly _data;
+/** One share of a Sharded Secret Key Reconstruction split. */
+export declare class SskrShare implements ToCbor, ToUR {
+    private readonly _share;
+    private readonly _bytes;
     private constructor();
-    static from(data: Uint8Array): SSKRShareCbor;
-    static fromHex(hex: string): SSKRShareCbor;
-    /** The bytes (a view; do not mutate). */
+    /** From the sskr package's parsed share, or from the wire bytes. */
+    static from(share: SskrShare_2 | Uint8Array): SskrShare;
+    static fromHex(hex: string): SskrShare;
+    /** Split `secret` per `spec`; every share wrapped as a component. */
+    static generate(spec: Spec, secret: Secret, options?: GenerateOptions): SskrShare[][];
+    /** Recover the secret from a quorum of shares. */
+    static combine(shares: readonly SskrShare[]): Secret;
+    /** The parsed share. */
+    get share(): SskrShare_2;
+    /** The wire bytes: five header bytes, then the share value. */
     get bytes(): Uint8Array;
-    toHex(): string;
     get identifier(): number;
-    identifierHex(): string;
     get groupThreshold(): number;
     get groupCount(): number;
     get groupIndex(): number;
     get memberThreshold(): number;
     get memberIndex(): number;
-    get shareValue(): Uint8Array;
-    equals(other: SSKRShareCbor): boolean;
+    /** The share value (the secret-length payload after the header). */
+    get value(): Uint8Array;
+    toHex(): string;
+    identifierHex(): string;
+    equals(other: SskrShare): boolean;
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SSKRShareCbor>;
+    static get codec(): ComponentCodec<SskrShare>;
     cborTags(): Tag[];
     untaggedCbor(): Cbor;
-    /** The tagged CBOR form. */
     toCbor(): Cbor;
-    /** As a UR, typed by the first tag's name. */
     toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
-    static fromCbor(cborValue: Cbor): SSKRShareCbor;
+    static fromCbor(cborValue: Cbor): SskrShare;
 }
-
-export { SSKRSpec }
 
 export { }

@@ -19,7 +19,6 @@
  *
  * UR type: `mldsa-public-key`
  *
- * Ported from bc-components-rust/src/mldsa/mldsa_public_key.rs
  */
 
 import {
@@ -45,6 +44,9 @@ import {
 import type { MLDSASignature } from "./mldsa-signature.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let M_L_D_S_A_PUBLIC_KEY_CODEC: ComponentCodec<MLDSAPublicKey> | undefined;
 
 /**
  * MLDSAPublicKey - Post-quantum signature verification key using ML-DSA.
@@ -142,22 +144,24 @@ export class MLDSAPublicKey implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<MLDSAPublicKey> = defineCodec({
-    tags: [TAG_MLDSA_PUBLIC_KEY],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
-      if (elements.length !== 2) {
-        throw ComponentsError.postQuantum(
-          `MLDSAPublicKey CBOR must have 2 elements, got ${elements.length}`,
-        );
-      }
-      const levelValue = Number(expectInteger(elements[0]));
-      const level = mldsaLevelFromValue(levelValue);
-      const data = expectBytes(elements[1]);
-      return MLDSAPublicKey.fromBytes(level, data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<MLDSAPublicKey> {
+    return (M_L_D_S_A_PUBLIC_KEY_CODEC ??= defineCodec({
+      tags: [TAG_MLDSA_PUBLIC_KEY],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
+        if (elements.length !== 2) {
+          throw ComponentsError.postQuantum(
+            `MLDSAPublicKey CBOR must have 2 elements, got ${elements.length}`,
+          );
+        }
+        const levelValue = Number(expectInteger(elements[0]));
+        const level = mldsaLevelFromValue(levelValue);
+        const data = expectBytes(elements[1]);
+        return MLDSAPublicKey.fromBytes(level, data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...MLDSAPublicKey.codec.tags];

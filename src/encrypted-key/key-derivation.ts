@@ -7,7 +7,6 @@
  *
  * Defines the common interface for all key derivation implementations.
  *
- * Ported from bc-components-rust/src/encrypted_key/key_derivation.rs
  */
 
 import type { Cbor } from "@blockchaincommons/dcbor";

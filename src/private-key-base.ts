@@ -19,7 +19,6 @@
  *
  * UR type: `crypto-prvkey-base`
  *
- * Ported from bc-components-rust/src/private_key_base.rs
  */
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
@@ -55,8 +54,11 @@ import { ComponentsError } from "./error.js";
 /** Default size of PrivateKeyBase key material in bytes (used for random generation) */
 const PRIVATE_KEY_BASE_DEFAULT_SIZE = 32;
 
-/** Key derivation salt string - must match Rust's bc-crypto derive functions */
+/** Key derivation salt string - must match the reference implementation's bc-crypto derive functions */
 const SALT_SIGNING = "signing";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let PRIVATE_KEY_BASE_CODEC: ComponentCodec<PrivateKeyBase> | undefined;
 
 /**
  * PrivateKeyBase - Root cryptographic material for deterministic key derivation.
@@ -109,7 +111,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive an Ed25519 signing private key.
    *
-   * Uses HKDF with salt "signing", matching Rust's derive_signing_private_key().
+   * Uses HKDF with salt "signing", as the reference implementation does's derive_signing_private_key().
    */
   ed25519SigningPrivateKey(): SigningPrivateKey {
     const derivedKey = this._deriveKey(SALT_SIGNING);
@@ -120,7 +122,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive an X25519 agreement private key.
    *
-   * Uses HKDF with salt "agreement", matching Rust's derive_agreement_private_key().
+   * Uses HKDF with salt "agreement", as the reference implementation does's derive_agreement_private_key().
    */
   x25519PrivateKey(): X25519PrivateKey {
     return X25519PrivateKey.deriveFromKeyMaterial(this._data);
@@ -139,8 +141,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    * Decapsulate a shared secret from a ciphertext.
    *
    * Implements the `Decrypter` interface so a `PrivateKeyBase` can be used
-   * directly as a recipient key, mirroring Rust `impl Decrypter for
-   * PrivateKeyBase`.
+   * directly as a recipient key,.
    */
   decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey {
     return this.encapsulationPrivateKey().decapsulateSharedSecret(ciphertext);
@@ -171,7 +172,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive a Schnorr signing private key.
    *
-   * Uses ECPrivateKey.deriveFromKeyMaterial() matching Rust's
+   * Uses ECPrivateKey.deriveFromKeyMaterial() as the reference implementation does's
    * PrivateKeyBase::schnorr_signing_private_key().
    */
   schnorrSigningPrivateKey(): SigningPrivateKey {
@@ -182,7 +183,6 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive a PrivateKeys container with Schnorr signing and X25519 agreement keys.
    *
-   * Matches Rust's PrivateKeyBase::schnorr_private_keys().
    */
   schnorrPrivateKeys(): PrivateKeys {
     return PrivateKeys.from({
@@ -201,7 +201,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive an ECDSA signing private key.
    *
-   * Uses ECPrivateKey.deriveFromKeyMaterial() matching Rust's
+   * Uses ECPrivateKey.deriveFromKeyMaterial() as the reference implementation does's
    * PrivateKeyBase::ecdsa_signing_private_key().
    */
   ecdsaSigningPrivateKey(): SigningPrivateKey {
@@ -212,7 +212,6 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive a PrivateKeys container with ECDSA signing and X25519 agreement keys.
    *
-   * Matches Rust's PrivateKeyBase::ecdsa_private_keys().
    */
   ecdsaPrivateKeys(): PrivateKeys {
     return PrivateKeys.from({
@@ -231,8 +230,6 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive an SSH `SigningPrivateKey` from this `PrivateKeyBase`.
    *
-   * Mirrors Rust `PrivateKeyBase::ssh_signing_private_key`
-   * (`bc-components-rust/src/private_key_base.rs:179-207`):
    * builds an `HKDFRng` seeded by `this._data` with salt
    * `sshAlgorithmName(algorithm)`, then dispatches to the matching
    * `*Keypair::random` constructor.
@@ -294,8 +291,8 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
       }
       case "dsa":
         throw ComponentsError.invalidData(
-          "SSH DSA key generation is not yet implemented in TS. Rust's " +
-            "`bc-components-rust` ships byte-deterministic DSA-1024 keygen " +
+          "SSH DSA key generation is not yet implemented in TS. the reference implementation's " +
+            "the reference implementation ships byte-deterministic DSA-1024 keygen " +
             "via the `dsa` crate's FIPS 186-4 prime search, which has not " +
             "been ported. See SSH_V2_PLAN.md A.1 for status. Sign/verify " +
             "and PEM round-trip work for DSA keys parsed from existing " +
@@ -309,8 +306,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
 
   /**
    * Derive a `PrivateKeys` container with an SSH signing key and an X25519
-   * agreement key. Mirrors Rust `PrivateKeyBase::ssh_private_keys`
-   * (`bc-components-rust/src/private_key_base.rs:273-283`).
+   * agreement key.
    */
   sshPrivateKeys(algorithm: SshAlgorithm, comment = ""): PrivateKeys {
     return PrivateKeys.from({
@@ -322,7 +318,6 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive a `PublicKeys` container from `sshPrivateKeys`. Mirrors Rust
    * `PrivateKeyBase::ssh_public_keys`
-   * (`bc-components-rust/src/private_key_base.rs:289-300`).
    */
   sshPublicKeys(algorithm: SshAlgorithm, comment = ""): PublicKeys {
     return this.sshPrivateKeys(algorithm, comment).publicKeys();
@@ -330,7 +325,6 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
 
   /**
    * Internal key derivation using HKDF-SHA256.
-   * Matches Rust's hkdf_hmac_sha256(key_material, salt, key_len) with empty info.
    */
   private _deriveKey(salt: string): Uint8Array {
     return hkdfSha256(this._data, new TextEncoder().encode(salt), 32);
@@ -364,14 +358,16 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<PrivateKeyBase> = defineCodec({
-    tags: [TAG_PRIVATE_KEY_BASE],
-    decodeUntagged: (cborValue) => {
-      const data = expectBytes(cborValue);
-      return PrivateKeyBase.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<PrivateKeyBase> {
+    return (PRIVATE_KEY_BASE_CODEC ??= defineCodec({
+      tags: [TAG_PRIVATE_KEY_BASE],
+      decodeUntagged: (cborValue) => {
+        const data = expectBytes(cborValue);
+        return PrivateKeyBase.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...PrivateKeyBase.codec.tags];

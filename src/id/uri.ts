@@ -32,6 +32,9 @@ import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources"
 import { ComponentsError } from "../error.js";
 import { toBase64 } from "../utils.js";
 
+// The codec is built on first use so that an unused class tree-shakes away.
+let U_R_I_CODEC: ComponentCodec<URI> | undefined;
+
 export class URI implements ToCbor, ToUR {
   private readonly _uri: string;
 
@@ -157,14 +160,16 @@ export class URI implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<URI> = defineCodec({
-    tags: [TAG_URI],
-    decodeUntagged: (cborValue) => {
-      const text = expectText(cborValue);
-      return URI.from(text);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<URI> {
+    return (U_R_I_CODEC ??= defineCodec({
+      tags: [TAG_URI],
+      decodeUntagged: (cborValue) => {
+        const text = expectText(cborValue);
+        return URI.from(text);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...URI.codec.tags];

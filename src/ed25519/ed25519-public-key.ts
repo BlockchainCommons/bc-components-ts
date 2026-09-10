@@ -4,7 +4,6 @@
  *
  *
  * Ed25519 public key for EdDSA signature verification (32 bytes)
- * Ported from bc-components-rust/src/ed25519/ed25519_public_key.rs
  */
 
 import {
@@ -90,8 +89,6 @@ export class Ed25519PublicKey {
   /**
    * Get string representation.
    *
-   * Mirrors Rust `Display for Ed25519PublicKey`
-   * (`bc-components-rust/src/ed25519/ed25519_public_key.rs`):
    *   `Ed25519PublicKey(<ref_hex_short>)`
    * where the reference is computed from the **raw 32-byte data**
    * (not tagged CBOR) — same pattern as SchnorrPublicKey.

@@ -21,7 +21,6 @@
  *
  * UR type: `crypto-pubkeys`
  *
- * Ported from bc-components-rust/src/public_keys.rs
  */
 
 import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
@@ -52,6 +51,9 @@ export interface PublicKeysProvider {
    */
   publicKeys(): PublicKeys;
 }
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let PUBLIC_KEYS_CODEC: ComponentCodec<PublicKeys> | undefined;
 
 /**
  * PublicKeys - Container for a signing public key and an encapsulation public key.
@@ -89,7 +91,7 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
   /**
    * Returns the encapsulation public key.
    *
-   * Note: Named to match Rust's API (which has a typo but we maintain compatibility)
+   * Note: Named to match the reference implementation's API (which has a typo but we maintain compatibility)
    */
   encapsulationPublicKey(): EncapsulationPublicKey {
     return this._encapsulationPublicKey;
@@ -154,8 +156,6 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
   /**
    * Get string representation.
    *
-   * Mirrors Rust `Display for PublicKeys`
-   * (`bc-components-rust/src/public_keys.rs:216-225`):
    *   `PublicKeys(<short_reference>, <signing_public_key>, <encapsulation_public_key>)`
    *
    * The earlier short form (`PublicKeys(<short_reference>)`) was
@@ -174,24 +174,26 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<PublicKeys> = defineCodec({
-    tags: [TAG_PUBLIC_KEYS],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
+  static get codec(): ComponentCodec<PublicKeys> {
+    return (PUBLIC_KEYS_CODEC ??= defineCodec({
+      tags: [TAG_PUBLIC_KEYS],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
 
-      if (elements.length !== 2) {
-        throw ComponentsError.invalidData(
-          `PublicKeys must have 2 elements, got ${elements.length}`,
-        );
-      }
+        if (elements.length !== 2) {
+          throw ComponentsError.invalidData(
+            `PublicKeys must have 2 elements, got ${elements.length}`,
+          );
+        }
 
-      const signingPublicKey = SigningPublicKey.fromCbor(elements[0]);
-      const encapsulationPublicKey = EncapsulationPublicKey.fromCbor(elements[1]);
+        const signingPublicKey = SigningPublicKey.fromCbor(elements[0]);
+        const encapsulationPublicKey = EncapsulationPublicKey.fromCbor(elements[1]);
 
-      return new PublicKeys(signingPublicKey, encapsulationPublicKey);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return new PublicKeys(signingPublicKey, encapsulationPublicKey);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...PublicKeys.codec.tags];

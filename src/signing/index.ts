@@ -23,12 +23,11 @@
  * All types share a common interface through the `Signer` and `Verifier`
  * interfaces, and can be serialized to and from CBOR with appropriate tags.
  *
- * Ported from bc-components-rust/src/signing/mod.rs
  */
 
 export type { Signer, Verifier } from "./signer.js";
 export { SignatureScheme, defaultSignatureScheme, isSshScheme } from "./signature-scheme.js";
-export { createKeypair, createKeypairUsing } from "./keypair.js";
+export { createKeypair, type CreateKeypairOptions } from "./keypair.js";
 export { Signature } from "./signature.js";
 export { SigningPrivateKey } from "./signing-private-key.js";
 export { SigningPublicKey } from "./signing-public-key.js";

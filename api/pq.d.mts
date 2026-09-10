@@ -86,7 +86,7 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     static fromHex(hex: string): Digest;
     /**
-     * Compute SHA-256 digest of data (called "image" in Rust).
+     * Compute SHA-256 digest of data (called "image" in the reference implementation).
      *
      * @param image - The data to hash
      */
@@ -149,7 +149,7 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     digest(): Digest;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Digest>;
+    static get codec(): ComponentCodec<Digest>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -237,7 +237,7 @@ declare class EncryptedMessage implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<EncryptedMessage>;
+    static get codec(): ComponentCodec<EncryptedMessage>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as an array).
@@ -294,14 +294,17 @@ export declare interface MLDSAKeypairData {
  * - 3: NIST Level 3 (MLDSA65)
  * - 5: NIST Level 5 (MLDSA87)
  */
-export declare enum MLDSALevel {
+export declare const MLDSALevel: {
     /** NIST Level 2 - AES-128 equivalent security */
-    MLDSA44 = 2,
+    readonly MLDSA44: 2;
     /** NIST Level 3 - AES-192 equivalent security */
-    MLDSA65 = 3,
+    readonly MLDSA65: 3;
     /** NIST Level 5 - AES-256 equivalent security */
-    MLDSA87 = 5
-}
+    readonly MLDSA87: 5;
+};
+
+/** One of the `MLDSALevel` values. */
+export declare type MLDSALevel = (typeof MLDSALevel)[keyof typeof MLDSALevel];
 
 /**
  * Parse an ML-DSA level from its numeric value.
@@ -367,7 +370,7 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLDSAPrivateKey>;
+    static get codec(): ComponentCodec<MLDSAPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -427,7 +430,7 @@ export declare class MLDSAPublicKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLDSAPublicKey>;
+    static get codec(): ComponentCodec<MLDSAPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -489,7 +492,7 @@ export declare class MLDSASignature implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLDSASignature>;
+    static get codec(): ComponentCodec<MLDSASignature>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -562,7 +565,7 @@ export declare class MLKEMCiphertext implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLKEMCiphertext>;
+    static get codec(): ComponentCodec<MLKEMCiphertext>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -653,14 +656,17 @@ export declare interface MLKEMKeypairData {
  * - 768: ML-KEM-768 (NIST Level 3)
  * - 1024: ML-KEM-1024 (NIST Level 5)
  */
-export declare enum MLKEMLevel {
+export declare const MLKEMLevel: {
     /** NIST Level 1 - AES-128 equivalent security */
-    MLKEM512 = 512,
+    readonly MLKEM512: 512;
     /** NIST Level 3 - AES-192 equivalent security */
-    MLKEM768 = 768,
+    readonly MLKEM768: 768;
     /** NIST Level 5 - AES-256 equivalent security */
-    MLKEM1024 = 1024
-}
+    readonly MLKEM1024: 1024;
+};
+
+/** One of the `MLKEMLevel` values. */
+export declare type MLKEMLevel = (typeof MLKEMLevel)[keyof typeof MLKEMLevel];
 
 /**
  * Parse an ML-KEM level from its numeric value.
@@ -727,7 +733,7 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLKEMPrivateKey>;
+    static get codec(): ComponentCodec<MLKEMPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -789,7 +795,7 @@ export declare class MLKEMPublicKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLKEMPublicKey>;
+    static get codec(): ComponentCodec<MLKEMPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -853,7 +859,7 @@ declare class Nonce implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Nonce>;
+    static get codec(): ComponentCodec<Nonce>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -911,7 +917,7 @@ declare class SymmetricKey implements ToCbor {
      */
     decrypt(message: EncryptedMessage): Uint8Array;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SymmetricKey>;
+    static get codec(): ComponentCodec<SymmetricKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).

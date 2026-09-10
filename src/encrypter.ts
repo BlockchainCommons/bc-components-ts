@@ -5,7 +5,6 @@
  *
  * Encrypter and Decrypter interfaces for public key encryption/decryption.
  *
- * Ported from bc-components-rust/src/encrypter.rs
  *
  * The `Encrypter` interface defines an interface for encapsulating a shared secret
  * using a public key. This is a key part of hybrid encryption schemes, where a

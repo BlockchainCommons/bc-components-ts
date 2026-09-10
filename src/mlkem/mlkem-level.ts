@@ -13,7 +13,6 @@
  * - MLKEM768: NIST Level 3 (equivalent to AES-192)
  * - MLKEM1024: NIST Level 5 (equivalent to AES-256)
  *
- * Ported from bc-components-rust/src/mlkem/mlkem_level.rs
  *
  * Naming note: Rust calls this enum `MLKEM`. TypeScript uses `MLKEMLevel`
  * to avoid colliding with the keypair type names (`MLKEMPrivateKey` /
@@ -34,14 +33,17 @@ import { ComponentsError } from "../error.js";
  * - 768: ML-KEM-768 (NIST Level 3)
  * - 1024: ML-KEM-1024 (NIST Level 5)
  */
-export enum MLKEMLevel {
+export const MLKEMLevel = {
   /** NIST Level 1 - AES-128 equivalent security */
-  MLKEM512 = 512,
+  MLKEM512: 512,
   /** NIST Level 3 - AES-192 equivalent security */
-  MLKEM768 = 768,
+  MLKEM768: 768,
   /** NIST Level 5 - AES-256 equivalent security */
-  MLKEM1024 = 1024,
-}
+  MLKEM1024: 1024,
+} as const;
+
+/** One of the `MLKEMLevel` values. */
+export type MLKEMLevel = (typeof MLKEMLevel)[keyof typeof MLKEMLevel];
 
 /**
  * Key sizes for each ML-KEM security level.

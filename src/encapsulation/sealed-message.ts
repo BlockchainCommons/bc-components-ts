@@ -40,7 +40,6 @@
  * When serialized as a Uniform Resource (UR), a `SealedMessage` is
  * represented with the type "crypto-sealed".
  *
- * Ported from bc-components-rust/src/encapsulation/sealed_message.rs
  */
 
 import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
@@ -55,6 +54,9 @@ import { type EncapsulationPublicKey } from "./encapsulation-public-key.js";
 import { type EncapsulationPrivateKey } from "./encapsulation-private-key.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let SEALED_MESSAGE_CODEC: ComponentCodec<SealedMessage> | undefined;
 
 /**
  * A sealed message providing anonymous authenticated encryption.
@@ -154,27 +156,29 @@ export class SealedMessage implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<SealedMessage> = defineCodec({
-    tags: [TAG_SEALED_MESSAGE],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
+  static get codec(): ComponentCodec<SealedMessage> {
+    return (SEALED_MESSAGE_CODEC ??= defineCodec({
+      tags: [TAG_SEALED_MESSAGE],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
 
-      if (elements.length !== 2) {
-        throw ComponentsError.invalidData(
-          `SealedMessage must have 2 elements, got ${elements.length}`,
-        );
-      }
+        if (elements.length !== 2) {
+          throw ComponentsError.invalidData(
+            `SealedMessage must have 2 elements, got ${elements.length}`,
+          );
+        }
 
-      // Decode the encrypted message (tagged)
-      const message = EncryptedMessage.fromCbor(elements[0]);
+        // Decode the encrypted message (tagged)
+        const message = EncryptedMessage.fromCbor(elements[0]);
 
-      // Decode the encapsulation ciphertext (tagged)
-      const encapsulatedKey = EncapsulationCiphertext.fromCbor(elements[1]);
+        // Decode the encapsulation ciphertext (tagged)
+        const encapsulatedKey = EncapsulationCiphertext.fromCbor(elements[1]);
 
-      return new SealedMessage(message, encapsulatedKey);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return new SealedMessage(message, encapsulatedKey);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...SealedMessage.codec.tags];

@@ -14,7 +14,8 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { MLKEMPrivateKey, MLKEMLevel, MLDSAPrivateKey, MLDSALevel } from "../src/index.js";
+import { MLKEMLevel, MLDSALevel } from "../src/index.js";
+import { MLKEMPrivateKey, MLDSAPrivateKey } from "../src/pq.js";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // CBOR major-6 (tag) encoding helper for the 40100-range tags:

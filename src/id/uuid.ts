@@ -41,6 +41,9 @@ import { type RandomNumberGenerator, randomBytes, secureRng } from "@blockchainc
 
 const UUID_SIZE = 16;
 
+// The codec is built on first use so that an unused class tree-shakes away.
+let U_U_I_D_CODEC: ComponentCodec<UUID> | undefined;
+
 export class UUID implements ToCbor, ToUR {
   static readonly UUID_SIZE: number = UUID_SIZE;
 
@@ -115,7 +118,7 @@ export class UUID implements ToCbor, ToUR {
   }
 
   /**
-   * Get hex string representation (lowercase, matching Rust implementation).
+   * Get hex string representation (lowercase, as the reference implementation does implementation).
    */
   toHex(): string {
     return bytesToHex(this._data);
@@ -153,14 +156,16 @@ export class UUID implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<UUID> = defineCodec({
-    tags: [TAG_UUID],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return UUID.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<UUID> {
+    return (U_U_I_D_CODEC ??= defineCodec({
+      tags: [TAG_UUID],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return UUID.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...UUID.codec.tags];

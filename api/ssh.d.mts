@@ -13,8 +13,7 @@ export declare const SSH_CURVE_NISTP256 = "nistp256";
  *
  * SSH key algorithm identifiers.
  *
- * Mirrors the relevant subset of `ssh_key::Algorithm` (Rust crate
- * `ssh-key` v0.6.7). v1.1 supports the four algorithms `bc-components-rust`
+ * `ssh-key` v0.6.7). v1.1 supports the four algorithms the reference implementation
  * actually wires through `SignatureScheme`:
  *
  *   - Ed25519 (`ssh-ed25519`)
@@ -47,7 +46,7 @@ export declare class SSHCertificate {
     static fromText(text: string): SSHCertificate;
     /** The canonical OpenSSH text — round-trips byte-identically. */
     toText(): string;
-    /** Fixed summarizer string — matches Rust `tags_registry.rs:236`. */
+    /** Fixed summarizer string. */
     toString(): string;
     digest(): Uint8Array;
 }
@@ -69,7 +68,7 @@ export declare class SSHPrivateKey {
      * Construct an `SSHPrivateKey` from already-decoded parts. Used by
      * `PrivateKeyBase.sshSigningPrivateKey` after generating key material
      * from an HKDF-seeded RNG. The `checkint` should be derived
-     * deterministically from the private bytes (matching Rust's
+     * deterministically from the private bytes (as the reference implementation does's
      * `ssh-key` 0.6.7 `KeypairData::checkint`).
      */
     static fromParts(data: SshPrivateKeyData, comment: string, checkint: number): SSHPrivateKey;
@@ -82,7 +81,6 @@ export declare class SSHPrivateKey {
     /**
      * Re-serialize to the canonical OpenSSH armored format.
      *
-     * Matches Rust `ssh_key::PrivateKey::to_openssh(LineEnding::LF)`.
      */
     toOpenssh(): string;
     toBlob(): Uint8Array;
@@ -136,7 +134,6 @@ export declare class SSHPublicKey {
     /**
      * Returns a copy of this SSH public key with the comment replaced.
      *
-     * Mirrors `ssh_key::PublicKey::set_comment` (mutating in Rust; we
      * return a new instance to keep the type immutable).
      */
     withComment(comment: string): SSHPublicKey;

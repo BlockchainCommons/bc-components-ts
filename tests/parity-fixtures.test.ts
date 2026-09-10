@@ -20,21 +20,15 @@
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
+import { Digest, XID, Reference, Compressed, Salt, SymmetricKey, Signature } from "../src/index.js";
 import {
-  Digest,
-  XID,
-  Reference,
-  Compressed,
-  Salt,
   Argon2idParams,
   HKDFParams,
   PBKDF2Params,
   ScryptParams,
   SSHAgentParams,
   HashType,
-  SymmetricKey,
-  Signature,
-} from "../src/index.js";
+} from "../src/kdf.js";
 import { SecureRng, randomBytes } from "@blockchaincommons/rand";
 import { bytesToHex } from "../src/utils.js";
 import { ECPrivateKey } from "../src/ec-key/index.js";

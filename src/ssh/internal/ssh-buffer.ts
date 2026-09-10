@@ -5,7 +5,6 @@ import { ComponentsError } from "../../error.js";
  * RFC 4251/4253 length-prefixed wire format primitives used by every OpenSSH
  * binary blob (key bodies, signature blobs, SSHSIG, etc.).
  *
- * Mirrors what Rust's `ssh-encoding` crate (transitive dep of `ssh-key`)
  * produces byte-for-byte, so encodes here round-trip with bytes Rust emits.
  *
  * Spec references:

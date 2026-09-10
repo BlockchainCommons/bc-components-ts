@@ -13,7 +13,6 @@
  * - MLDSA65: NIST Level 3 (equivalent to AES-192)
  * - MLDSA87: NIST Level 5 (equivalent to AES-256)
  *
- * Ported from bc-components-rust/src/mldsa/mldsa_level.rs
  *
  * Naming note: Rust calls this enum `MLDSA`. TypeScript uses `MLDSALevel`
  * to avoid colliding with the keypair type names (`MLDSAPrivateKey` /
@@ -34,14 +33,17 @@ import { ComponentsError } from "../error.js";
  * - 3: NIST Level 3 (MLDSA65)
  * - 5: NIST Level 5 (MLDSA87)
  */
-export enum MLDSALevel {
+export const MLDSALevel = {
   /** NIST Level 2 - AES-128 equivalent security */
-  MLDSA44 = 2,
+  MLDSA44: 2,
   /** NIST Level 3 - AES-192 equivalent security */
-  MLDSA65 = 3,
+  MLDSA65: 3,
   /** NIST Level 5 - AES-256 equivalent security */
-  MLDSA87 = 5,
-}
+  MLDSA87: 5,
+} as const;
+
+/** One of the `MLDSALevel` values. */
+export type MLDSALevel = (typeof MLDSALevel)[keyof typeof MLDSALevel];
 
 /**
  * Key sizes for each ML-DSA security level.

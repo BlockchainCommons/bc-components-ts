@@ -11,7 +11,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as baselineMod from "./baseline/components-baseline.mjs";
 import * as randBaseline from "../../bc-rand-ts/tests/baseline/rand-baseline.mjs";
-import * as src from "../src";
+import * as root from "../src/index.js";
+import * as ssh from "../src/ssh/index.js";
+import * as pq from "../src/pq.js";
+import * as kdf from "../src/kdf.js";
+import * as sskr from "../src/sskr.js";
+
+const src = { ...root, ...ssh, ...pq, ...kdf, ...sskr };
 import * as rand from "@blockchaincommons/rand";
 import {
   materialize,
@@ -33,7 +39,7 @@ const BASELINE_SHA256 = "e586b600317b4e2acdd9853bea449e641fefabe6f6049e90cc0b108
  * T2 (landed with W1): every bare `Error` throw became a `ComponentsError`
  *    with a code; the baseline's `throw:Error` is any `throw:<code>` now.
  * T3 (landed with W2): every codable type has `toUR()`; the adapter's `-`
- *    placeholder for "no UR" became a UR string for JSON and SSKR shares,
+ *    placeholder for "no UR" became a UR string for CborJson and SSKR shares,
  *    and `AuthenticationTag` reports through `toCbor()` now.
  */
 const TOMBSTONES: {
@@ -45,6 +51,11 @@ const TOMBSTONES: {
     id: "T1",
     landed: true,
     matches: (r) => r.k === "decode" && r.type === "seed" && r.hex.includes("a10161"),
+  },
+  {
+    id: "T4",
+    landed: true,
+    matches: (r) => r.k === "sshFromSeed" || r.k === "sshFromPem",
   },
   {
     id: "T3",

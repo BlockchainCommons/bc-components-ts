@@ -13,7 +13,6 @@
  * SSHAgentParams = [4, Salt, id: tstr]
  * ```
  *
- * Ported from bc-components-rust/src/encrypted_key/ssh_agent_params.rs
  */
 
 import { type Cbor, cbor, expectArray, expectNumber, expectText } from "@blockchaincommons/dcbor";
@@ -44,7 +43,7 @@ export const SALT_LEN = 16;
  * (`ssh-agent-client-rs`). The TS port deliberately stubs the lock/unlock
  * paths because no portable browser-friendly SSH-agent transport exists.
  * The CBOR encoding of `SSHAgentParams` is still byte-identical, so a
- * payload produced in Rust can be inspected and parsed in TS — only the
+ * payload produced in the reference implementation can be inspected and parsed in TS — only the
  * actual key-derivation operation is unavailable.
  */
 export class SSHAgentParams implements KeyDerivation {

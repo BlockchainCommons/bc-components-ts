@@ -5,7 +5,6 @@
  *
  * SHA-256 cryptographic digest (32 bytes)
  *
- * Ported from bc-components-rust/src/digest.rs
  *
  * A `Digest` represents the cryptographic hash of some data. In this
  * implementation, SHA-256 is used, which produces a 32-byte hash value.
@@ -51,6 +50,9 @@ import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { DigestProvider } from "./digest-provider.js";
 
+// The codec is built on first use so that an unused class tree-shakes away.
+let DIGEST_CODEC: ComponentCodec<Digest> | undefined;
+
 export class Digest implements DigestProvider, ToCbor, ToUR {
   static readonly DIGEST_SIZE: number = SHA256_SIZE;
 
@@ -89,7 +91,7 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
   }
 
   /**
-   * Compute SHA-256 digest of data (called "image" in Rust).
+   * Compute SHA-256 digest of data (called "image" in the reference implementation).
    *
    * @param image - The data to hash
    */
@@ -224,14 +226,16 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<Digest> = defineCodec({
-    tags: [TAG_DIGEST],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return Digest.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<Digest> {
+    return (DIGEST_CODEC ??= defineCodec({
+      tags: [TAG_DIGEST],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return Digest.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...Digest.codec.tags];

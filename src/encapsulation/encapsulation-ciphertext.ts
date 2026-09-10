@@ -14,7 +14,6 @@
  * For X25519, the ciphertext is serialized with the X25519 public key tag (40011).
  * For MLKEM, the ciphertext is serialized with tag 40102.
  *
- * Ported from bc-components-rust/src/encapsulation/encapsulation_ciphertext.rs
  */
 
 import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
@@ -55,6 +54,9 @@ function isMlkemScheme(scheme: EncapsulationScheme): boolean {
     scheme === EncapsulationScheme.MLKEM1024
   );
 }
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let ENCAPSULATION_CIPHERTEXT_CODEC: ComponentCodec<EncapsulationCiphertext> | undefined;
 
 /**
  * Represents the ciphertext from a key encapsulation operation.
@@ -223,17 +225,19 @@ export class EncapsulationCiphertext implements ToCbor {
   // ============================================================================
 
   /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
-  static readonly codec: ComponentCodec<EncapsulationCiphertext> = defineCodec({
-    tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_CIPHERTEXT],
-    decodeUntagged: (cborValue) =>
-      EncapsulationCiphertext.fromX25519PublicKey(X25519PublicKey.from(expectBytes(cborValue))),
-    decodeTagged: (tag, content, whole) =>
-      tag.value === TAG_MLKEM_CIPHERTEXT.value
-        ? EncapsulationCiphertext.fromMlkem(MLKEMCiphertext.fromCbor(whole))
-        : EncapsulationCiphertext.codec.decodeUntagged(content),
-    encodeUntagged: (value) => value.untaggedCbor(),
-    encode: (value) => value.toCbor(),
-  });
+  static get codec(): ComponentCodec<EncapsulationCiphertext> {
+    return (ENCAPSULATION_CIPHERTEXT_CODEC ??= defineCodec({
+      tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_CIPHERTEXT],
+      decodeUntagged: (cborValue) =>
+        EncapsulationCiphertext.fromX25519PublicKey(X25519PublicKey.from(expectBytes(cborValue))),
+      decodeTagged: (tag, content, whole) =>
+        tag.value === TAG_MLKEM_CIPHERTEXT.value
+          ? EncapsulationCiphertext.fromMlkem(MLKEMCiphertext.fromCbor(whole))
+          : EncapsulationCiphertext.codec.decodeUntagged(content),
+      encodeUntagged: (value) => value.untaggedCbor(),
+      encode: (value) => value.toCbor(),
+    }));
+  }
 
   /**
    * Returns the CBOR tags associated with this ciphertext.

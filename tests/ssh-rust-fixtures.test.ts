@@ -29,8 +29,8 @@ import {
   SignatureScheme,
   SigningPrivateKey,
   SigningPublicKey,
-  SSHPrivateKey,
-} from "../src";
+} from "../src/index.js";
+import { SSHPrivateKey } from "../src/ssh/index.js";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
 // Mirror `bc-components-rust/src/lib.rs:268` — `SEED = hex!("59f2293a5bce7d4de59e71b4207ac5d2")`.

@@ -25,7 +25,6 @@
  * })
  * ```
  *
- * Ported from bc-components-rust/src/ec_key/ec_private_key.rs
  */
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
@@ -53,6 +52,9 @@ import { ECPublicKey } from "./ec-public-key.js";
 import { SchnorrPublicKey } from "./schnorr-public-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import type { ECKey } from "./ec-key-base.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let E_C_PRIVATE_KEY_CODEC: ComponentCodec<ECPrivateKey> | undefined;
 
 export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   static readonly KEY_SIZE: number = ECDSA_PRIVATE_KEY_SIZE;
@@ -221,28 +223,30 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<ECPrivateKey> = defineCodec({
-    tags: [TAG_EC_KEY, TAG_EC_KEY_V1],
-    decodeUntagged: (cborValue) => {
-      const map = expectMap(cborValue);
+  static get codec(): ComponentCodec<ECPrivateKey> {
+    return (E_C_PRIVATE_KEY_CODEC ??= defineCodec({
+      tags: [TAG_EC_KEY, TAG_EC_KEY_V1],
+      decodeUntagged: (cborValue) => {
+        const map = expectMap(cborValue);
 
-      // Check for key 2 (isPrivate = true)
-      const isPrivate = mapGetBoolean(map, 2);
-      if (isPrivate !== true) {
-        throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 2 set to true");
-      }
+        // Check for key 2 (isPrivate = true)
+        const isPrivate = mapGetBoolean(map, 2);
+        if (isPrivate !== true) {
+          throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 2 set to true");
+        }
 
-      // Get key data from key 3
-      // CborMap.extract() returns native types (Uint8Array for byte strings)
-      const keyData = mapGetBytes(map, 3);
-      if (keyData === undefined || keyData.length === 0) {
-        throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 3 (data)");
-      }
+        // Get key data from key 3
+        // CborMap.extract() returns native types (Uint8Array for byte strings)
+        const keyData = mapGetBytes(map, 3);
+        if (keyData === undefined || keyData.length === 0) {
+          throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 3 (data)");
+        }
 
-      return ECPrivateKey.from(keyData);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return ECPrivateKey.from(keyData);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...ECPrivateKey.codec.tags];

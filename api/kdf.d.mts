@@ -164,7 +164,7 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     static fromHex(hex: string): Digest;
     /**
-     * Compute SHA-256 digest of data (called "image" in Rust).
+     * Compute SHA-256 digest of data (called "image" in the reference implementation).
      *
      * @param image - The data to hash
      */
@@ -227,7 +227,7 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     digest(): Digest;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Digest>;
+    static get codec(): ComponentCodec<Digest>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -334,7 +334,7 @@ export declare class EncryptedKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<EncryptedKey>;
+    static get codec(): ComponentCodec<EncryptedKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -399,7 +399,7 @@ declare class EncryptedMessage implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<EncryptedMessage>;
+    static get codec(): ComponentCodec<EncryptedMessage>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as an array).
@@ -417,12 +417,15 @@ declare class EncryptedMessage implements ToCbor, ToUR {
 /**
  * Enum representing supported hash types for key derivation.
  */
-export declare enum HashType {
+export declare const HashType: {
     /** SHA-256 hash algorithm */
-    SHA256 = 0,
+    readonly SHA256: 0;
     /** SHA-512 hash algorithm */
-    SHA512 = 1
-}
+    readonly SHA512: 1;
+};
+
+/** One of the `HashType` values. */
+export declare type HashType = (typeof HashType)[keyof typeof HashType];
 
 /**
  * Parse HashType from CBOR.
@@ -647,18 +650,21 @@ export declare interface KeyDerivation {
 /**
  * Enum representing supported key derivation methods.
  */
-export declare enum KeyDerivationMethod {
+export declare const KeyDerivationMethod: {
     /** HKDF (HMAC-based Key Derivation Function) - RFC 5869 */
-    HKDF = 0,
+    readonly HKDF: 0;
     /** PBKDF2 (Password-Based Key Derivation Function 2) - RFC 8018 */
-    PBKDF2 = 1,
+    readonly PBKDF2: 1;
     /** Scrypt - RFC 7914 */
-    Scrypt = 2,
+    readonly Scrypt: 2;
     /** Argon2id - RFC 9106 (default, most secure for passwords) */
-    Argon2id = 3,
+    readonly Argon2id: 3;
     /** SSH Agent - Uses SSH agent for key derivation */
-    SSHAgent = 4
-}
+    readonly SSHAgent: 4;
+};
+
+/** One of the `KeyDerivationMethod` values. */
+export declare type KeyDerivationMethod = (typeof KeyDerivationMethod)[keyof typeof KeyDerivationMethod];
 
 /**
  * Parse KeyDerivationMethod from CBOR.
@@ -770,7 +776,7 @@ declare class Nonce implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Nonce>;
+    static get codec(): ComponentCodec<Nonce>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -894,7 +900,7 @@ declare class Salt implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Salt>;
+    static get codec(): ComponentCodec<Salt>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -999,7 +1005,7 @@ export declare const SSH_AGENT_SALT_LEN = 16;
  * (`ssh-agent-client-rs`). The TS port deliberately stubs the lock/unlock
  * paths because no portable browser-friendly SSH-agent transport exists.
  * The CBOR encoding of `SSHAgentParams` is still byte-identical, so a
- * payload produced in Rust can be inspected and parsed in TS — only the
+ * payload produced in the reference implementation can be inspected and parsed in TS — only the
  * actual key-derivation operation is unavailable.
  */
 export declare class SSHAgentParams implements KeyDerivation {
@@ -1112,7 +1118,7 @@ declare class SymmetricKey implements ToCbor {
      */
     decrypt(message: EncryptedMessage): Uint8Array;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SymmetricKey>;
+    static get codec(): ComponentCodec<SymmetricKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).

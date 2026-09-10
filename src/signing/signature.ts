@@ -12,13 +12,12 @@
  *
  * # CBOR Serialization
  *
- * The CBOR encoding (matching Rust bc-components):
+ * The CBOR encoding:
  * - Schnorr: `#6.40020(h'<64-byte-signature>')` (bare byte string)
  * - ECDSA:   `#6.40020([1, h'<64-byte-signature>'])`
  * - Ed25519: `#6.40020([2, h'<64-byte-signature>'])`
  * - Sr25519: `#6.40020([3, h'<64-byte-signature>'])`
  *
- * Ported from bc-components-rust/src/signing/signature.rs
  */
 
 import {
@@ -55,6 +54,9 @@ import { MLDSASignature } from "../mldsa/mldsa-signature.js";
 import { MLDSALevel } from "../mldsa/mldsa-level.js";
 import { SSHSignature } from "../ssh/ssh-signature.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let SIGNATURE_CODEC: ComponentCodec<Signature> | undefined;
 
 /**
  * A digital signature created with various signature algorithms.
@@ -208,11 +210,9 @@ export class Signature implements ToCbor {
   /**
    * Creates a Signature from an SSHSignature.
    *
-   * Mirrors Rust `Signature::from_ssh`
-   * (`bc-components-rust/src/signing/signature.rs:398`).
    *
    * The signature scheme is derived from the inner public-key algorithm,
-   * matching Rust `Signature::scheme()` at lines 506-519.
+   * as the reference implementation does `Signature::scheme()` at lines 506-519.
    *
    * @param sig - The SSHSignature
    * @returns A new SSH Signature
@@ -387,8 +387,6 @@ export class Signature implements ToCbor {
   /**
    * Returns the underlying SSHSignature if this is an SSH signature.
    *
-   * Mirrors Rust `Signature::to_ssh`
-   * (`bc-components-rust/src/signing/signature.rs:459`).
    *
    * @returns The SSHSignature if this is an SSH signature, undefined otherwise
    */
@@ -438,58 +436,62 @@ export class Signature implements ToCbor {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<Signature> = defineCodec({
-    tags: [TAG_SIGNATURE],
-    decodeUntagged: (cborValue) => {
-      // Rust format: Schnorr is a bare byte string
-      if (isBytes(cborValue)) {
-        const signatureData = expectBytes(cborValue);
-        return Signature.schnorrFromData(signatureData);
-      }
-
-      // Array format for ECDSA, Ed25519, Sr25519
-      if (isArray(cborValue)) {
-        const elements = expectArray(cborValue);
-
-        if (elements.length !== 2) {
-          throw ComponentsError.invalidData("Signature array must have 2 elements");
+  static get codec(): ComponentCodec<Signature> {
+    return (SIGNATURE_CODEC ??= defineCodec({
+      tags: [TAG_SIGNATURE],
+      decodeUntagged: (cborValue) => {
+        // Wire format: Schnorr is a bare byte string
+        if (isBytes(cborValue)) {
+          const signatureData = expectBytes(cborValue);
+          return Signature.schnorrFromData(signatureData);
         }
 
-        const discriminator = expectUnsigned(elements[0]);
-        const signatureData = expectBytes(elements[1]);
+        // Array format for ECDSA, Ed25519, Sr25519
+        if (isArray(cborValue)) {
+          const elements = expectArray(cborValue);
 
-        switch (Number(discriminator)) {
-          case 1: // ECDSA
-            return Signature.ecdsaFromData(signatureData);
-          case 2: // Ed25519
-            return Signature.ed25519FromData(signatureData);
-          case 3: // Sr25519
-            return Signature.sr25519FromData(signatureData);
-          default:
-            throw ComponentsError.invalidData(`Unknown signature discriminator: ${discriminator}`);
-        }
-      }
+          if (elements.length !== 2) {
+            throw ComponentsError.invalidData("Signature array must have 2 elements");
+          }
 
-      // Tagged format for MLDSA / SSH
-      if (isTagged(cborValue)) {
-        const tagged = asTaggedValue(cborValue);
-        if (tagged?.[0].value === TAG_MLDSA_SIGNATURE.value) {
-          const mldsaSig = MLDSASignature.fromCbor(cborValue);
-          return Signature.mldsaFromSignature(mldsaSig);
-        }
-        if (tagged?.[0].value === TAG_SSH_TEXT_SIGNATURE.value) {
-          const text = expectText(tagged[1]);
-          const sshSig = SSHSignature.fromPem(text);
-          return Signature.fromSsh(sshSig);
-        }
-      }
+          const discriminator = expectUnsigned(elements[0]);
+          const signatureData = expectBytes(elements[1]);
 
-      throw ComponentsError.invalidData(
-        "Signature must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
-      );
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+          switch (Number(discriminator)) {
+            case 1: // ECDSA
+              return Signature.ecdsaFromData(signatureData);
+            case 2: // Ed25519
+              return Signature.ed25519FromData(signatureData);
+            case 3: // Sr25519
+              return Signature.sr25519FromData(signatureData);
+            default:
+              throw ComponentsError.invalidData(
+                `Unknown signature discriminator: ${discriminator}`,
+              );
+          }
+        }
+
+        // Tagged format for MLDSA / SSH
+        if (isTagged(cborValue)) {
+          const tagged = asTaggedValue(cborValue);
+          if (tagged?.[0].value === TAG_MLDSA_SIGNATURE.value) {
+            const mldsaSig = MLDSASignature.fromCbor(cborValue);
+            return Signature.mldsaFromSignature(mldsaSig);
+          }
+          if (tagged?.[0].value === TAG_SSH_TEXT_SIGNATURE.value) {
+            const text = expectText(tagged[1]);
+            const sshSig = SSHSignature.fromPem(text);
+            return Signature.fromSsh(sshSig);
+          }
+        }
+
+        throw ComponentsError.invalidData(
+          "Signature must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
+        );
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...Signature.codec.tags];
@@ -498,7 +500,7 @@ export class Signature implements ToCbor {
   /**
    * Returns the untagged CBOR encoding.
    *
-   * Format (matching Rust bc-components):
+   * Format:
    * - Schnorr: h'<64-byte-signature>' (bare byte string)
    * - ECDSA:   [1, h'<64-byte-signature>']
    * - Ed25519: [2, h'<64-byte-signature>']
@@ -507,7 +509,7 @@ export class Signature implements ToCbor {
   untaggedCbor(): Cbor {
     switch (this._type) {
       case SignatureScheme.Schnorr:
-        // Rust: CBOR::to_byte_string(data) - bare byte string
+        // CBOR::to_byte_string(data) - bare byte string
         return cbor(this._data);
       case SignatureScheme.Ecdsa:
         return cbor([1, cbor(this._data)]);
@@ -521,7 +523,7 @@ export class Signature implements ToCbor {
         if (this._mldsaSignature === undefined) {
           throw ComponentsError.invalidData("MLDSA signature is missing");
         }
-        // Rust: delegates to MLDSASignature (which produces tagged CBOR)
+        // delegates to MLDSASignature (which produces tagged CBOR)
         return this._mldsaSignature.toCbor();
       }
       case SignatureScheme.SshEd25519:
@@ -531,7 +533,6 @@ export class Signature implements ToCbor {
         if (this._sshSig === undefined) {
           throw ComponentsError.invalidData("SSH signature is missing");
         }
-        // Mirror Rust `Signature::SSH(sig) => to_tagged_value(TAG_SSH_TEXT_SIGNATURE, pem)`
         // (`signature.rs:643-646`).
         return taggedValue(TAG_SSH_TEXT_SIGNATURE, this._sshSig.toPem());
       }

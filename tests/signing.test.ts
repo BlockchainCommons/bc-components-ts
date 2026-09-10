@@ -16,7 +16,6 @@ import {
   SigningPrivateKey,
   SigningPublicKey,
   createKeypair,
-  createKeypairUsing,
   defaultSignatureScheme,
   isSshScheme,
   Ed25519PrivateKey,
@@ -117,7 +116,7 @@ describe("SignatureScheme", () => {
   describe("createKeypairUsing", () => {
     it("should create keypair using provided RNG", () => {
       const rng = new SecureRng();
-      const [privateKey, publicKey] = createKeypairUsing(SignatureScheme.Ed25519, rng);
+      const [privateKey, publicKey] = createKeypair(SignatureScheme.Ed25519, { rng: rng });
 
       expect(privateKey).toBeInstanceOf(SigningPrivateKey);
       expect(publicKey).toBeInstanceOf(SigningPublicKey);

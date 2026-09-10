@@ -5,7 +5,6 @@
  *
  * @blockchaincommons/components - Cryptographic components library
  * TypeScript implementation of Blockchain Commons' cryptographic components specification
- * Ported from bc-components-rust
  */
 
 // Error handling
@@ -28,13 +27,12 @@ export type { Encrypter, Decrypter } from "./encrypter.js";
 export { isEncrypter, isDecrypter } from "./encrypter.js";
 
 // JSON wrapper
-export { JSON } from "./json.js";
+export { CborJson } from "./json.js";
 
 // Compressed data
 export { Compressed } from "./compressed.js";
 
 // HKDF-based RNG
-export { HKDFRng } from "./hkdf-rng.js";
 
 // Utility functions
 export { bytesToHex, hexToBytes, toBase64, fromBase64, bytesEqual } from "./utils.js";
@@ -59,7 +57,7 @@ export { ARID, UUID, XID, XID_PREFIX, URI, isXIDProvider } from "./id/index.js";
 export type { XIDProvider } from "./id/index.js";
 
 // Top-level keypair helpers (PrivateKeys + PublicKeys bundle).
-export { keypair, keypairUsing, keypairOpt, keypairOptUsing } from "./keypair.js";
+export { generateKeypair, type KeypairOptions } from "./keypair.js";
 
 // Key agreement - X25519 (from x25519/ module)
 export { X25519PrivateKey, X25519PublicKey } from "./x25519/index.js";
@@ -101,7 +99,7 @@ export {
   SigningPrivateKey,
   SigningPublicKey,
 } from "./signing/index.js";
-export { createKeypair, createKeypairUsing } from "./signing/keypair.js";
+export { createKeypair, type CreateKeypairOptions } from "./signing/keypair.js";
 export {
   defaultSignatureScheme,
   isSshScheme,
@@ -118,48 +116,7 @@ export {
   SealedMessage,
   defaultEncapsulationScheme,
   createEncapsulationKeypair,
-  createEncapsulationKeypairUsing,
 } from "./encapsulation/index.js";
-
-// Encrypted key / Key derivation (from encrypted-key/ module)
-export {
-  HashType,
-  hashTypeToString,
-  hashTypeToCbor,
-  hashTypeFromCbor,
-  KeyDerivationMethod,
-  defaultKeyDerivationMethod,
-  keyDerivationMethodIndex,
-  keyDerivationMethodFromIndex,
-  keyDerivationMethodToString,
-  keyDerivationMethodFromCbor,
-  HKDFParams,
-  SALT_LEN,
-  PBKDF2Params,
-  DEFAULT_PBKDF2_ITERATIONS,
-  ScryptParams,
-  DEFAULT_SCRYPT_LOG_N,
-  DEFAULT_SCRYPT_R,
-  DEFAULT_SCRYPT_P,
-  Argon2idParams,
-  hkdfParams,
-  pbkdf2Params,
-  scryptParams,
-  argon2idParams,
-  defaultKeyDerivationParams,
-  keyDerivationParamsMethod,
-  isPasswordBased,
-  isSshAgent,
-  lockWithParams,
-  keyDerivationParamsToCbor,
-  keyDerivationParamsToCborData,
-  keyDerivationParamsToString,
-  keyDerivationParamsFromCbor,
-  EncryptedKey,
-  SSHAgentParams,
-  sshAgentParams,
-} from "./encrypted-key/index.js";
-export type { KeyDerivation, KeyDerivationParams } from "./encrypted-key/index.js";
 
 // Key management containers
 export { PrivateKeyBase } from "./private-key-base.js";
@@ -169,94 +126,16 @@ export { PublicKeys } from "./public-keys.js";
 export type { PublicKeysProvider } from "./public-keys.js";
 
 // SSKR integration with CBOR/UR serialization
-export {
-  // Primary API (matches Rust bc-components naming)
-  SSKRShare,
-  SSKRShareCbor, // Implementation class (SSKRShare is the preferred name)
-  sskrGenerateShares,
-  sskrGenerateSharesUsing,
-  sskrCombineShares,
-  // Re-exports from @blockchaincommons/sskr for raw byte operations
-  sskrGenerate,
-  sskrGenerateUsing,
-  sskrCombine,
-  SSKRSecret,
-  SSKRGroupSpec,
-  SSKRSpec,
-} from "./sskr.js";
-export type { SimpleRng } from "./sskr.js";
 
 // Post-quantum cryptography - ML-DSA (from mldsa/ module)
-export {
-  MLDSALevel,
-  MLDSA_KEY_SIZES,
-  mldsaPrivateKeySize,
-  mldsaPublicKeySize,
-  mldsaSignatureSize,
-  mldsaLevelToString,
-  mldsaLevelFromValue,
-  mldsaGenerateKeypair,
-  mldsaGenerateKeypairUsing,
-  mldsaSign,
-  mldsaVerify,
-  MLDSAPrivateKey,
-  MLDSAPublicKey,
-  MLDSASignature,
-} from "./mldsa/index.js";
-export type { MLDSAKeypairData } from "./mldsa/index.js";
+export { MLDSALevel } from "./mldsa/index.js";
 
 // SSH key/signature/certificate types — Ed25519 + ECDSA P-256 v1
-// (mirrors `bc-components-rust` feature `ssh`).
-export {
-  SSHPublicKey,
-  SSHPrivateKey,
-  SSHSignature,
-  SSHCertificate,
-  parseSshAlgorithm,
-  sshAlgorithmName,
-  SSH_ALGO_ED25519,
-  SSH_ALGO_ECDSA_NISTP256,
-  SSH_CURVE_NISTP256,
-} from "./ssh/index.js";
-export type {
-  SshAlgorithm,
-  SshEcdsaCurve,
-  SshHashAlgorithm,
-  SshPrivateKeyData,
-  SshPublicKeyData,
-} from "./ssh/index.js";
+// (mirrors the reference implementation feature `ssh`).
+export type { SshAlgorithm, SshEcdsaCurve, SshHashAlgorithm } from "./ssh/index.js";
 
 // Post-quantum cryptography - ML-KEM (from mlkem/ module)
-export {
-  MLKEMLevel,
-  MLKEM_KEY_SIZES,
-  mlkemPrivateKeySize,
-  mlkemPublicKeySize,
-  mlkemCiphertextSize,
-  mlkemSharedSecretSize,
-  mlkemLevelToString,
-  mlkemLevelFromValue,
-  mlkemGenerateKeypair,
-  mlkemGenerateKeypairUsing,
-  mlkemEncapsulate,
-  mlkemDecapsulate,
-  MLKEMPrivateKey,
-  MLKEMPublicKey,
-  MLKEMCiphertext,
-} from "./mlkem/index.js";
-export type {
-  MLKEMKeypairData,
-  MLKEMEncapsulationResult,
-  MLKEMEncapsulationPair,
-} from "./mlkem/index.js";
+export { MLKEMLevel } from "./mlkem/index.js";
 
 // Re-export commonly used tags for higher-level packages
 // This allows packages like envelope to depend on components instead of tags directly
-export {
-  KNOWN_VALUE,
-  // Envelope-related tags
-  ENVELOPE,
-  LEAF,
-  ENCRYPTED,
-  COMPRESSED,
-} from "@blockchaincommons/tags";

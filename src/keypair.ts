@@ -6,96 +6,50 @@
  * Top-level keypair helpers — produce a `(PrivateKeys, PublicKeys)` bundle
  * spanning both signing and encapsulation schemes in one call.
  *
- * Ported from bc-components-rust/src/keypair.rs
  */
 
-import type { RandomNumberGenerator } from "@blockchaincommons/rand";
+import { type RandomNumberGenerator } from "@blockchaincommons/rand";
 import { PrivateKeys } from "./private-keys.js";
 import { PublicKeys } from "./public-keys.js";
 import { defaultSignatureScheme } from "./signing/signature-scheme.js";
-import {
-  createKeypair as createSigningKeypair,
-  createKeypairUsing as createSigningKeypairUsing,
-} from "./signing/keypair.js";
+import { createKeypair as createSigningKeypair } from "./signing/keypair.js";
 import type { SignatureScheme } from "./signing/signature-scheme.js";
 import { defaultEncapsulationScheme } from "./encapsulation/encapsulation-scheme.js";
-import {
-  createEncapsulationKeypair,
-  createEncapsulationKeypairUsing,
-} from "./encapsulation/keypair.js";
+import { createEncapsulationKeypair } from "./encapsulation/keypair.js";
 import type { EncapsulationScheme } from "./encapsulation/encapsulation-scheme.js";
 
 /**
  * Generates a key pair using the default signature and encapsulation schemes
  * (Schnorr + X25519).
  *
- * Mirrors Rust `pub fn keypair() -> (PrivateKeys, PublicKeys)`.
  */
-export function keypair(): [PrivateKeys, PublicKeys] {
-  return keypairOpt(defaultSignatureScheme(), defaultEncapsulationScheme());
+/** What `generateKeypair` accepts; every field has a default. */
+export interface KeypairOptions {
+  /** Signature scheme (Schnorr by default). */
+  signing?: SignatureScheme;
+  /** Encapsulation scheme (X25519 by default). */
+  encapsulation?: EncapsulationScheme;
+  /** Randomness source; ML-DSA and ML-KEM keys refuse a caller-supplied one. */
+  rng?: RandomNumberGenerator;
 }
 
 /**
- * Generates a key pair using the default schemes and a provided RNG.
- *
- * Mirrors Rust `pub fn keypair_using(rng) -> Result<(PrivateKeys, PublicKeys)>`.
- *
- * Note: ML-KEM does not support deterministic generation. This helper uses
- * the default encapsulation scheme (X25519), which does.
+ * A fresh `PrivateKeys`/`PublicKeys` pair: a signing key and an
+ * encapsulation key in the chosen schemes.
  */
-export function keypairUsing(rng: RandomNumberGenerator): [PrivateKeys, PublicKeys] {
-  return keypairOptUsing(defaultSignatureScheme(), defaultEncapsulationScheme(), rng);
-}
-
-/**
- * Generates a key pair with explicit signature and encapsulation schemes.
- *
- * Mirrors Rust `pub fn keypair_opt(sig, enc) -> (PrivateKeys, PublicKeys)`.
- */
-export function keypairOpt(
-  signatureScheme: SignatureScheme,
-  encapsulationScheme: EncapsulationScheme,
-): [PrivateKeys, PublicKeys] {
-  const [signingPrivateKey, signingPublicKey] = createSigningKeypair(signatureScheme);
-  const [encapsulationPrivateKey, encapsulationPublicKey] =
-    createEncapsulationKeypair(encapsulationScheme);
-  const privateKeys = PrivateKeys.from({
-    signing: signingPrivateKey,
-    encapsulation: encapsulationPrivateKey,
-  });
-  const publicKeys = PublicKeys.from({
-    signing: signingPublicKey,
-    encapsulation: encapsulationPublicKey,
-  });
-  return [privateKeys, publicKeys];
-}
-
-/**
- * Generates a key pair with explicit schemes and a provided RNG.
- *
- * Mirrors Rust `pub fn keypair_opt_using(sig, enc, rng) ->
- *   Result<(PrivateKeys, PublicKeys)>`.
- *
- * Throws if either scheme does not support deterministic generation
- * (e.g. ML-DSA / ML-KEM, or any SSH-based signing scheme).
- */
-export function keypairOptUsing(
-  signatureScheme: SignatureScheme,
-  encapsulationScheme: EncapsulationScheme,
-  rng: RandomNumberGenerator,
-): [PrivateKeys, PublicKeys] {
-  const [signingPrivateKey, signingPublicKey] = createSigningKeypairUsing(signatureScheme, rng);
-  const [encapsulationPrivateKey, encapsulationPublicKey] = createEncapsulationKeypairUsing(
-    rng,
-    encapsulationScheme,
+export function generateKeypair({
+  signing = defaultSignatureScheme(),
+  encapsulation = defaultEncapsulationScheme(),
+  rng,
+}: KeypairOptions = {}): [PrivateKeys, PublicKeys] {
+  const opts = rng === undefined ? {} : { rng };
+  const [signingPrivateKey, signingPublicKey] = createSigningKeypair(signing, opts);
+  const [encapsulationPrivateKey, encapsulationPublicKey] = createEncapsulationKeypair(
+    encapsulation,
+    opts,
   );
-  const privateKeys = PrivateKeys.from({
-    signing: signingPrivateKey,
-    encapsulation: encapsulationPrivateKey,
-  });
-  const publicKeys = PublicKeys.from({
-    signing: signingPublicKey,
-    encapsulation: encapsulationPublicKey,
-  });
-  return [privateKeys, publicKeys];
+  return [
+    PrivateKeys.from({ signing: signingPrivateKey, encapsulation: encapsulationPrivateKey }),
+    PublicKeys.from({ signing: signingPublicKey, encapsulation: encapsulationPublicKey }),
+  ];
 }

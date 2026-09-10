@@ -1,76 +1,12 @@
 import { bytesToHex } from '@blockchaincommons/dcbor';
 import { Cbor } from '@blockchaincommons/dcbor';
 import { CborCodec } from '@blockchaincommons/dcbor';
-import { COMPRESSED } from '@blockchaincommons/tags';
-import { ENCRYPTED } from '@blockchaincommons/tags';
-import { ENVELOPE } from '@blockchaincommons/tags';
 import { hexToBytes } from '@blockchaincommons/dcbor';
-import { KNOWN_VALUE } from '@blockchaincommons/tags';
-import { LEAF } from '@blockchaincommons/tags';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
-import { GroupSpec as SSKRGroupSpec } from '@blockchaincommons/sskr';
-import { Secret as SSKRSecret } from '@blockchaincommons/sskr';
-import { Spec as SSKRSpec } from '@blockchaincommons/sskr';
 import { Tag } from '@blockchaincommons/dcbor';
 import { ToCbor } from '@blockchaincommons/dcbor';
 import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
-
-/**
- * Argon2id parameters for password-based key derivation.
- *
- * This is the recommended method for password-based key derivation as it
- * provides the best protection against both GPU cracking and side-channel
- * attacks.
- */
-export declare class Argon2idParams implements KeyDerivation {
-    static readonly INDEX: KeyDerivationMethod;
-    private readonly _salt;
-    private constructor();
-    /** Parameters with a fresh random salt unless one is given. */
-    static from({ salt }?: {
-        salt?: Salt;
-    }): Argon2idParams;
-    /** Returns the salt. */
-    get salt(): Salt;
-    /** Returns the method index for CBOR encoding. */
-    index(): number;
-    /**
-     * Derive a key from the secret and encrypt the content key.
-     */
-    lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
-    /**
-     * Derive a key from the secret and decrypt the content key.
-     */
-    unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey;
-    private _deriveKey;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-    /**
-     * Check equality with another Argon2idParams.
-     */
-    equals(other: Argon2idParams): boolean;
-    /**
-     * Convert to CBOR.
-     * Format: [3, Salt]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
-     */
-    toCbor(): Cbor;
-    /**
-     * Convert to CBOR binary data.
-     */
-    toCborData(): Uint8Array;
-    /**
-     * Parse from CBOR.
-     */
-    static fromCbor(cborValue: Cbor): Argon2idParams;
-}
-
-/**
- * Create Argon2id derivation parameters.
- */
-export declare function argon2idParams(params?: Argon2idParams): KeyDerivationParams;
 
 export declare class ARID implements ToCbor, ToUR {
     static readonly ARID_SIZE = 32;
@@ -117,7 +53,7 @@ export declare class ARID implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<ARID>;
+    static get codec(): ComponentCodec<ARID>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -211,6 +147,69 @@ export declare function bytesEqual(a: Uint8Array, b: Uint8Array): boolean;
 
 export { bytesToHex }
 
+/**
+ * A CBOR-tagged container for UTF-8 CborJson text.
+ *
+ * Wraps UTF-8 CborJson text as a CBOR byte string with tag 262.
+ * This allows CborJson data to be embedded within CBOR structures while
+ * maintaining type information through the tag.
+ */
+export declare class CborJson implements ToCbor {
+    private readonly _data;
+    private constructor();
+    /**
+     * Create a new CborJson instance from byte data.
+     */
+    static from(data: Uint8Array): CborJson;
+    /**
+     * Create a new CborJson instance from a string.
+     */
+    static fromString(s: string): CborJson;
+    /**
+     * Create a new CborJson instance from a hexadecimal string.
+     */
+    static fromHex(hex: string): CborJson;
+    /** Number of bytes. */
+    get byteLength(): number;
+    /**
+     * Return true if the CborJson data is empty.
+     */
+    isEmpty(): boolean;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /**
+     * Return the data as a UTF-8 string slice.
+     *
+     * @throws Error if the data is not valid UTF-8.
+     */
+    asStr(): string;
+    /**
+     * Return the data as a hexadecimal string.
+     */
+    toHex(): string;
+    /**
+     * Compare with another CborJson.
+     */
+    equals(other: CborJson): boolean;
+    /**
+     * Get string representation.
+     */
+    toString(): string;
+    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    static get codec(): ComponentCodec<CborJson>;
+    cborTags(): Tag[];
+    /**
+     * Returns the untagged CBOR encoding (as a byte string).
+     */
+    untaggedCbor(): Cbor;
+    /** The tagged CBOR form. */
+    toCbor(): Cbor;
+    /** As a UR, typed by the first tag's name. */
+    toUR(): UR;
+    /** Decode tagged or untagged CBOR. */
+    static fromCbor(cborValue: Cbor): CborJson;
+}
+
 /** A codec over a tagged type; `decode` also accepts the untagged form. */
 declare interface ComponentCodec<T> extends CborCodec<T> {
     /** The tags this type is written and read with; the first is written. */
@@ -284,8 +283,6 @@ export declare type ComponentsErrorCode = "InvalidSize" | "InvalidData" | "DataT
 
 /** `details` is discriminated by `code`. */
 export declare type ComponentsErrorDetails = InvalidSizeDetails | InvalidDataDetails | DataTooShortDetails | MessageDetails;
-
-export { COMPRESSED }
 
 /**
  * A compressed binary object with integrity verification.
@@ -399,7 +396,7 @@ export declare class Compressed implements ToCbor, DigestProvider {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Compressed>;
+    static get codec(): ComponentCodec<Compressed>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as an array).
@@ -424,49 +421,28 @@ export declare class Compressed implements ToCbor, DigestProvider {
 }
 
 /**
- * Generate a new keypair for the given encapsulation scheme.
- *
- * @param scheme - The encapsulation scheme to use (defaults to X25519)
- * @returns A tuple of [privateKey, publicKey]
+ * A fresh encapsulation key pair for `scheme` (X25519 by default). With
+ * `rng` the ML-KEM schemes throw, because their key generation cannot be
+ * seeded.
  */
-export declare function createEncapsulationKeypair(scheme?: EncapsulationScheme): [EncapsulationPrivateKey, EncapsulationPublicKey];
+export declare function createEncapsulationKeypair(scheme?: EncapsulationScheme, { rng }?: {
+    rng?: RandomNumberGenerator;
+}): [EncapsulationPrivateKey, EncapsulationPublicKey];
 
 /**
- * Generate a new keypair for the given encapsulation scheme using a specific RNG.
- *
- * Note: Only X25519 supports deterministic keypair generation.
- * MLKEM schemes do not support deterministic generation (matching Rust behavior).
- *
- * @param rng - The random number generator to use
- * @param scheme - The encapsulation scheme to use (defaults to X25519)
- * @returns A tuple of [privateKey, publicKey]
- * @throws Error if the scheme doesn't support deterministic generation
+ * A fresh signing key pair for `scheme`. Without `rng` every scheme draws
+ * from the secure generator; with `rng` the ML-DSA schemes throw, because
+ * their key generation cannot be seeded.
  */
-export declare function createEncapsulationKeypairUsing(rng: RandomNumberGenerator, scheme?: EncapsulationScheme): [EncapsulationPrivateKey, EncapsulationPublicKey];
+export declare function createKeypair(scheme: SignatureScheme, { rng, comment }?: CreateKeypairOptions): [SigningPrivateKey, SigningPublicKey];
 
-/**
- * Creates a new key pair for the signature scheme.
- *
- * @param scheme  - The signature scheme to use
- * @param comment - Optional comment for SSH keys (ignored for non-SSH schemes;
- *                  mirrors Rust `SignatureScheme::keypair_opt(comment)` at
- *                  `signature_scheme.rs:152`)
- * @returns A tuple containing a signing private key and its corresponding public key
- */
-export declare function createKeypair(scheme: SignatureScheme, comment?: string): [SigningPrivateKey, SigningPublicKey];
-
-/**
- * Creates a new key pair for the signature scheme using a provided RNG.
- *
- * @param scheme  - The signature scheme to use
- * @param rng     - The random number generator to use
- * @param comment - Optional comment for SSH keys (ignored for non-SSH schemes;
- *                  mirrors Rust `SignatureScheme::keypair_using(rng, comment)`
- *                  at `signature_scheme.rs:316`)
- * @returns A tuple containing a signing private key and its corresponding public key
- * @throws ComponentsError for MLDSA (which doesn't support deterministic generation)
- */
-export declare function createKeypairUsing(scheme: SignatureScheme, rng: RandomNumberGenerator, comment?: string): [SigningPrivateKey, SigningPublicKey];
+/** What `createKeypair` accepts. */
+export declare interface CreateKeypairOptions {
+    /** Randomness source; the ML-DSA schemes refuse a caller-supplied one. */
+    rng?: RandomNumberGenerator;
+    /** Comment stored in SSH keys (ignored by the other schemes). */
+    comment?: string;
+}
 
 /** Details of a `DataTooShort` failure. */
 export declare interface DataTooShortDetails {
@@ -527,36 +503,14 @@ export declare interface Decrypter {
     decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey;
 }
 
-/** Default number of iterations for PBKDF2 */
-export declare const DEFAULT_PBKDF2_ITERATIONS = 1e5;
-
-/** Default log_n parameter (2^15 = 32768 iterations) */
-export declare const DEFAULT_SCRYPT_LOG_N = 15;
-
-/** Default p parameter (parallelism) */
-export declare const DEFAULT_SCRYPT_P = 1;
-
-/** Default r parameter (block size) */
-export declare const DEFAULT_SCRYPT_R = 8;
-
 /**
  * Returns the default encapsulation scheme (X25519).
  */
 export declare function defaultEncapsulationScheme(): EncapsulationScheme;
 
 /**
- * Returns the default key derivation method (Argon2id).
- */
-export declare function defaultKeyDerivationMethod(): KeyDerivationMethod;
-
-/**
- * Create default key derivation parameters (Argon2id).
- */
-export declare function defaultKeyDerivationParams(): KeyDerivationParams;
-
-/**
  * Get the default signature scheme.
- * Defaults to Schnorr (matching Rust bc-components default when secp256k1 is enabled).
+ * Defaults to Schnorr.
  */
 export declare function defaultSignatureScheme(): SignatureScheme;
 
@@ -577,7 +531,7 @@ export declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     static fromHex(hex: string): Digest;
     /**
-     * Compute SHA-256 digest of data (called "image" in Rust).
+     * Compute SHA-256 digest of data (called "image" in the reference implementation).
      *
      * @param image - The data to hash
      */
@@ -640,7 +594,7 @@ export declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     digest(): Digest;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Digest>;
+    static get codec(): ComponentCodec<Digest>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -805,7 +759,7 @@ export declare class ECPrivateKey implements ECKey, ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<ECPrivateKey>;
+    static get codec(): ComponentCodec<ECPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -871,7 +825,7 @@ export declare class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<ECPublicKey>;
+    static get codec(): ComponentCodec<ECPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -950,7 +904,7 @@ export declare class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR 
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<ECUncompressedPublicKey>;
+    static get codec(): ComponentCodec<ECUncompressedPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -1053,8 +1007,6 @@ export declare class Ed25519PublicKey {
     /**
      * Get string representation.
      *
-     * Mirrors Rust `Display for Ed25519PublicKey`
-     * (`bc-components-rust/src/ed25519/ed25519_public_key.rs`):
      *   `Ed25519PublicKey(<ref_hex_short>)`
      * where the reference is computed from the **raw 32-byte data**
      * (not tagged CBOR) — same pattern as SchnorrPublicKey.
@@ -1130,7 +1082,7 @@ export declare class EncapsulationCiphertext implements ToCbor {
      */
     toString(): string;
     /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
-    static readonly codec: ComponentCodec<EncapsulationCiphertext>;
+    static get codec(): ComponentCodec<EncapsulationCiphertext>;
     /**
      * Returns the CBOR tags associated with this ciphertext.
      */
@@ -1249,7 +1201,7 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbo
      */
     reference(): Reference;
     /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
-    static readonly codec: ComponentCodec<EncapsulationPrivateKey>;
+    static get codec(): ComponentCodec<EncapsulationPrivateKey>;
     /**
      * Returns the CBOR tags associated with this private key.
      */
@@ -1349,8 +1301,6 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
     /**
      * Get string representation.
      *
-     * Mirrors Rust `Display for EncapsulationPublicKey`
-     * (`bc-components-rust/src/encapsulation/encapsulation_public_key.rs:191-205`):
      *   `EncapsulationPublicKey(<ref_hex_short>, <inner_key_display>)`
      * where ref_hex_short is computed from the tagged-CBOR form.
      */
@@ -1363,7 +1313,7 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
      */
     reference(): Reference;
     /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
-    static readonly codec: ComponentCodec<EncapsulationPublicKey>;
+    static get codec(): ComponentCodec<EncapsulationPublicKey>;
     /**
      * Returns the CBOR tags associated with this public key.
      */
@@ -1383,111 +1333,28 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
 /**
  * Available key encapsulation schemes.
  */
-export declare enum EncapsulationScheme {
+export declare const EncapsulationScheme: {
     /**
      * X25519 Diffie-Hellman key exchange (default).
      * Based on Curve25519 as defined in RFC 7748.
      */
-    X25519 = "x25519",
+    readonly X25519: "x25519";
     /**
      * ML-KEM-512 post-quantum key encapsulation (NIST security level 1).
      */
-    MLKEM512 = "mlkem512",
+    readonly MLKEM512: "mlkem512";
     /**
      * ML-KEM-768 post-quantum key encapsulation (NIST security level 3).
      */
-    MLKEM768 = "mlkem768",
+    readonly MLKEM768: "mlkem768";
     /**
      * ML-KEM-1024 post-quantum key encapsulation (NIST security level 5).
      */
-    MLKEM1024 = "mlkem1024"
-}
+    readonly MLKEM1024: "mlkem1024";
+};
 
-export { ENCRYPTED }
-
-/**
- * Encrypted key providing secure storage of symmetric keys.
- *
- * Use `lock()` to encrypt a content key with a password or secret,
- * and `unlock()` to decrypt it.
- */
-export declare class EncryptedKey implements ToCbor, ToUR {
-    private readonly _params;
-    private readonly _encryptedMessage;
-    private constructor();
-    /**
-     * Lock (encrypt) a content key using custom derivation parameters.
-     *
-     * @param params - The key derivation parameters to use
-     * @param secret - The secret (password or key material) to derive from
-     * @param contentKey - The symmetric key to encrypt
-     * @returns The encrypted key
-     */
-    static lockOpt(params: KeyDerivationParams, secret: Uint8Array, contentKey: SymmetricKey): EncryptedKey;
-    /**
-     * Lock (encrypt) a content key using a specific derivation method with defaults.
-     *
-     * @param method - The key derivation method to use
-     * @param secret - The secret (password or key material) to derive from
-     * @param contentKey - The symmetric key to encrypt
-     * @returns The encrypted key
-     */
-    static lock(method: KeyDerivationMethod, secret: Uint8Array, contentKey: SymmetricKey): EncryptedKey;
-    /**
-     * Returns the encrypted message.
-     */
-    get encryptedMessage(): EncryptedMessage;
-    /**
-     * Returns the key derivation parameters.
-     */
-    get params(): KeyDerivationParams;
-    /**
-     * Returns the key derivation method.
-     */
-    get method(): KeyDerivationMethod;
-    /**
-     * Check if this uses a password-based key derivation method.
-     */
-    isPasswordBased(): boolean;
-    /**
-     * Check if this uses SSH Agent for key derivation.
-     *
-     * Note: SSH Agent key derivation is not yet functional in TypeScript.
-     * This method is useful for detecting envelopes locked by other
-     * implementations (e.g., Rust).
-     */
-    isSshAgent(): boolean;
-    /**
-     * Unlock (decrypt) the content key.
-     *
-     * @param secret - The secret (password or key material) used to lock
-     * @returns The decrypted symmetric key
-     * @throws ComponentsError if decryption fails (wrong password, tampered data, etc.)
-     */
-    unlock(secret: Uint8Array): SymmetricKey;
-    /**
-     * Check equality with another EncryptedKey.
-     */
-    equals(other: EncryptedKey): boolean;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<EncryptedKey>;
-    cborTags(): Tag[];
-    /**
-     * Returns the untagged CBOR encoding.
-     * The EncryptedMessage is encoded with its own tag (40002).
-     */
-    untaggedCbor(): Cbor;
-    /** The tagged CBOR form. */
-    toCbor(): Cbor;
-    /** As a UR, typed by the first tag's name. */
-    toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
-    static fromCbor(cborValue: Cbor): EncryptedKey;
-}
+/** One of the `EncapsulationScheme` values. */
+export declare type EncapsulationScheme = (typeof EncapsulationScheme)[keyof typeof EncapsulationScheme];
 
 export declare class EncryptedMessage implements ToCbor, ToUR {
     private readonly _ciphertext;
@@ -1539,7 +1406,7 @@ export declare class EncryptedMessage implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<EncryptedMessage>;
+    static get codec(): ComponentCodec<EncryptedMessage>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as an array).
@@ -1601,8 +1468,6 @@ export declare interface Encrypter {
     encapsulateNewSharedSecret(): [SymmetricKey, EncapsulationCiphertext];
 }
 
-export { ENVELOPE }
-
 /**
  * Convert a base64-encoded string to a Uint8Array.
  *
@@ -1620,179 +1485,12 @@ export { ENVELOPE }
 export declare function fromBase64(base64: string): Uint8Array;
 
 /**
- * Enum representing supported hash types for key derivation.
+ * A fresh `PrivateKeys`/`PublicKeys` pair: a signing key and an
+ * encapsulation key in the chosen schemes.
  */
-export declare enum HashType {
-    /** SHA-256 hash algorithm */
-    SHA256 = 0,
-    /** SHA-512 hash algorithm */
-    SHA512 = 1
-}
-
-/**
- * Parse HashType from CBOR.
- */
-export declare function hashTypeFromCbor(cborValue: Cbor): HashType;
-
-/**
- * Convert HashType to CBOR.
- */
-export declare function hashTypeToCbor(hashType: HashType): Cbor;
-
-/**
- * Convert HashType to its string representation.
- */
-export declare function hashTypeToString(hashType: HashType): string;
+export declare function generateKeypair({ signing, encapsulation, rng }?: KeypairOptions): [PrivateKeys, PublicKeys];
 
 export { hexToBytes }
-
-/**
- * HKDF parameters for key derivation.
- *
- * HKDF is suitable for deriving keys from high-entropy inputs (like other keys),
- * but NOT for password-based key derivation.
- */
-export declare class HKDFParams implements KeyDerivation {
-    static readonly INDEX: KeyDerivationMethod;
-    private readonly _salt;
-    private readonly _hashType;
-    private constructor();
-    /** Parameters with a fresh random salt unless one is given. */
-    static from({ salt, hashType }?: {
-        salt?: Salt;
-        hashType?: HashType;
-    }): HKDFParams;
-    /** Returns the salt. */
-    get salt(): Salt;
-    /** Returns the hash type. */
-    get hashType(): HashType;
-    /** Returns the method index for CBOR encoding. */
-    index(): number;
-    /**
-     * Derive a key from the secret and encrypt the content key.
-     */
-    lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
-    /**
-     * Derive a key from the secret and decrypt the content key.
-     */
-    unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey;
-    private _deriveKey;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-    /**
-     * Check equality with another HKDFParams.
-     */
-    equals(other: HKDFParams): boolean;
-    /**
-     * Convert to CBOR.
-     * Format: [0, Salt, HashType]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
-     */
-    toCbor(): Cbor;
-    /**
-     * Convert to CBOR binary data.
-     */
-    toCborData(): Uint8Array;
-    /**
-     * Parse from CBOR.
-     */
-    static fromCbor(cborValue: Cbor): HKDFParams;
-}
-
-/**
- * Create HKDF derivation parameters.
- */
-export declare function hkdfParams(params?: HKDFParams): KeyDerivationParams;
-
-/**
- * A deterministic random number generator based on HKDF-HMAC-SHA256.
- *
- * Implements the RandomNumberGenerator interface from @blockchaincommons/rand.
- */
-export declare class HKDFRng implements RandomNumberGenerator {
-    /** Internal buffer of generated bytes */
-    private _buffer;
-    /** Current position in the buffer */
-    private _position;
-    /** Source key material (seed) */
-    private readonly _keyMaterial;
-    /** Salt value to combine with the key material */
-    private readonly _salt;
-    /** Length of each "page" of generated data */
-    private readonly _pageLength;
-    /** Current page index */
-    private _pageIndex;
-    /**
-     * @param keyMaterial - The input key material for HKDF
-     * @param salt - The salt string; page `i` uses `"<salt>-<i>"`
-     * @param pageLength - Bytes of output derived per page (32 by default)
-     */
-    constructor(keyMaterial: Uint8Array, salt: string, { pageLength }?: {
-        pageLength?: number;
-    });
-    /**
-     * Refills the internal buffer with new deterministic random bytes.
-     *
-     * This method is called automatically when the internal buffer is exhausted.
-     * It uses HKDF-HMAC-SHA256 to generate a new page of random bytes using the
-     * key material, salt, and current page index.
-     */
-    private fillBuffer;
-    /**
-     * Generates the specified number of deterministic random bytes.
-     *
-     * @param length - The number of bytes to generate
-     * @returns A Uint8Array containing the requested number of deterministic random bytes
-     */
-    private nextBytes;
-    /**
-     * Generates deterministic random bytes.
-     *
-     * @param length - The number of bytes to generate
-     * @returns A Uint8Array of random bytes
-     */
-    randomData(length: number): Uint8Array;
-    /**
-     * Fills the provided buffer with deterministic random bytes.
-     *
-     * @param dest - The buffer to fill with random bytes
-     */
-    fillBytes(dest: Uint8Array): void;
-    /**
-     * Generates a random `u32` value.
-     *
-     * @returns A deterministic random 32-bit unsigned integer
-     */
-    nextU32(): number;
-    /**
-     * Generates a random `u64` value.
-     *
-     * Note: JavaScript numbers can only safely represent integers up to 2^53 - 1,
-     * so this returns a BigInt for full 64-bit precision.
-     *
-     * @returns A deterministic random 64-bit unsigned integer as BigInt
-     */
-    nextU64(): bigint;
-    /**
-     * Attempts to fill the provided buffer with random bytes.
-     * This implementation never fails.
-     *
-     * @param dest - The buffer to fill with random bytes
-     */
-    tryFillBytes(dest: Uint8Array): void;
-    /**
-     * Fills the provided buffer with deterministic random bytes.
-     * Alias for fillBytes for interface compatibility.
-     *
-     * @param data - The buffer to fill with random bytes
-     */
-    fillRandomData(data: Uint8Array): void;
-    get keyMaterial(): Uint8Array;
-    get salt(): string;
-    get pageLength(): number;
-    get pageIndex(): number;
-}
 
 /** Details of an `InvalidData` failure. */
 export declare interface InvalidDataDetails {
@@ -1844,13 +1542,6 @@ export declare function isEncrypter(obj: unknown): obj is Encrypter;
 export declare function isMldsaScheme(scheme: SignatureScheme): boolean;
 
 /**
- * Check if the parameters use a password-based method.
- * Password-based methods (PBKDF2, Scrypt, Argon2id) are designed for
- * low-entropy secrets like passwords.
- */
-export declare function isPasswordBased(kdp: KeyDerivationParams): boolean;
-
-/**
  * Type guard to check if an object implements PrivateKeyDataProvider
  */
 export declare function isPrivateKeyDataProvider(obj: unknown): obj is PrivateKeyDataProvider;
@@ -1859,15 +1550,6 @@ export declare function isPrivateKeyDataProvider(obj: unknown): obj is PrivateKe
  * Type guard to check if an object implements the ReferenceProvider interface.
  */
 export declare function isReferenceProvider(obj: unknown): obj is ReferenceProvider;
-
-/**
- * Check if the parameters use SSH Agent for key derivation.
- *
- * Note: SSH Agent key derivation is not yet functional in TypeScript.
- * This function is useful for detecting envelopes locked by other
- * implementations (e.g., Rust).
- */
-export declare function isSshAgent(kdp: KeyDerivationParams): boolean;
 
 /**
  * Check if a signature scheme requires SSH agent support.
@@ -1883,277 +1565,24 @@ export declare function isSshScheme(scheme: SignatureScheme): boolean;
 export declare function isXIDProvider(obj: unknown): obj is XIDProvider;
 
 /**
- * A CBOR-tagged container for UTF-8 JSON text.
- *
- * Wraps UTF-8 JSON text as a CBOR byte string with tag 262.
- * This allows JSON data to be embedded within CBOR structures while
- * maintaining type information through the tag.
- */
-declare class JSON_2 implements ToCbor {
-    private readonly _data;
-    private constructor();
-    /**
-     * Create a new JSON instance from byte data.
-     */
-    static from(data: Uint8Array): JSON_2;
-    /**
-     * Create a new JSON instance from a string.
-     */
-    static fromString(s: string): JSON_2;
-    /**
-     * Create a new JSON instance from a hexadecimal string.
-     */
-    static fromHex(hex: string): JSON_2;
-    /** Number of bytes. */
-    get byteLength(): number;
-    /**
-     * Return true if the JSON data is empty.
-     */
-    isEmpty(): boolean;
-    /** The bytes (a view; do not mutate). */
-    get bytes(): Uint8Array;
-    /**
-     * Return the data as a UTF-8 string slice.
-     *
-     * @throws Error if the data is not valid UTF-8.
-     */
-    asStr(): string;
-    /**
-     * Return the data as a hexadecimal string.
-     */
-    toHex(): string;
-    /**
-     * Compare with another JSON.
-     */
-    equals(other: JSON_2): boolean;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<JSON_2>;
-    cborTags(): Tag[];
-    /**
-     * Returns the untagged CBOR encoding (as a byte string).
-     */
-    untaggedCbor(): Cbor;
-    /** The tagged CBOR form. */
-    toCbor(): Cbor;
-    /** As a UR, typed by the first tag's name. */
-    toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
-    static fromCbor(cborValue: Cbor): JSON_2;
-}
-export { JSON_2 as JSON }
-
-/**
- * Interface for key derivation implementations.
- *
- * All key derivation methods must implement this interface to provide
- * lock (encrypt) and unlock (decrypt) operations.
- */
-export declare interface KeyDerivation {
-    /**
-     * Returns the method index for CBOR encoding.
-     */
-    index(): number;
-    /**
-     * Lock (encrypt) a content key using the derived key.
-     *
-     * @param contentKey - The symmetric key to encrypt
-     * @param secret - The secret (password or key material) to derive from
-     * @returns The encrypted message containing the locked key
-     */
-    lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
-    /**
-     * Unlock (decrypt) a content key using the derived key.
-     *
-     * @param encryptedMessage - The encrypted message containing the locked key
-     * @param secret - The secret (password or key material) to derive from
-     * @returns The decrypted symmetric key
-     */
-    unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey;
-    /**
-     * Convert to CBOR representation.
-     */
-    toCbor(): Cbor;
-    /**
-     * Convert to CBOR binary data.
-     */
-    toCborData(): Uint8Array;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-}
-
-/**
- * Enum representing supported key derivation methods.
- */
-export declare enum KeyDerivationMethod {
-    /** HKDF (HMAC-based Key Derivation Function) - RFC 5869 */
-    HKDF = 0,
-    /** PBKDF2 (Password-Based Key Derivation Function 2) - RFC 8018 */
-    PBKDF2 = 1,
-    /** Scrypt - RFC 7914 */
-    Scrypt = 2,
-    /** Argon2id - RFC 9106 (default, most secure for passwords) */
-    Argon2id = 3,
-    /** SSH Agent - Uses SSH agent for key derivation */
-    SSHAgent = 4
-}
-
-/**
- * Parse KeyDerivationMethod from CBOR.
- */
-export declare function keyDerivationMethodFromCbor(cborValue: Cbor): KeyDerivationMethod;
-
-/**
- * Attempts to create a KeyDerivationMethod from a zero-based index.
- */
-export declare function keyDerivationMethodFromIndex(index: number): KeyDerivationMethod | undefined;
-
-/**
- * Returns the zero-based index of the key derivation method.
- */
-export declare function keyDerivationMethodIndex(method: KeyDerivationMethod): number;
-
-/**
- * Convert KeyDerivationMethod to its string representation.
- */
-export declare function keyDerivationMethodToString(method: KeyDerivationMethod): string;
-
-/**
- * Union type representing key derivation parameters.
- *
- * Use the `method()` function to get the derivation method, and
- * `lock()`/`unlock()` for key operations.
- */
-export declare type KeyDerivationParams = {
-    type: "hkdf";
-    params: HKDFParams;
-} | {
-    type: "pbkdf2";
-    params: PBKDF2Params;
-} | {
-    type: "scrypt";
-    params: ScryptParams;
-} | {
-    type: "argon2id";
-    params: Argon2idParams;
-} | {
-    type: "sshagent";
-    params: SSHAgentParams;
-};
-
-/**
- * Parse KeyDerivationParams from CBOR.
- */
-export declare function keyDerivationParamsFromCbor(cborValue: Cbor): KeyDerivationParams;
-
-/**
- * Get the key derivation method for the given parameters.
- */
-export declare function keyDerivationParamsMethod(kdp: KeyDerivationParams): KeyDerivationMethod;
-
-/**
- * Convert KeyDerivationParams to CBOR.
- */
-export declare function keyDerivationParamsToCbor(kdp: KeyDerivationParams): Cbor;
-
-/**
- * Convert KeyDerivationParams to CBOR binary data.
- */
-export declare function keyDerivationParamsToCborData(kdp: KeyDerivationParams): Uint8Array;
-
-/**
- * Get string representation of KeyDerivationParams.
- */
-export declare function keyDerivationParamsToString(kdp: KeyDerivationParams): string;
-
-/**
  * Generates a key pair using the default signature and encapsulation schemes
  * (Schnorr + X25519).
  *
- * Mirrors Rust `pub fn keypair() -> (PrivateKeys, PublicKeys)`.
  */
-export declare function keypair(): [PrivateKeys, PublicKeys];
-
-/**
- * Generates a key pair with explicit signature and encapsulation schemes.
- *
- * Mirrors Rust `pub fn keypair_opt(sig, enc) -> (PrivateKeys, PublicKeys)`.
- */
-export declare function keypairOpt(signatureScheme: SignatureScheme, encapsulationScheme: EncapsulationScheme): [PrivateKeys, PublicKeys];
-
-/**
- * Generates a key pair with explicit schemes and a provided RNG.
- *
- * Mirrors Rust `pub fn keypair_opt_using(sig, enc, rng) ->
- *   Result<(PrivateKeys, PublicKeys)>`.
- *
- * Throws if either scheme does not support deterministic generation
- * (e.g. ML-DSA / ML-KEM, or any SSH-based signing scheme).
- */
-export declare function keypairOptUsing(signatureScheme: SignatureScheme, encapsulationScheme: EncapsulationScheme, rng: RandomNumberGenerator): [PrivateKeys, PublicKeys];
-
-/**
- * Generates a key pair using the default schemes and a provided RNG.
- *
- * Mirrors Rust `pub fn keypair_using(rng) -> Result<(PrivateKeys, PublicKeys)>`.
- *
- * Note: ML-KEM does not support deterministic generation. This helper uses
- * the default encapsulation scheme (X25519), which does.
- */
-export declare function keypairUsing(rng: RandomNumberGenerator): [PrivateKeys, PublicKeys];
-
-export { KNOWN_VALUE }
-
-export { LEAF }
-
-/**
- * Lock (encrypt) a content key using the derived key.
- */
-export declare function lockWithParams(kdp: KeyDerivationParams, contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
+/** What `generateKeypair` accepts; every field has a default. */
+export declare interface KeypairOptions {
+    /** Signature scheme (Schnorr by default). */
+    signing?: SignatureScheme;
+    /** Encapsulation scheme (X25519 by default). */
+    encapsulation?: EncapsulationScheme;
+    /** Randomness source; ML-DSA and ML-KEM keys refuse a caller-supplied one. */
+    rng?: RandomNumberGenerator;
+}
 
 /** Details of every other failure: the unprefixed message. */
 export declare interface MessageDetails {
     code: Exclude<ComponentsErrorCode, "InvalidSize" | "InvalidData" | "DataTooShort">;
     message: string;
-}
-
-/**
- * Key sizes for each ML-DSA security level.
- */
-export declare const MLDSA_KEY_SIZES: Readonly<Record<MLDSALevel, {
-    privateKey: number;
-    publicKey: number;
-    signature: number;
-}>>;
-
-/**
- * Generate an ML-DSA keypair for the given security level.
- *
- * @param level - The ML-DSA security level
- * @returns Object containing publicKey and secretKey bytes
- */
-export declare function mldsaGenerateKeypair(level: MLDSALevel): MLDSAKeypairData;
-
-/**
- * Generate an ML-DSA keypair using a provided RNG.
- *
- * @param level - The ML-DSA security level
- * @param rng - Random number generator
- * @returns Object containing publicKey and secretKey bytes
- */
-export declare function mldsaGenerateKeypairUsing(level: MLDSALevel, rng: RandomNumberGenerator): MLDSAKeypairData;
-
-/**
- * Internal type for ML-DSA keypair generation result.
- */
-export declare interface MLDSAKeypairData {
-    publicKey: Uint8Array;
-    secretKey: Uint8Array;
 }
 
 /**
@@ -2164,29 +1593,22 @@ export declare interface MLDSAKeypairData {
  * - 3: NIST Level 3 (MLDSA65)
  * - 5: NIST Level 5 (MLDSA87)
  */
-export declare enum MLDSALevel {
+export declare const MLDSALevel: {
     /** NIST Level 2 - AES-128 equivalent security */
-    MLDSA44 = 2,
+    readonly MLDSA44: 2;
     /** NIST Level 3 - AES-192 equivalent security */
-    MLDSA65 = 3,
+    readonly MLDSA65: 3;
     /** NIST Level 5 - AES-256 equivalent security */
-    MLDSA87 = 5
-}
+    readonly MLDSA87: 5;
+};
 
-/**
- * Parse an ML-DSA level from its numeric value.
- */
-export declare function mldsaLevelFromValue(value: number): MLDSALevel;
-
-/**
- * Convert an ML-DSA level to its string representation.
- */
-export declare function mldsaLevelToString(level: MLDSALevel): string;
+/** One of the `MLDSALevel` values. */
+export declare type MLDSALevel = (typeof MLDSALevel)[keyof typeof MLDSALevel];
 
 /**
  * MLDSAPrivateKey - Post-quantum signing private key using ML-DSA.
  */
-export declare class MLDSAPrivateKey implements ToCbor, ToUR {
+declare class MLDSAPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -2237,7 +1659,7 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLDSAPrivateKey>;
+    static get codec(): ComponentCodec<MLDSAPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -2254,14 +1676,9 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
 }
 
 /**
- * Get the private key size for a given ML-DSA level.
- */
-export declare function mldsaPrivateKeySize(level: MLDSALevel): number;
-
-/**
  * MLDSAPublicKey - Post-quantum signature verification key using ML-DSA.
  */
-export declare class MLDSAPublicKey implements ToCbor, ToUR {
+declare class MLDSAPublicKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -2297,7 +1714,7 @@ export declare class MLDSAPublicKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLDSAPublicKey>;
+    static get codec(): ComponentCodec<MLDSAPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -2314,24 +1731,9 @@ export declare class MLDSAPublicKey implements ToCbor, ToUR {
 }
 
 /**
- * Get the public key size for a given ML-DSA level.
- */
-export declare function mldsaPublicKeySize(level: MLDSALevel): number;
-
-/**
- * Sign a message using ML-DSA.
- *
- * @param level - The ML-DSA security level
- * @param secretKey - The secret key bytes
- * @param message - The message to sign
- * @returns The signature bytes
- */
-export declare function mldsaSign(level: MLDSALevel, secretKey: Uint8Array, message: Uint8Array): Uint8Array;
-
-/**
  * MLDSASignature - Post-quantum digital signature using ML-DSA.
  */
-export declare class MLDSASignature implements ToCbor, ToUR {
+declare class MLDSASignature implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -2359,7 +1761,7 @@ export declare class MLDSASignature implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLDSASignature>;
+    static get codec(): ComponentCodec<MLDSASignature>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -2376,35 +1778,9 @@ export declare class MLDSASignature implements ToCbor, ToUR {
 }
 
 /**
- * Get the signature size for a given ML-DSA level.
- */
-export declare function mldsaSignatureSize(level: MLDSALevel): number;
-
-/**
- * Verify a signature using ML-DSA.
- *
- * @param level - The ML-DSA security level
- * @param publicKey - The public key bytes
- * @param message - The message that was signed
- * @param signature - The signature to verify
- * @returns True if the signature is valid
- */
-export declare function mldsaVerify(level: MLDSALevel, publicKey: Uint8Array, message: Uint8Array, signature: Uint8Array): boolean;
-
-/**
- * Key sizes for each ML-KEM security level.
- */
-export declare const MLKEM_KEY_SIZES: Readonly<Record<MLKEMLevel, {
-    privateKey: number;
-    publicKey: number;
-    ciphertext: number;
-    sharedSecret: number;
-}>>;
-
-/**
  * MLKEMCiphertext - Post-quantum key encapsulation ciphertext using ML-KEM.
  */
-export declare class MLKEMCiphertext implements ToCbor, ToUR {
+declare class MLKEMCiphertext implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -2432,7 +1808,7 @@ export declare class MLKEMCiphertext implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLKEMCiphertext>;
+    static get codec(): ComponentCodec<MLKEMCiphertext>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -2449,70 +1825,13 @@ export declare class MLKEMCiphertext implements ToCbor, ToUR {
 }
 
 /**
- * Get the ciphertext size for a given ML-KEM level.
- */
-export declare function mlkemCiphertextSize(level: MLKEMLevel): number;
-
-/**
- * Decapsulate a shared secret using a private key and ciphertext.
- *
- * @param level - The ML-KEM security level
- * @param secretKey - The secret key bytes
- * @param ciphertext - The ciphertext bytes
- * @returns The shared secret bytes
- */
-export declare function mlkemDecapsulate(level: MLKEMLevel, secretKey: Uint8Array, ciphertext: Uint8Array): Uint8Array;
-
-/**
- * Encapsulate a new shared secret using a public key.
- *
- * @param level - The ML-KEM security level
- * @param publicKey - The public key bytes
- * @returns Object containing sharedSecret and ciphertext bytes
- */
-export declare function mlkemEncapsulate(level: MLKEMLevel, publicKey: Uint8Array): MLKEMEncapsulationResult;
-
-/**
  * Result of encapsulation operation.
  */
-export declare interface MLKEMEncapsulationPair {
+declare interface MLKEMEncapsulationPair {
     /** The shared secret as a SymmetricKey */
     sharedSecret: SymmetricKey;
     /** The ciphertext to send to the private key holder */
     ciphertext: MLKEMCiphertext;
-}
-
-/**
- * Internal type for ML-KEM encapsulation result.
- */
-export declare interface MLKEMEncapsulationResult {
-    sharedSecret: Uint8Array;
-    ciphertext: Uint8Array;
-}
-
-/**
- * Generate an ML-KEM keypair for the given security level.
- *
- * @param level - The ML-KEM security level
- * @returns Object containing publicKey and secretKey bytes
- */
-export declare function mlkemGenerateKeypair(level: MLKEMLevel): MLKEMKeypairData;
-
-/**
- * Generate an ML-KEM keypair using a provided RNG.
- *
- * @param level - The ML-KEM security level
- * @param rng - Random number generator
- * @returns Object containing publicKey and secretKey bytes
- */
-export declare function mlkemGenerateKeypairUsing(level: MLKEMLevel, rng: RandomNumberGenerator): MLKEMKeypairData;
-
-/**
- * Internal type for ML-KEM keypair generation result.
- */
-export declare interface MLKEMKeypairData {
-    publicKey: Uint8Array;
-    secretKey: Uint8Array;
 }
 
 /**
@@ -2523,29 +1842,22 @@ export declare interface MLKEMKeypairData {
  * - 768: ML-KEM-768 (NIST Level 3)
  * - 1024: ML-KEM-1024 (NIST Level 5)
  */
-export declare enum MLKEMLevel {
+export declare const MLKEMLevel: {
     /** NIST Level 1 - AES-128 equivalent security */
-    MLKEM512 = 512,
+    readonly MLKEM512: 512;
     /** NIST Level 3 - AES-192 equivalent security */
-    MLKEM768 = 768,
+    readonly MLKEM768: 768;
     /** NIST Level 5 - AES-256 equivalent security */
-    MLKEM1024 = 1024
-}
+    readonly MLKEM1024: 1024;
+};
 
-/**
- * Parse an ML-KEM level from its numeric value.
- */
-export declare function mlkemLevelFromValue(value: number): MLKEMLevel;
-
-/**
- * Convert an ML-KEM level to its string representation.
- */
-export declare function mlkemLevelToString(level: MLKEMLevel): string;
+/** One of the `MLKEMLevel` values. */
+export declare type MLKEMLevel = (typeof MLKEMLevel)[keyof typeof MLKEMLevel];
 
 /**
  * MLKEMPrivateKey - Post-quantum key decapsulation private key using ML-KEM.
  */
-export declare class MLKEMPrivateKey implements ToCbor, ToUR {
+declare class MLKEMPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -2597,7 +1909,7 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLKEMPrivateKey>;
+    static get codec(): ComponentCodec<MLKEMPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -2614,14 +1926,9 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
 }
 
 /**
- * Get the private key size for a given ML-KEM level.
- */
-export declare function mlkemPrivateKeySize(level: MLKEMLevel): number;
-
-/**
  * MLKEMPublicKey - Post-quantum key encapsulation public key using ML-KEM.
  */
-export declare class MLKEMPublicKey implements ToCbor, ToUR {
+declare class MLKEMPublicKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
@@ -2659,7 +1966,7 @@ export declare class MLKEMPublicKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<MLKEMPublicKey>;
+    static get codec(): ComponentCodec<MLKEMPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -2674,17 +1981,6 @@ export declare class MLKEMPublicKey implements ToCbor, ToUR {
     /** Decode tagged or untagged CBOR. */
     static fromCbor(cborValue: Cbor): MLKEMPublicKey;
 }
-
-/**
- * Get the public key size for a given ML-KEM level.
- */
-export declare function mlkemPublicKeySize(level: MLKEMLevel): number;
-
-/**
- * Get the shared secret size for a given ML-KEM level.
- * Note: This is always 32 bytes for all ML-KEM levels.
- */
-export declare function mlkemSharedSecretSize(level: MLKEMLevel): number;
 
 export declare class Nonce implements ToCbor, ToUR {
     static readonly NONCE_SIZE: number;
@@ -2723,7 +2019,7 @@ export declare class Nonce implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Nonce>;
+    static get codec(): ComponentCodec<Nonce>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -2736,68 +2032,6 @@ export declare class Nonce implements ToCbor, ToUR {
     /** Decode tagged or untagged CBOR. */
     static fromCbor(cbor: Cbor): Nonce;
 }
-
-export declare function parseSshAlgorithm(name: string): SshAlgorithm;
-
-/**
- * PBKDF2 parameters for password-based key derivation.
- */
-export declare class PBKDF2Params implements KeyDerivation {
-    static readonly INDEX: KeyDerivationMethod;
-    private readonly _salt;
-    private readonly _iterations;
-    private readonly _hashType;
-    private constructor();
-    /** Parameters with a fresh random salt unless one is given. */
-    static from({ salt, iterations, hashType }?: {
-        salt?: Salt;
-        iterations?: number;
-        hashType?: HashType;
-    }): PBKDF2Params;
-    /** Returns the salt. */
-    get salt(): Salt;
-    /** Returns the number of iterations. */
-    get iterations(): number;
-    /** Returns the hash type. */
-    get hashType(): HashType;
-    /** Returns the method index for CBOR encoding. */
-    index(): number;
-    /**
-     * Derive a key from the secret and encrypt the content key.
-     */
-    lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
-    /**
-     * Derive a key from the secret and decrypt the content key.
-     */
-    unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey;
-    private _deriveKey;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-    /**
-     * Check equality with another PBKDF2Params.
-     */
-    equals(other: PBKDF2Params): boolean;
-    /**
-     * Convert to CBOR.
-     * Format: [1, Salt, iterations, HashType]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
-     */
-    toCbor(): Cbor;
-    /**
-     * Convert to CBOR binary data.
-     */
-    toCborData(): Uint8Array;
-    /**
-     * Parse from CBOR.
-     */
-    static fromCbor(cborValue: Cbor): PBKDF2Params;
-}
-
-/**
- * Create PBKDF2 derivation parameters.
- */
-export declare function pbkdf2Params(params?: PBKDF2Params): KeyDerivationParams;
 
 /**
  * PrivateKeyBase - Root cryptographic material for deterministic key derivation.
@@ -2823,13 +2057,13 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     /**
      * Derive an Ed25519 signing private key.
      *
-     * Uses HKDF with salt "signing", matching Rust's derive_signing_private_key().
+     * Uses HKDF with salt "signing", as the reference implementation does's derive_signing_private_key().
      */
     ed25519SigningPrivateKey(): SigningPrivateKey;
     /**
      * Derive an X25519 agreement private key.
      *
-     * Uses HKDF with salt "agreement", matching Rust's derive_agreement_private_key().
+     * Uses HKDF with salt "agreement", as the reference implementation does's derive_agreement_private_key().
      */
     x25519PrivateKey(): X25519PrivateKey;
     /**
@@ -2842,8 +2076,7 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
      * Decapsulate a shared secret from a ciphertext.
      *
      * Implements the `Decrypter` interface so a `PrivateKeyBase` can be used
-     * directly as a recipient key, mirroring Rust `impl Decrypter for
-     * PrivateKeyBase`.
+     * directly as a recipient key,.
      */
     decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey;
     /**
@@ -2861,14 +2094,13 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     /**
      * Derive a Schnorr signing private key.
      *
-     * Uses ECPrivateKey.deriveFromKeyMaterial() matching Rust's
+     * Uses ECPrivateKey.deriveFromKeyMaterial() as the reference implementation does's
      * PrivateKeyBase::schnorr_signing_private_key().
      */
     schnorrSigningPrivateKey(): SigningPrivateKey;
     /**
      * Derive a PrivateKeys container with Schnorr signing and X25519 agreement keys.
      *
-     * Matches Rust's PrivateKeyBase::schnorr_private_keys().
      */
     schnorrPrivateKeys(): PrivateKeys;
     /**
@@ -2878,14 +2110,13 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     /**
      * Derive an ECDSA signing private key.
      *
-     * Uses ECPrivateKey.deriveFromKeyMaterial() matching Rust's
+     * Uses ECPrivateKey.deriveFromKeyMaterial() as the reference implementation does's
      * PrivateKeyBase::ecdsa_signing_private_key().
      */
     ecdsaSigningPrivateKey(): SigningPrivateKey;
     /**
      * Derive a PrivateKeys container with ECDSA signing and X25519 agreement keys.
      *
-     * Matches Rust's PrivateKeyBase::ecdsa_private_keys().
      */
     ecdsaPrivateKeys(): PrivateKeys;
     /**
@@ -2895,8 +2126,6 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     /**
      * Derive an SSH `SigningPrivateKey` from this `PrivateKeyBase`.
      *
-     * Mirrors Rust `PrivateKeyBase::ssh_signing_private_key`
-     * (`bc-components-rust/src/private_key_base.rs:179-207`):
      * builds an `HKDFRng` seeded by `this._data` with salt
      * `sshAlgorithmName(algorithm)`, then dispatches to the matching
      * `*Keypair::random` constructor.
@@ -2916,19 +2145,16 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     sshSigningPrivateKey(algorithm: SshAlgorithm, comment?: string): SigningPrivateKey;
     /**
      * Derive a `PrivateKeys` container with an SSH signing key and an X25519
-     * agreement key. Mirrors Rust `PrivateKeyBase::ssh_private_keys`
-     * (`bc-components-rust/src/private_key_base.rs:273-283`).
+     * agreement key.
      */
     sshPrivateKeys(algorithm: SshAlgorithm, comment?: string): PrivateKeys;
     /**
      * Derive a `PublicKeys` container from `sshPrivateKeys`. Mirrors Rust
      * `PrivateKeyBase::ssh_public_keys`
-     * (`bc-components-rust/src/private_key_base.rs:289-300`).
      */
     sshPublicKeys(algorithm: SshAlgorithm, comment?: string): PublicKeys;
     /**
      * Internal key derivation using HKDF-SHA256.
-     * Matches Rust's hkdf_hmac_sha256(key_material, salt, key_len) with empty info.
      */
     private _deriveKey;
     /**
@@ -2940,7 +2166,7 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<PrivateKeyBase>;
+    static get codec(): ComponentCodec<PrivateKeyBase>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -2961,7 +2187,6 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
  *
  * A trait for types that can provide unique data for cryptographic key derivation.
  *
- * Ported from bc-components-rust/src/private_key_data_provider.rs
  *
  * Types implementing `PrivateKeyDataProvider` can be used as seed material for
  * cryptographic key derivation. The provided data should be sufficiently
@@ -3030,7 +2255,7 @@ export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider
     /**
      * Returns the encapsulation private key.
      *
-     * Note: Named to match Rust's API (which has a typo but we maintain compatibility)
+     * Note: Named to match the reference implementation's API (which has a typo but we maintain compatibility)
      */
     encapsulationPrivateKey(): EncapsulationPrivateKey;
     /**
@@ -3064,15 +2289,13 @@ export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider
      */
     equals(other: PrivateKeys): boolean;
     /**
-     * Mirror of Rust `Display for PrivateKeys`
-     * (`bc-components-rust/src/private_keys.rs:229-238`):
      *   `PrivateKeys(<refHexShort>, <signingPrivateKey>, <encapsulationPrivateKey>)`
      * The previous abbreviated form (`PrivateKeys(<short>)` only) was a
      * parity drift caught by the E1a summarizer audit.
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<PrivateKeys>;
+    static get codec(): ComponentCodec<PrivateKeys>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3118,7 +2341,7 @@ export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvide
     /**
      * Returns the encapsulation public key.
      *
-     * Note: Named to match Rust's API (which has a typo but we maintain compatibility)
+     * Note: Named to match the reference implementation's API (which has a typo but we maintain compatibility)
      */
     encapsulationPublicKey(): EncapsulationPublicKey;
     /**
@@ -3148,8 +2371,6 @@ export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvide
     /**
      * Get string representation.
      *
-     * Mirrors Rust `Display for PublicKeys`
-     * (`bc-components-rust/src/public_keys.rs:216-225`):
      *   `PublicKeys(<short_reference>, <signing_public_key>, <encapsulation_public_key>)`
      *
      * The earlier short form (`PublicKeys(<short_reference>)`) was
@@ -3159,7 +2380,7 @@ export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvide
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<PublicKeys>;
+    static get codec(): ComponentCodec<PublicKeys>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3196,19 +2417,19 @@ export declare interface PublicKeysProvider {
 /**
  * A globally unique reference to a globally unique object.
  *
- * Internally stores 32 raw bytes (matches Rust's `Reference([u8; 32])`).
+ * Internally stores 32 raw bytes`).
  * Most callers obtain a `Reference` via `fromDigest`, but `XID` (and similar
  * content-addressable types whose bytes _are_ the reference) construct
  * via `fromData` directly.
  */
 export declare class Reference implements ToCbor, DigestProvider, ReferenceProvider {
-    /** Reference data size in bytes — matches Rust `Reference::REFERENCE_SIZE`. */
+    /** Reference data size in bytes. */
     static readonly REFERENCE_SIZE = 32;
     private readonly _data;
     private constructor();
-    /** Create a Reference from exactly 32 bytes. Mirrors Rust `Reference::from_data`. */
+    /** Create a Reference from exactly 32 bytes. */
     static from(data: Uint8Array): Reference;
-    /** Alias of `fromData` for parity with Rust `from_data_ref`. */
+    /**  */
     /** Create a Reference from a Digest's underlying bytes. */
     static fromDigest(digest: Digest): Reference;
     /** Backwards-compatible alias of `fromDigest`. */
@@ -3219,7 +2440,7 @@ export declare class Reference implements ToCbor, DigestProvider, ReferenceProvi
      *
      * @deprecated Prefer `Reference.fromDigest(Digest.fromImage(data))` for
      *   clarity, or `Reference.from(data)` if `data` is already 32 bytes
-     *   that should be wrapped without hashing (matches Rust `from_data`).
+     *   that should be wrapped without hashing.
      */
     static hash(data: Uint8Array): Reference;
     /** Returns the 32 reference bytes (copy). */
@@ -3258,17 +2479,16 @@ export declare class Reference implements ToCbor, DigestProvider, ReferenceProvi
      * `bytewordsIdentifier`, or `bytemojiIdentifier` directly.
      */
     shortReference(format?: ReferenceEncodingFormat): string;
-    /** A Reference to this Reference (matches Rust's blanket `ReferenceProvider` impl). */
+    /** A Reference to this Reference. */
     reference(): Reference;
     /**
      * SHA-256 of `taggedCbor().toCborData()`.
      *
-     * Matches Rust's `DigestProvider for Reference` —
      * `Digest::from_image(self.tagged_cbor().to_cbor_data())`.
      */
     digest(): Digest;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Reference>;
+    static get codec(): ComponentCodec<Reference>;
     cborTags(): Tag[];
     /** Untagged CBOR — a single byte string of the 32 raw bytes. */
     untaggedCbor(): Cbor;
@@ -3290,7 +2510,6 @@ export declare type ReferenceEncodingFormat = "hex" | "bytewords" | "bytemojis";
 /**
  * Implementers of this interface provide a globally unique reference to themselves.
  *
- * Mirrors Rust's `ReferenceProvider` trait. The reference is derived from a
  * cryptographic digest of the object's serialized form, ensuring that it
  * uniquely identifies the object's contents.
  */
@@ -3349,7 +2568,7 @@ export declare class Salt implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Salt>;
+    static get codec(): ComponentCodec<Salt>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -3362,9 +2581,6 @@ export declare class Salt implements ToCbor, ToUR {
     /** Decode tagged or untagged CBOR. */
     static fromCbor(cbor: Cbor): Salt;
 }
-
-/** Default salt length for key derivation */
-export declare const SALT_LEN = 16;
 
 export declare class SchnorrPublicKey implements ECKeyBase {
     static readonly KEY_SIZE: number;
@@ -3403,8 +2619,6 @@ export declare class SchnorrPublicKey implements ECKeyBase {
     /**
      * Get string representation.
      *
-     * Mirrors Rust `Display for SchnorrPublicKey`
-     * (`bc-components-rust/src/ec_key/schnorr_public_key.rs:116-120`)
      * — the reference is computed from the **raw 32-byte key data**
      * (not the tagged-CBOR form): `Reference::from_digest(Digest::from_image(self.bytes))`.
      * `ref_hex_short()` returns the first 8 hex chars of that
@@ -3412,75 +2626,6 @@ export declare class SchnorrPublicKey implements ECKeyBase {
      */
     toString(): string;
 }
-
-/**
- * Scrypt parameters for password-based key derivation.
- *
- * Parameters:
- * - log_n: CPU/memory cost parameter (N = 2^log_n)
- * - r: Block size parameter
- * - p: Parallelization parameter
- */
-export declare class ScryptParams implements KeyDerivation {
-    static readonly INDEX: KeyDerivationMethod;
-    private readonly _salt;
-    private readonly _logN;
-    private readonly _r;
-    private readonly _p;
-    private constructor();
-    /** Parameters with a fresh random salt unless one is given. */
-    static from({ salt, logN, r, p }?: {
-        salt?: Salt;
-        logN?: number;
-        r?: number;
-        p?: number;
-    }): ScryptParams;
-    /** Returns the salt. */
-    get salt(): Salt;
-    /** Returns the log_n parameter. */
-    get logN(): number;
-    /** Returns the r parameter (block size). */
-    get r(): number;
-    /** Returns the p parameter (parallelism). */
-    get p(): number;
-    /** Returns the method index for CBOR encoding. */
-    index(): number;
-    /**
-     * Derive a key from the secret and encrypt the content key.
-     */
-    lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
-    /**
-     * Derive a key from the secret and decrypt the content key.
-     */
-    unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey;
-    private _deriveKey;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-    /**
-     * Check equality with another ScryptParams.
-     */
-    equals(other: ScryptParams): boolean;
-    /**
-     * Convert to CBOR.
-     * Format: [2, Salt, log_n, r, p]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
-     */
-    toCbor(): Cbor;
-    /**
-     * Convert to CBOR binary data.
-     */
-    toCborData(): Uint8Array;
-    /**
-     * Parse from CBOR.
-     */
-    static fromCbor(cborValue: Cbor): ScryptParams;
-}
-
-/**
- * Create Scrypt derivation parameters.
- */
-export declare function scryptParams(params?: ScryptParams): KeyDerivationParams;
 
 /**
  * A sealed message providing anonymous authenticated encryption.
@@ -3530,7 +2675,7 @@ export declare class SealedMessage implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SealedMessage>;
+    static get codec(): ComponentCodec<SealedMessage>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -3547,7 +2692,7 @@ export declare class SealedMessage implements ToCbor, ToUR {
 
 export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     /**
-     * Minimum seed length in bytes (matches Rust MIN_SEED_LENGTH).
+     * Minimum seed length in bytes.
      */
     static readonly MIN_SEED_LENGTH = 16;
     private readonly _data;
@@ -3594,7 +2739,7 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     /**
      * Return the name of the seed.
      *
-     * Rust equivalent: `seed.name` - returns empty string if not set.
+     * returns empty string if not set.
      */
     /** The optional metadata as one object. */
     get metadata(): SeedMetadata;
@@ -3603,15 +2748,14 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     /**
      * Return the note of the seed.
      *
-     * Rust equivalent: `seed.note` - returns empty string if not set.
+     * returns empty string if not set.
      */
     get note(): string;
     set note(note: string);
     /**
      * Return the creation date of the seed.
      *
-     * Rust equivalent: `seed.creation_date()`
-     */
+     * */
     get creationDate(): Date | undefined;
     set creationDate(creationDate: Date | undefined);
     /**
@@ -3632,7 +2776,7 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
      */
     privateKeyData(): Uint8Array;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Seed>;
+    static get codec(): ComponentCodec<Seed>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a map).
@@ -3739,11 +2883,9 @@ export declare class Signature implements ToCbor {
     /**
      * Creates a Signature from an SSHSignature.
      *
-     * Mirrors Rust `Signature::from_ssh`
-     * (`bc-components-rust/src/signing/signature.rs:398`).
      *
      * The signature scheme is derived from the inner public-key algorithm,
-     * matching Rust `Signature::scheme()` at lines 506-519.
+     * as the reference implementation does `Signature::scheme()` at lines 506-519.
      *
      * @param sig - The SSHSignature
      * @returns A new SSH Signature
@@ -3813,8 +2955,6 @@ export declare class Signature implements ToCbor {
     /**
      * Returns the underlying SSHSignature if this is an SSH signature.
      *
-     * Mirrors Rust `Signature::to_ssh`
-     * (`bc-components-rust/src/signing/signature.rs:459`).
      *
      * @returns The SSHSignature if this is an SSH signature, undefined otherwise
      */
@@ -3836,12 +2976,12 @@ export declare class Signature implements ToCbor {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<Signature>;
+    static get codec(): ComponentCodec<Signature>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
      *
-     * Format (matching Rust bc-components):
+     * Format:
      * - Schnorr: h'<64-byte-signature>' (bare byte string)
      * - ECDSA:   [1, h'<64-byte-signature>']
      * - Ed25519: [2, h'<64-byte-signature>']
@@ -3879,58 +3019,61 @@ export declare class Signature implements ToCbor {
  * `SigningPrivateKey`, `SigningPublicKey` — so this is a stylistic
  * difference, not a parity gap.
  */
-export declare enum SignatureScheme {
+export declare const SignatureScheme: {
     /**
      * BIP-340 Schnorr signature scheme (secp256k1)
-     * Default scheme (matching Rust bc-components default when secp256k1 is enabled)
+     * Default scheme
      */
-    Schnorr = "Schnorr",
+    readonly Schnorr: "Schnorr";
     /**
      * ECDSA signature scheme (secp256k1)
      */
-    Ecdsa = "Ecdsa",
+    readonly Ecdsa: "Ecdsa";
     /**
      * Ed25519 signature scheme (RFC 8032)
      */
-    Ed25519 = "Ed25519",
+    readonly Ed25519: "Ed25519";
     /**
      * SR25519 signature scheme (Schnorr over Ristretto25519)
      * Used by Polkadot/Substrate
      */
-    Sr25519 = "Sr25519",
+    readonly Sr25519: "Sr25519";
     /**
      * ML-DSA44 post-quantum signature scheme (NIST level 2)
      */
-    MLDSA44 = "MLDSA44",
+    readonly MLDSA44: "MLDSA44";
     /**
      * ML-DSA65 post-quantum signature scheme (NIST level 3)
      */
-    MLDSA65 = "MLDSA65",
+    readonly MLDSA65: "MLDSA65";
     /**
      * ML-DSA87 post-quantum signature scheme (NIST level 5)
      */
-    MLDSA87 = "MLDSA87",
+    readonly MLDSA87: "MLDSA87";
     /**
      * Ed25519 signature via SSH agent.
      * Requires SSH agent daemon support.
      */
-    SshEd25519 = "SshEd25519",
+    readonly SshEd25519: "SshEd25519";
     /**
      * DSA signature via SSH agent.
      * Requires SSH agent daemon support.
      */
-    SshDsa = "SshDsa",
+    readonly SshDsa: "SshDsa";
     /**
      * ECDSA P-256 signature via SSH agent.
      * Requires SSH agent daemon support.
      */
-    SshEcdsaP256 = "SshEcdsaP256",
+    readonly SshEcdsaP256: "SshEcdsaP256";
     /**
      * ECDSA P-384 signature via SSH agent.
      * Requires SSH agent daemon support.
      */
-    SshEcdsaP384 = "SshEcdsaP384"
-}
+    readonly SshEcdsaP384: "SshEcdsaP384";
+};
+
+/** One of the `SignatureScheme` values. */
+export declare type SignatureScheme = (typeof SignatureScheme)[keyof typeof SignatureScheme];
 
 /**
  * A trait for types capable of creating digital signatures.
@@ -4043,8 +3186,6 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
     /**
      * Creates a new SSH signing private key from an SSHPrivateKey.
      *
-     * Mirrors Rust `SigningPrivateKey::new_ssh`
-     * (`bc-components-rust/src/signing/signing_private_key.rs:317`).
      *
      * @param key - The SSH private key to wrap
      * @returns A new SSH signing private key
@@ -4132,8 +3273,6 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
     /**
      * Returns the underlying SSH private key if this is an SSH key.
      *
-     * Mirrors Rust `SigningPrivateKey::to_ssh`
-     * (`bc-components-rust/src/signing/signing_private_key.rs:387`).
      *
      * @returns The SSHPrivateKey if this is an SSH key, undefined otherwise
      */
@@ -4147,8 +3286,6 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      */
     equals(other: SigningPrivateKey): boolean;
     /**
-     * Mirror of Rust `Display for SigningPrivateKey`
-     * (`bc-components-rust/src/signing/signing_private_key.rs:1048-1095`):
      *   `SigningPrivateKey(<refHexShort>, <inner>)`
      * where `<inner>` is:
      *   - `SchnorrPrivateKey(<refHexShort>)` / `ECDSAPrivateKey(<refHexShort>)`
@@ -4192,7 +3329,6 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
     /**
      * Verifies a signature against a message using the derived public key.
      *
-     * Mirrors Rust's `Verifier for SigningPrivateKey`: only Schnorr keys
      * actually verify; every other scheme returns `false`. Callers needing
      * verification for Ed25519 / ECDSA / Sr25519 / MLDSA should derive the
      * public key first via `publicKey().verify(...)`.
@@ -4254,12 +3390,12 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      */
     mldsaSign(message: Uint8Array): Signature;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SigningPrivateKey>;
+    static get codec(): ComponentCodec<SigningPrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
      *
-     * Format (matching Rust bc-components):
+     * Format:
      * - Schnorr: h'<32-byte-private-key>' (bare byte string)
      * - ECDSA:   [1, h'<32-byte-private-key>']
      * - Ed25519: [2, h'<32-byte-private-key>']
@@ -4278,7 +3414,7 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      *
      * Only valid when this `SigningPrivateKey` wraps an `SSHPrivateKey`
      * (i.e. one of the four `SignatureScheme.SshXxx` variants). Mirrors
-     * Rust's `SigningPrivateKey::SSH(key) => key.to_openssh(LineEnding::LF)`
+     * the reference implementation's `SigningPrivateKey::SSH(key) => key.to_openssh(LineEnding::LF)`
      * usage at `signing_private_key.rs:896`.
      */
     toSshOpenssh(): string;
@@ -4341,8 +3477,6 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
     /**
      * Creates a new signing public key from an SSHPublicKey.
      *
-     * Mirrors Rust `SigningPublicKey::from_ssh`
-     * (`bc-components-rust/src/signing/signing_public_key.rs:214`).
      *
      * @param key - An SSHPublicKey
      * @returns A new signing public key wrapping the SSH public key
@@ -4410,8 +3544,6 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
     /**
      * Returns the underlying SSH public key if this is an SSH key.
      *
-     * Mirrors Rust `SigningPublicKey::to_ssh`
-     * (`bc-components-rust/src/signing/signing_public_key.rs:272`).
      *
      * @returns The SSHPublicKey if this is an SSH key, undefined otherwise
      */
@@ -4422,7 +3554,7 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
     isSsh(): boolean;
     /**
      * Returns a copy of this SSH public key with its comment replaced.
-     * Throws if this is not an SSH key — mirrors Rust's `set_comment`
+     * Throws if this is not an SSH key — mirrors the reference implementation's `set_comment`
      * which is only callable on `SigningPublicKey::SSH` variants.
      */
     withSshComment(comment: string): SigningPublicKey;
@@ -4433,8 +3565,6 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
     /**
      * Get string representation.
      *
-     * Mirrors Rust `Display for SigningPublicKey`
-     * (`bc-components-rust/src/signing/signing_public_key.rs:573-606`):
      *   `SigningPublicKey(<ref_hex_short>, <inner_key_display>)`
      * The reference is computed from the tagged-CBOR form.
      */
@@ -4455,12 +3585,12 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
      */
     verify(signature: Signature, message: Uint8Array): boolean;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SigningPublicKey>;
+    static get codec(): ComponentCodec<SigningPublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
      *
-     * Format (matching Rust bc-components):
+     * Format:
      * - Schnorr: h'<32-byte-x-only-public-key>' (bare byte string)
      * - ECDSA:   [1, h'<33-byte-compressed-public-key>']
      * - Ed25519: [2, h'<32-byte-public-key>']
@@ -4478,14 +3608,10 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
      *
      * Only valid when this `SigningPublicKey` wraps an `SSHPublicKey`
      * (i.e. one of the four `SignatureScheme.SshXxx` variants). Mirrors
-     * Rust's `SigningPublicKey::SSH(key) => key.to_openssh()` usage at
+     * the reference implementation's `SigningPublicKey::SSH(key) => key.to_openssh()` usage at
      * `signing_public_key.rs:442`.
      */
     toSshOpenssh(): string;
-}
-
-export declare interface SimpleRng {
-    fillBytes(data: Uint8Array): void;
 }
 
 /** Default signing context (Substrate/Polkadot compatible) */
@@ -4629,106 +3755,12 @@ export declare class Sr25519PublicKey {
     toString(): string;
 }
 
-export declare const SSH_ALGO_ECDSA_NISTP256 = "ecdsa-sha2-nistp256";
-
-/** Wire-format algorithm name as it appears in OpenSSH text and in the key blob. */
-export declare const SSH_ALGO_ED25519 = "ssh-ed25519";
-
-/** OpenSSH curve identifier embedded inside ECDSA key blobs. */
-export declare const SSH_CURVE_NISTP256 = "nistp256";
-
-/**
- * SSH Agent parameters for key derivation.
- *
- * This method uses an SSH agent daemon to derive encryption keys.
- * The agent signs a challenge derived from the salt using the specified
- * SSH key identity, and the signature is used to derive the encryption key.
- *
- * **Note:** SSH agent communication requires platform-specific support and
- * may not be available in all JavaScript environments. The lock/unlock
- * methods will throw an error if SSH agent support is not available.
- *
- * **Parity / portability note:** Rust gates SSH-agent support behind the
- * `ssh-agent` feature flag and links to OS-native libraries
- * (`ssh-agent-client-rs`). The TS port deliberately stubs the lock/unlock
- * paths because no portable browser-friendly SSH-agent transport exists.
- * The CBOR encoding of `SSHAgentParams` is still byte-identical, so a
- * payload produced in Rust can be inspected and parsed in TS — only the
- * actual key-derivation operation is unavailable.
- */
-export declare class SSHAgentParams implements KeyDerivation {
-    static readonly INDEX: KeyDerivationMethod;
-    private readonly _salt;
-    private readonly _id;
-    private constructor();
-    /** Parameters with a fresh random salt unless one is given. */
-    static from({ id, salt }: {
-        id: string;
-        salt?: Salt;
-    }): SSHAgentParams;
-    /** Returns the salt. */
-    get salt(): Salt;
-    /** Returns the SSH key identity. */
-    get id(): string;
-    /** Returns the method index for CBOR encoding. */
-    index(): number;
-    /**
-     * Derive a key using SSH agent and encrypt the content key.
-     *
-     * **Note:** This method requires SSH agent support which is not yet
-     * implemented in this TypeScript port. Use an alternative key derivation
-     * method or implement SSH agent communication for your environment.
-     *
-     * @throws ComponentsError - SSH agent support is not available
-     */
-    lock(_contentKey: SymmetricKey, _secret: Uint8Array): EncryptedMessage;
-    /**
-     * Derive a key using SSH agent and decrypt the content key.
-     *
-     * **Note:** This method requires SSH agent support which is not yet
-     * implemented in this TypeScript port. Use an alternative key derivation
-     * method or implement SSH agent communication for your environment.
-     *
-     * @throws ComponentsError - SSH agent support is not available
-     */
-    unlock(_encryptedMessage: EncryptedMessage, _secret: Uint8Array): SymmetricKey;
-    /**
-     * Get string representation.
-     */
-    toString(): string;
-    /**
-     * Check equality with another SSHAgentParams.
-     */
-    equals(other: SSHAgentParams): boolean;
-    /**
-     * Convert to CBOR.
-     * Format: [4, Salt, id: tstr]   (Salt is encoded as a tagged value — `#6.40018(bytes)`)
-     */
-    toCbor(): Cbor;
-    /**
-     * Convert to CBOR binary data.
-     */
-    toCborData(): Uint8Array;
-    /**
-     * Parse from CBOR.
-     */
-    static fromCbor(cborValue: Cbor): SSHAgentParams;
-}
-
-/**
- * Create SSH agent derivation parameters.
- *
- * @param idOrParams - Either an SSH key identity string or SSHAgentParams instance
- */
-export declare function sshAgentParams(idOrParams: string | SSHAgentParams): KeyDerivationParams;
-
 /**
  * Copyright © 2025-2026 Parity Technologies
  *
  * SSH key algorithm identifiers.
  *
- * Mirrors the relevant subset of `ssh_key::Algorithm` (Rust crate
- * `ssh-key` v0.6.7). v1.1 supports the four algorithms `bc-components-rust`
+ * `ssh-key` v0.6.7). v1.1 supports the four algorithms the reference implementation
  * actually wires through `SignatureScheme`:
  *
  *   - Ed25519 (`ssh-ed25519`)
@@ -4750,27 +3782,11 @@ export declare type SshAlgorithm = {
     curve: SshEcdsaCurve;
 };
 
-export declare function sshAlgorithmName(algo: SshAlgorithm): string;
-
-export declare class SSHCertificate {
-    /** The full single-line OpenSSH cert text, e.g.
-     *  `ssh-ed25519-cert-v01@openssh.com AAAAI...== user@host`. */
-    readonly text: string;
-    private constructor();
-    /** Construct from the canonical OpenSSH certificate text. */
-    static fromText(text: string): SSHCertificate;
-    /** The canonical OpenSSH text — round-trips byte-identically. */
-    toText(): string;
-    /** Fixed summarizer string — matches Rust `tags_registry.rs:236`. */
-    toString(): string;
-    digest(): Uint8Array;
-}
-
 export declare type SshEcdsaCurve = "nistp256" | "nistp384";
 
 export declare type SshHashAlgorithm = "sha256" | "sha512";
 
-export declare class SSHPrivateKey {
+declare class SSHPrivateKey {
     readonly data: SshPrivateKeyData;
     readonly comment: string;
     /**
@@ -4783,7 +3799,7 @@ export declare class SSHPrivateKey {
      * Construct an `SSHPrivateKey` from already-decoded parts. Used by
      * `PrivateKeyBase.sshSigningPrivateKey` after generating key material
      * from an HKDF-seeded RNG. The `checkint` should be derived
-     * deterministically from the private bytes (matching Rust's
+     * deterministically from the private bytes (as the reference implementation does's
      * `ssh-key` 0.6.7 `KeypairData::checkint`).
      */
     static fromParts(data: SshPrivateKeyData, comment: string, checkint: number): SSHPrivateKey;
@@ -4796,7 +3812,6 @@ export declare class SSHPrivateKey {
     /**
      * Re-serialize to the canonical OpenSSH armored format.
      *
-     * Matches Rust `ssh_key::PrivateKey::to_openssh(LineEnding::LF)`.
      */
     toOpenssh(): string;
     toBlob(): Uint8Array;
@@ -4817,7 +3832,7 @@ export declare class SSHPrivateKey {
  *   - dsa:     canonical positive p, q, g, y (re-stated from the public
  *              key blob), plus the secret exponent x.
  */
-export declare type SshPrivateKeyData = {
+declare type SshPrivateKeyData = {
     kind: "ed25519";
     seed: Uint8Array;
     pubBytes: Uint8Array;
@@ -4835,7 +3850,7 @@ export declare type SshPrivateKeyData = {
     x: Uint8Array;
 };
 
-export declare class SSHPublicKey {
+declare class SSHPublicKey {
     readonly data: SshPublicKeyData;
     readonly comment: string;
     private constructor();
@@ -4850,7 +3865,6 @@ export declare class SSHPublicKey {
     /**
      * Returns a copy of this SSH public key with the comment replaced.
      *
-     * Mirrors `ssh_key::PublicKey::set_comment` (mutating in Rust; we
      * return a new instance to keep the type immutable).
      */
     withComment(comment: string): SSHPublicKey;
@@ -4889,7 +3903,7 @@ export declare class SSHPublicKey {
  *   - dsa:     four canonical-positive mpint bytes (p, q, g, y) — sign
  *              byte already stripped on parse, re-added by the writer.
  */
-export declare type SshPublicKeyData = {
+declare type SshPublicKeyData = {
     kind: "ed25519";
     pubBytes: Uint8Array;
 } | {
@@ -4904,7 +3918,7 @@ export declare type SshPublicKeyData = {
     y: Uint8Array;
 };
 
-export declare class SSHSignature {
+declare class SSHSignature {
     readonly publicKey: SSHPublicKey;
     readonly namespace: string;
     readonly reserved: Uint8Array;
@@ -4940,65 +3954,6 @@ export declare class SSHSignature {
     /** SHA-256 digest of canonical PEM bytes — kept for parity with key types. */
     digest(): Uint8Array;
 }
-
-export declare function sskrCombine(shares: Uint8Array[]): SSKRSecret;
-
-export declare function sskrCombineShares(shares: SSKRShare[]): SSKRSecret;
-
-/** Raw share bytes per group, as sskr's `generateShares` + `shareBytes`. */
-export declare function sskrGenerate(spec: SSKRSpec, masterSecret: SSKRSecret): Uint8Array[][];
-
-export declare function sskrGenerateShares(spec: SSKRSpec, masterSecret: SSKRSecret): SSKRShare[][];
-
-export declare function sskrGenerateSharesUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: SimpleRng): SSKRShare[][];
-
-export declare function sskrGenerateUsing(spec: SSKRSpec, masterSecret: SSKRSecret, rng: RandomNumberGenerator): Uint8Array[][];
-
-export { SSKRGroupSpec }
-
-export { SSKRSecret }
-
-export declare type SSKRShare = SSKRShareCbor;
-
-export declare const SSKRShare: {
-    fromData: (data: Uint8Array) => SSKRShareCbor;
-    fromHex: (hex: string) => SSKRShareCbor;
-    fromTaggedCbor: (cborValue: Cbor) => SSKRShareCbor;
-    fromTaggedCborData: (data: Uint8Array) => SSKRShareCbor;
-    fromUntaggedCborData: (data: Uint8Array) => SSKRShareCbor;
-};
-
-export declare class SSKRShareCbor implements ToCbor {
-    private readonly _data;
-    private constructor();
-    static from(data: Uint8Array): SSKRShareCbor;
-    static fromHex(hex: string): SSKRShareCbor;
-    /** The bytes (a view; do not mutate). */
-    get bytes(): Uint8Array;
-    toHex(): string;
-    get identifier(): number;
-    identifierHex(): string;
-    get groupThreshold(): number;
-    get groupCount(): number;
-    get groupIndex(): number;
-    get memberThreshold(): number;
-    get memberIndex(): number;
-    get shareValue(): Uint8Array;
-    equals(other: SSKRShareCbor): boolean;
-    toString(): string;
-    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SSKRShareCbor>;
-    cborTags(): Tag[];
-    untaggedCbor(): Cbor;
-    /** The tagged CBOR form. */
-    toCbor(): Cbor;
-    /** As a UR, typed by the first tag's name. */
-    toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
-    static fromCbor(cborValue: Cbor): SSKRShareCbor;
-}
-
-export { SSKRSpec }
 
 export declare class SymmetricKey implements ToCbor {
     static readonly SYMMETRIC_KEY_SIZE: number;
@@ -5044,7 +3999,7 @@ export declare class SymmetricKey implements ToCbor {
      */
     decrypt(message: EncryptedMessage): Uint8Array;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<SymmetricKey>;
+    static get codec(): ComponentCodec<SymmetricKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -5131,7 +4086,7 @@ export declare class URI implements ToCbor, ToUR {
      */
     get length(): number;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<URI>;
+    static get codec(): ComponentCodec<URI>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a text string).
@@ -5171,7 +4126,7 @@ export declare class UUID implements ToCbor, ToUR {
     /** The bytes (a view; do not mutate). */
     get bytes(): Uint8Array;
     /**
-     * Get hex string representation (lowercase, matching Rust implementation).
+     * Get hex string representation (lowercase, as the reference implementation does implementation).
      */
     toHex(): string;
     /**
@@ -5188,7 +4143,7 @@ export declare class UUID implements ToCbor, ToUR {
      */
     equals(other: UUID): boolean;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<UUID>;
+    static get codec(): ComponentCodec<UUID>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -5284,7 +4239,7 @@ export declare class X25519PrivateKey implements ToCbor, ToUR {
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<X25519PrivateKey>;
+    static get codec(): ComponentCodec<X25519PrivateKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -5327,14 +4282,12 @@ export declare class X25519PublicKey implements ToCbor, ToUR {
     /**
      * Get string representation.
      *
-     * Mirrors Rust `Display for X25519PublicKey`
-     * (`bc-components-rust/src/x25519/x25519_public_key.rs:166-168`):
      *   `X25519PublicKey(<ref_hex_short>)` where the reference is
      *   computed from the **tagged-CBOR** form of the key.
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<X25519PublicKey>;
+    static get codec(): ComponentCodec<X25519PublicKey>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -5370,22 +4323,18 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
         rng?: RandomNumberGenerator;
     }): XID;
     /**
-     * Mirror of Rust's `From<&SigningPublicKey> for XID`.
      * Derived from the SHA-256 digest of the key's tagged CBOR.
      */
     static fromSigningPublicKey(signingPublicKey: SigningPublicKey): XID;
     /**
-     * Mirror of Rust's `From<&PublicKeys> for XID`.
      * The XID is derived from the bundle's signing public key.
      */
     static fromPublicKeys(publicKeys: PublicKeys): XID;
     /**
-     * Mirror of Rust's `From<&PrivateKeyBase> for XID` (secp256k1 feature).
      * The XID is derived from the schnorr signing public key.
      */
     static fromPrivateKeyBase(base: PrivateKeyBase): XID;
     /**
-     * Mirror of Rust's `TryFrom<&SigningPrivateKey> for XID`.
      * The XID is derived from the corresponding public key.
      */
     static tryFromSigningPrivateKey(signingPrivateKey: SigningPrivateKey): XID;
@@ -5393,13 +4342,13 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
      * Validate the XID against the given public key.
      *
      * Returns true if the SHA-256 hash of the key's CBOR encoding matches
-     * the XID data. This matches Rust's `XID::validate(&self, key: &SigningPublicKey)`.
+     * the XID data. This matches the reference implementation's `XID::validate(&self, key: &SigningPublicKey)`.
      */
     validate(signingPublicKey: SigningPublicKey): boolean;
     /** The bytes (a view; do not mutate). */
     get bytes(): Uint8Array;
     /**
-     * Get hex string representation (lowercase, matching Rust implementation).
+     * Get hex string representation (lowercase, as the reference implementation does implementation).
      */
     toHex(): string;
     /**
@@ -5431,14 +4380,12 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
     /**
      * XIDProvider impl — returns this XID.
      *
-     * Mirrors Rust's blanket `impl XIDProvider for XID`.
      */
     xid(): XID;
     /**
      * ReferenceProvider impl — produces a Reference whose 32 bytes are the
      * raw XID data.
      *
-     * Mirrors Rust's `impl ReferenceProvider for XID { fn reference(&self) ->
      * Reference { Reference::from_data(*self.bytes) } }` — note this is a
      * direct wrap, not a SHA-256 hash of the XID.
      */
@@ -5448,12 +4395,12 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
      */
     equals(other: XID): boolean;
     /**
-     * Get string representation (short format, matching Rust Display).
+     * Get string representation (short format, as the reference implementation does Display).
      * Uses first 4 bytes of the XID as hex, e.g., "XID(71274df1)".
      */
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static readonly codec: ComponentCodec<XID>;
+    static get codec(): ComponentCodec<XID>;
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding (as a byte string).
@@ -5478,7 +4425,6 @@ export declare const XID_PREFIX = "🅧";
 /**
  * Trait-style interface for objects that can produce a XID.
  *
- * Mirrors Rust's `XIDProvider` trait. `XID` itself implements this; any
  * other type that maps cleanly to a single XID (e.g. `SigningPublicKey`,
  * `PublicKeys`) may also implement it.
  */

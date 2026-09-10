@@ -40,7 +40,6 @@
  * When serialized as a Uniform Resource (UR), an `EncryptedMessage` is
  * represented with the type "encrypted".
  *
- * Ported from bc-components-rust/src/symmetric/encrypted_message.rs
  */
 
 import {
@@ -60,6 +59,9 @@ import { Digest } from "../digest.js";
 import { AuthenticationTag } from "./authentication-tag.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let ENCRYPTED_MESSAGE_CODEC: ComponentCodec<EncryptedMessage> | undefined;
 
 export class EncryptedMessage implements ToCbor, ToUR {
   private readonly _ciphertext: Uint8Array;
@@ -194,31 +196,33 @@ export class EncryptedMessage implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<EncryptedMessage> = defineCodec({
-    tags: [TAG_ENCRYPTED],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
+  static get codec(): ComponentCodec<EncryptedMessage> {
+    return (ENCRYPTED_MESSAGE_CODEC ??= defineCodec({
+      tags: [TAG_ENCRYPTED],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
 
-      if (elements.length < 3) {
-        throw ComponentsError.invalidData("EncryptedMessage must have at least 3 elements");
-      }
+        if (elements.length < 3) {
+          throw ComponentsError.invalidData("EncryptedMessage must have at least 3 elements");
+        }
 
-      const ciphertext = expectBytes(elements[0]);
-      const nonceData = expectBytes(elements[1]);
-      const nonce = Nonce.from(nonceData);
-      const authData = expectBytes(elements[2]);
-      const auth = AuthenticationTag.from(authData);
-      const aad = elements.length > 3 ? expectBytes(elements[3]) : new Uint8Array(0);
+        const ciphertext = expectBytes(elements[0]);
+        const nonceData = expectBytes(elements[1]);
+        const nonce = Nonce.from(nonceData);
+        const authData = expectBytes(elements[2]);
+        const auth = AuthenticationTag.from(authData);
+        const aad = elements.length > 3 ? expectBytes(elements[3]) : new Uint8Array(0);
 
-      return EncryptedMessage.from({
-        ciphertext: ciphertext,
-        aad: aad,
-        nonce: nonce,
-        authTag: auth,
-      });
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return EncryptedMessage.from({
+          ciphertext: ciphertext,
+          aad: aad,
+          nonce: nonce,
+          authTag: auth,
+        });
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...EncryptedMessage.codec.tags];

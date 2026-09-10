@@ -10,7 +10,6 @@
  *
  * Note: SR25519 uses the SigningPublicKey CBOR tag (40022) with discriminator 3.
  *
- * Ported from bc-components-rust/src/sr25519/sr25519_public_key.rs
  */
 
 import * as sr25519 from "@scure/sr25519";

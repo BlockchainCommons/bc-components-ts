@@ -5,7 +5,6 @@
  *
  * Random salt used to decorrelate other information.
  *
- * Ported from bc-components-rust/src/salt.rs
  *
  * A `Salt` is a cryptographic primitive consisting of random data that is used
  * to modify the output of a cryptographic function. Salts are primarily used
@@ -66,6 +65,9 @@ import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 
 const MIN_SALT_SIZE = 8;
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let SALT_CODEC: ComponentCodec<Salt> | undefined;
 
 export class Salt implements ToCbor, ToUR {
   private readonly _data: Uint8Array;
@@ -182,14 +184,16 @@ export class Salt implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<Salt> = defineCodec({
-    tags: [TAG_SALT],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return Salt.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<Salt> {
+    return (SALT_CODEC ??= defineCodec({
+      tags: [TAG_SALT],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return Salt.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...Salt.codec.tags];

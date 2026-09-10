@@ -4,7 +4,6 @@
  *
  *
  * Ed25519 private key for EdDSA signatures (32 bytes seed)
- * Ported from bc-components-rust/src/ed25519_private_key.rs
  */
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";

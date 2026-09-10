@@ -18,7 +18,13 @@ if (process.env.VECTORS_FROM === "baseline") {
   const rand = await import("../../bc-rand-ts/tests/baseline/rand-baseline.mjs");
   api = baselineAdapterFor(m, rand);
 } else {
-  const m = await import("../src/index.ts");
+  const m = {
+    ...(await import("../src/index.ts")),
+    ...(await import("../src/ssh/index.ts")),
+    ...(await import("../src/pq.ts")),
+    ...(await import("../src/kdf.ts")),
+    ...(await import("../src/sskr.ts")),
+  };
   const rand = await import("@blockchaincommons/rand");
   api = redesignedAdapterFor(m, rand);
 }

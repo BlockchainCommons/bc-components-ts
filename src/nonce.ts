@@ -5,7 +5,6 @@
  *
  * A random nonce ("number used once").
  *
- * Ported from bc-components-rust/src/nonce.rs
  *
  * A `Nonce` is a cryptographic primitive consisting of a random or
  * pseudo-random number that is used only once in a cryptographic
@@ -58,6 +57,9 @@ import { NONCE as TAG_NONCE } from "@blockchaincommons/tags";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "./error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let NONCE_CODEC: ComponentCodec<Nonce> | undefined;
 
 export class Nonce implements ToCbor, ToUR {
   static readonly NONCE_SIZE: number = SYMMETRIC_NONCE_SIZE;
@@ -142,14 +144,16 @@ export class Nonce implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<Nonce> = defineCodec({
-    tags: [TAG_NONCE],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return Nonce.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<Nonce> {
+    return (NONCE_CODEC ??= defineCodec({
+      tags: [TAG_NONCE],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return Nonce.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...Nonce.codec.tags];

@@ -15,7 +15,6 @@
  *
  * Note: SR25519 uses the SigningPrivateKey CBOR tag (40021) with discriminator 3.
  *
- * Ported from bc-components-rust/src/sr25519/sr25519_private_key.rs
  */
 
 import * as sr25519 from "@scure/sr25519";

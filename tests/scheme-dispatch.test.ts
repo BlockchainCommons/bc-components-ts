@@ -13,7 +13,6 @@ import {
   Ed25519PrivateKey,
   Sr25519PrivateKey,
   MLKEMLevel,
-  MLKEMPrivateKey,
   PrivateKeyBase,
   SigningPrivateKey,
   SigningPublicKey,
@@ -25,11 +24,10 @@ import {
   EncapsulationScheme,
   X25519PrivateKey,
   createKeypair,
-  createKeypairUsing,
   createEncapsulationKeypair,
-  createEncapsulationKeypairUsing,
   defaultEncapsulationScheme,
 } from "../src/index.js";
+import { MLKEMPrivateKey } from "../src/pq.js";
 import {
   isMlkemScheme,
   schemeToMlkemLevel,
@@ -236,7 +234,7 @@ describe("keypair factories", () => {
         expect(() => createKeypair(scheme)).toThrow(ComponentsError);
         continue;
       }
-      const [priv, pub] = createKeypair(scheme, "comment");
+      const [priv, pub] = createKeypair(scheme, { comment: "comment" });
       expect(priv.scheme).toBe(scheme);
       expect(pub.scheme).toBe(scheme);
       if (!priv.isMldsa()) expect(pub.equals(priv.publicKey())).toBe(true);
@@ -255,11 +253,11 @@ describe("keypair factories", () => {
       SignatureScheme.SshEd25519,
       SignatureScheme.SshEcdsaP256,
     ]) {
-      const [a] = createKeypairUsing(scheme, rng());
-      const [b] = createKeypairUsing(scheme, rng());
+      const [a] = createKeypair(scheme, { rng: rng() });
+      const [b] = createKeypair(scheme, { rng: rng() });
       expect(a.equals(b), scheme).toBe(true);
     }
-    expect(() => createKeypairUsing(SignatureScheme.MLDSA65, rng())).toThrow(ComponentsError);
+    expect(() => createKeypair(SignatureScheme.MLDSA65, { rng: rng() })).toThrow(ComponentsError);
   });
 });
 
@@ -376,11 +374,11 @@ describe("Encapsulation types over both schemes", () => {
       const [priv, pub] = createEncapsulationKeypair(scheme);
       expect(priv.encapsulationScheme).toBe(scheme);
       expect(priv.publicKey().equals(pub)).toBe(true);
-      expect(() => createEncapsulationKeypairUsing(rng(), scheme)).toThrow(ComponentsError);
+      expect(() => createEncapsulationKeypair(scheme, { rng: rng() })).toThrow(ComponentsError);
     }
     expect(() => schemeToMlkemLevel(EncapsulationScheme.X25519)).toThrow();
-    const [a] = createEncapsulationKeypairUsing(rng());
-    const [b] = createEncapsulationKeypairUsing(rng(), EncapsulationScheme.X25519);
+    const [a] = createEncapsulationKeypair(EncapsulationScheme.X25519, { rng: rng() });
+    const [b] = createEncapsulationKeypair(EncapsulationScheme.X25519, { rng: rng() });
     expect(a.equals(b)).toBe(true);
     expect(createEncapsulationKeypair()[0].isX25519()).toBe(true);
   });

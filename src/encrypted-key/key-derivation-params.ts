@@ -9,7 +9,6 @@
  * It provides a unified interface for locking and unlocking keys regardless
  * of the underlying derivation method.
  *
- * Ported from bc-components-rust/src/encrypted_key/key_derivation_params.rs
  */
 
 import { type Cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";

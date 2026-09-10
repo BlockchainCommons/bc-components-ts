@@ -14,7 +14,6 @@
  * ScryptParams = [2, Salt, log_n: uint, r: uint, p: uint]
  * ```
  *
- * Ported from bc-components-rust/src/encrypted_key/scrypt_params.rs
  */
 
 import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
@@ -29,8 +28,8 @@ import { SALT_LEN } from "./hkdf-params.js";
 import type { KeyDerivation } from "./key-derivation.js";
 import { ComponentsError } from "../error.js";
 
-// Defaults match Rust `ScryptParams::new()` in bc-components-rust v0.34.x
-// (`log_n = 15, r = 8, p = 1`). Distinct from Rust's `bc_crypto::scrypt()`
+// Defaults match Rust `ScryptParams::new()` in the reference implementation v0.34.x
+// (`log_n = 15, r = 8, p = 1`). Distinct from the reference implementation's `bc_crypto::scrypt()`
 // helper, which uses the heavier `scrypt::Params::recommended()` defaults
 // (`log_n = 17`).
 /** Default log_n parameter (2^15 = 32768 iterations) */

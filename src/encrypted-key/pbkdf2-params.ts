@@ -13,7 +13,6 @@
  * PBKDF2Params = [1, Salt, iterations: uint, HashType]
  * ```
  *
- * Ported from bc-components-rust/src/encrypted_key/pbkdf2_params.rs
  */
 
 import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";

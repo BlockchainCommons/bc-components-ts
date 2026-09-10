@@ -17,6 +17,7 @@ import {
   FAKE_FILL,
 } from "./recipes";
 import { decodeCbor } from "@blockchaincommons/dcbor";
+import { Spec, GroupSpec, Secret } from "@blockchaincommons/sskr";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 
 /**
@@ -79,7 +80,7 @@ export function redesignedShapedAdapterFor(
       case "symmetricKey":
         return m.SymmetricKey.from(data);
       case "json":
-        return m.JSON.from(data);
+        return m.CborJson.from(data);
       case "uri":
         return m.URI.from(new TextDecoder().decode(data));
       case "authTag":
@@ -107,7 +108,7 @@ export function redesignedShapedAdapterFor(
       case "privateKeyBase":
         return m.PrivateKeyBase.from(data);
       case "sskrShare":
-        return m.SSKRShareCbor.from(data);
+        return m.SskrShare.from(data);
     }
   };
   const describe = (v: any): string => {
@@ -173,7 +174,7 @@ export function redesignedShapedAdapterFor(
       xid: m.XID,
       reference: m.Reference,
       symmetricKey: m.SymmetricKey,
-      json: m.JSON,
+      json: m.CborJson,
       uri: m.URI,
       x25519Priv: m.X25519PrivateKey,
       x25519Pub: m.X25519PublicKey,
@@ -181,7 +182,7 @@ export function redesignedShapedAdapterFor(
       ecPub: m.ECPublicKey,
       ecUncompressed: m.ECUncompressedPublicKey,
       privateKeyBase: m.PrivateKeyBase,
-      sskrShare: m.SSKRShareCbor,
+      sskrShare: m.SskrShare,
       seed: m.Seed,
       compressed: m.Compressed,
       encryptedMessage: m.EncryptedMessage,
@@ -414,11 +415,11 @@ export function redesignedShapedAdapterFor(
             mlkem768: m.EncapsulationScheme.MLKEM768,
             mlkem1024: m.EncapsulationScheme.MLKEM1024,
           }[r.encScheme];
-          const [priv, pub] = m.keypairOptUsing(
-            m.SignatureScheme[schemeEnum(r.sigScheme)],
-            encEnum,
-            rngOf(r.rng),
-          );
+          const [priv, pub] = m.generateKeypair({
+            signing: m.SignatureScheme[schemeEnum(r.sigScheme)],
+            encapsulation: encEnum,
+            rng: rngOf(r.rng),
+          });
           return `${codable(priv)}|${codable(pub)}|${hex(pub.reference().bytes)}|${pub.equals(priv.publicKeys()) ? "consistent" : "INCONSISTENT"}`;
         }
         case "seal": {
@@ -501,29 +502,22 @@ export function redesignedShapedAdapterFor(
           return `${codable(priv)}|${codable(pub)}|ctLen=${ciphertext.toCbor().toData().length}|${back.equals(sharedSecret) ? "decapsulated" : "MISMATCH"}`;
         }
         case "sskr": {
-          const spec = m.SSKRSpec.new
-            ? m.SSKRSpec.new(
-                r.spec.gt,
-                r.spec.groups.map((g) => m.SSKRGroupSpec.new(g.mt, g.mc)),
-              )
-            : m.SSKRSpec.from({
-                groupThreshold: r.spec.gt,
-                groups: r.spec.groups.map((g) =>
-                  m.SSKRGroupSpec.from({ memberThreshold: g.mt, memberCount: g.mc }),
-                ),
-              });
-          const secret = m.SSKRSecret.new
-            ? m.SSKRSecret.new(B(r.secret))
-            : m.SSKRSecret.from(B(r.secret));
-          const groups = m.sskrGenerateSharesUsing(spec, secret, rngOf(r.rng));
+          const spec = Spec.from({
+            groupThreshold: r.spec.gt,
+            groups: r.spec.groups.map((g) =>
+              GroupSpec.from({ memberThreshold: g.mt, memberCount: g.mc }),
+            ),
+          });
+          const groups = m.SskrShare.generate(spec, Secret.from(B(r.secret)), {
+            rng: rngOf(r.rng),
+          });
           const quorum: any[] = [];
           for (let gi = 0; gi < r.spec.gt; gi++)
             for (let mi = 0; mi < r.spec.groups[gi]!.mt; mi++) quorum.push(groups[gi][mi]);
-          const back = m.sskrCombineShares(quorum);
-          const bytes = typeof back.getData === "function" ? back.getData() : back.bytes;
+          const back = m.SskrShare.combine(quorum);
           return (
             groups.map((g: any[]) => g.map(tagged).join(",")).join(";") +
-            `|${hex(bytes) === hex(B(r.secret)) ? "combined" : "MISMATCH"}`
+            `|${hex(back.bytes) === hex(B(r.secret)) ? "combined" : "MISMATCH"}`
           );
         }
         case "decode": {

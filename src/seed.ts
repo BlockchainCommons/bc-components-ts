@@ -4,7 +4,6 @@
  *
  *
  * Cryptographic seed with optional metadata (minimum 16 bytes)
- * Ported from bc-components-rust/src/seed.rs
  *
  * A `Seed` is a source of entropy used to generate cryptographic keys in a
  * deterministic manner. Unlike randomly generated keys, seed-derived keys can
@@ -70,9 +69,12 @@ export interface SeedMetadata {
   creationDate?: Date | undefined;
 }
 
+// The codec is built on first use so that an unused class tree-shakes away.
+let SEED_CODEC: ComponentCodec<Seed> | undefined;
+
 export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   /**
-   * Minimum seed length in bytes (matches Rust MIN_SEED_LENGTH).
+   * Minimum seed length in bytes.
    */
   static readonly MIN_SEED_LENGTH = 16;
 
@@ -94,7 +96,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   }
 
   // ============================================================================
-  // Static Factory Methods (Rust API Parity)
+  // Static Factory Methods
   // ============================================================================
 
   /**
@@ -136,7 +138,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   }
 
   // ============================================================================
-  // Instance Methods - Data Access (Rust API Parity)
+  // Instance Methods - Data Access
   // ============================================================================
 
   /** The bytes (a view; do not mutate). */
@@ -164,13 +166,13 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   }
 
   // ============================================================================
-  // Instance Methods - Metadata Access (Rust API Parity)
+  // Instance Methods - Metadata Access
   // ============================================================================
 
   /**
    * Return the name of the seed.
    *
-   * Rust equivalent: `seed.name` - returns empty string if not set.
+   * returns empty string if not set.
    */
   /** The optional metadata as one object. */
   get metadata(): SeedMetadata {
@@ -189,7 +191,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   /**
    * Return the note of the seed.
    *
-   * Rust equivalent: `seed.note` - returns empty string if not set.
+   * returns empty string if not set.
    */
   get note(): string {
     return this._note;
@@ -203,8 +205,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   /**
    * Return the creation date of the seed.
    *
-   * Rust equivalent: `seed.creation_date()`
-   */
+   * */
   get creationDate(): Date | undefined {
     return this._creationDate;
   }
@@ -257,42 +258,44 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<Seed> = defineCodec({
-    tags: [TAG_SEED, TAG_SEED_V1],
-    decodeUntagged: (cborValue) => {
-      const map = expectMap(cborValue);
+  static get codec(): ComponentCodec<Seed> {
+    return (SEED_CODEC ??= defineCodec({
+      tags: [TAG_SEED, TAG_SEED_V1],
+      decodeUntagged: (cborValue) => {
+        const map = expectMap(cborValue);
 
-      // Key 1: seed data (required)
-      // CborMap.extract() returns native types (Uint8Array for byte strings)
-      const data = mapGetBytes(map, 1);
-      if (data === undefined || data.length === 0) {
-        throw ComponentsError.invalidData("Seed data is empty");
-      }
+        // Key 1: seed data (required)
+        // CborMap.extract() returns native types (Uint8Array for byte strings)
+        const data = mapGetBytes(map, 1);
+        if (data === undefined || data.length === 0) {
+          throw ComponentsError.invalidData("Seed data is empty");
+        }
 
-      // Key 2: creation date (optional)
-      // For tagged values (like dates), the extract returns the tagged Cbor object
-      let creationDate: Date | undefined;
-      const dateValue = map.get(2);
-      if (dateValue !== undefined) {
-        // The date is stored as a tagged CBOR value (tag 1)
-        const cborDate = CborDate.fromTaggedCbor(dateValue);
-        creationDate = cborDate.toDate();
-      }
+        // Key 2: creation date (optional)
+        // For tagged values (like dates), the extract returns the tagged Cbor object
+        let creationDate: Date | undefined;
+        const dateValue = map.get(2);
+        if (dateValue !== undefined) {
+          // The date is stored as a tagged CBOR value (tag 1)
+          const cborDate = CborDate.fromTaggedCbor(dateValue);
+          creationDate = cborDate.toDate();
+        }
 
-      // Key 3: name (optional)
-      const name = mapGetText(map, 3);
+        // Key 3: name (optional)
+        const name = mapGetText(map, 3);
 
-      // Key 4: note (optional)
-      const note = mapGetText(map, 4);
+        // Key 4: note (optional)
+        const note = mapGetText(map, 4);
 
-      return Seed.from(new Uint8Array(data), {
-        name: name,
-        note: note,
-        creationDate: creationDate,
-      });
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return Seed.from(new Uint8Array(data), {
+          name: name,
+          note: note,
+          creationDate: creationDate,
+        });
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...Seed.codec.tags];

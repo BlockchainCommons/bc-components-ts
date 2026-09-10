@@ -12,8 +12,16 @@
 - Tagged CBOR of a value object is memoised; repeated `taggedCborData()`, references and XIDs over the same object no longer re-encode.
 - A `Seed` map value of the wrong CBOR type is now rejected with `InvalidData` (was an incidental `DataTooShort`).
 
+- **Enums are `as const` objects** with literal-union types (`SignatureScheme`, `EncapsulationScheme`, `KeyDerivationMethod`, `HashType`, `MLDSALevel`, `MLKEMLevel`); member names and values unchanged.
+- **Options objects** for key generation: `generateKeypair({ signing?, encapsulation?, rng? })` replaces `keypair`/`keypairUsing`/`keypairOpt`/`keypairOptUsing`; `createKeypair(scheme, { rng?, comment? })` and `createEncapsulationKeypair(scheme, { rng? })` absorb their `Using` variants.
+- **SSKR**: one `SskrShare` class (on `/sskr`) over the sskr package's parsed share replaces `SSKRShareCbor`, the `SSKRShare` alias object, `sskrGenerate*`, `sskrCombine*` and the re-exported sskr types.
+- **Subpaths**: the root entry no longer exports the SSH, post-quantum, KDF and SSKR families; codecs are built lazily so an import of `Digest` + `SymmetricKey` + `EncryptedMessage` tree-shakes to about 6.5 kB.
+- `JSON` is `CborJson`; the tag constants are no longer re-exported (import `@blockchaincommons/tags`).
+- Comments no longer frame the code as a port; the reference implementation is cited where a wire choice needs it.
+
 ### Fixed
 
+- `SSHSignature` text wraps at 70 columns like OpenSSH and the reference (was 76).
 - `createKeypair` for the ML-DSA schemes threw (it asked the private key for a public key it cannot derive); it now generates both keys together.
 
 ### Added

@@ -24,11 +24,10 @@
  * - `EncapsulationCiphertext`: The encapsulated shared secret
  * - `SealedMessage`: Complete anonymous authenticated encryption
  *
- * Ported from bc-components-rust/src/encapsulation/mod.rs
  */
 
 export { EncapsulationScheme, defaultEncapsulationScheme } from "./encapsulation-scheme.js";
-export { createEncapsulationKeypair, createEncapsulationKeypairUsing } from "./keypair.js";
+export { createEncapsulationKeypair } from "./keypair.js";
 export { EncapsulationPrivateKey } from "./encapsulation-private-key.js";
 export { EncapsulationPublicKey } from "./encapsulation-public-key.js";
 export { EncapsulationCiphertext } from "./encapsulation-ciphertext.js";

@@ -19,7 +19,6 @@
  *
  * UR type: `mlkem-ciphertext`
  *
- * Ported from bc-components-rust/src/mlkem/mlkem_ciphertext.rs
  */
 
 import {
@@ -43,6 +42,9 @@ import {
 } from "./mlkem-level.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let M_L_K_E_M_CIPHERTEXT_CODEC: ComponentCodec<MLKEMCiphertext> | undefined;
 
 /**
  * MLKEMCiphertext - Post-quantum key encapsulation ciphertext using ML-KEM.
@@ -126,22 +128,24 @@ export class MLKEMCiphertext implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<MLKEMCiphertext> = defineCodec({
-    tags: [TAG_MLKEM_CIPHERTEXT],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
-      if (elements.length !== 2) {
-        throw ComponentsError.postQuantum(
-          `MLKEMCiphertext CBOR must have 2 elements, got ${elements.length}`,
-        );
-      }
-      const levelValue = Number(expectInteger(elements[0]));
-      const level = mlkemLevelFromValue(levelValue);
-      const data = expectBytes(elements[1]);
-      return MLKEMCiphertext.fromBytes(level, data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<MLKEMCiphertext> {
+    return (M_L_K_E_M_CIPHERTEXT_CODEC ??= defineCodec({
+      tags: [TAG_MLKEM_CIPHERTEXT],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
+        if (elements.length !== 2) {
+          throw ComponentsError.postQuantum(
+            `MLKEMCiphertext CBOR must have 2 elements, got ${elements.length}`,
+          );
+        }
+        const levelValue = Number(expectInteger(elements[0]));
+        const level = mlkemLevelFromValue(levelValue);
+        const data = expectBytes(elements[1]);
+        return MLKEMCiphertext.fromBytes(level, data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...MLKEMCiphertext.codec.tags];

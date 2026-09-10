@@ -14,13 +14,12 @@
  *
  * `SigningPublicKey` is serialized to CBOR with tag 40022.
  *
- * The CBOR encoding (matching Rust bc-components):
+ * The CBOR encoding:
  * - Schnorr: `#6.40022(h'<32-byte-x-only-public-key>')` (bare byte string)
  * - ECDSA:   `#6.40022([1, h'<33-byte-compressed-public-key>'])`
  * - Ed25519: `#6.40022([2, h'<32-byte-public-key>'])`
  * - Sr25519: `#6.40022([3, h'<32-byte-public-key>'])`
  *
- * Ported from bc-components-rust/src/signing/signing_public_key.rs
  */
 
 import {
@@ -58,6 +57,9 @@ import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let SIGNING_PUBLIC_KEY_CODEC: ComponentCodec<SigningPublicKey> | undefined;
 
 /**
  * A public key used for verifying digital signatures.
@@ -196,8 +198,6 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   /**
    * Creates a new signing public key from an SSHPublicKey.
    *
-   * Mirrors Rust `SigningPublicKey::from_ssh`
-   * (`bc-components-rust/src/signing/signing_public_key.rs:214`).
    *
    * @param key - An SSHPublicKey
    * @returns A new signing public key wrapping the SSH public key
@@ -367,8 +367,6 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   /**
    * Returns the underlying SSH public key if this is an SSH key.
    *
-   * Mirrors Rust `SigningPublicKey::to_ssh`
-   * (`bc-components-rust/src/signing/signing_public_key.rs:272`).
    *
    * @returns The SSHPublicKey if this is an SSH key, undefined otherwise
    */
@@ -385,7 +383,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
 
   /**
    * Returns a copy of this SSH public key with its comment replaced.
-   * Throws if this is not an SSH key — mirrors Rust's `set_comment`
+   * Throws if this is not an SSH key — mirrors the reference implementation's `set_comment`
    * which is only callable on `SigningPublicKey::SSH` variants.
    */
   withSshComment(comment: string): SigningPublicKey {
@@ -433,8 +431,6 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   /**
    * Get string representation.
    *
-   * Mirrors Rust `Display for SigningPublicKey`
-   * (`bc-components-rust/src/signing/signing_public_key.rs:573-606`):
    *   `SigningPublicKey(<ref_hex_short>, <inner_key_display>)`
    * The reference is computed from the tagged-CBOR form.
    */
@@ -463,7 +459,6 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384:
-        // Mirror Rust `SigningPublicKey::SSH(key) => format!("SSHPublicKey({})", key.ref_hex_short())`
         // (`signing_public_key.rs:592-594`).
         innerDisplay = this._sshKey?.toString() ?? `SSHPublicKey(${refShort})`;
         break;
@@ -583,7 +578,6 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         if (this._sshKey === undefined) return false;
         const sshSig = signature.asSsh();
         if (sshSig === undefined) return false;
-        // Mirror Rust `SigningPublicKey::SSH(key) => key.verify(sig.namespace(), msg, sig).is_ok()`
         // (`signing_public_key.rs:362-364`).
         try {
           return this._sshKey.verifySshSignature(sshSig.namespace, message, sshSig);
@@ -599,60 +593,62 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<SigningPublicKey> = defineCodec({
-    tags: [TAG_SIGNING_PUBLIC_KEY],
-    decodeUntagged: (cborValue) => {
-      // Rust format: Schnorr is a bare byte string
-      if (isBytes(cborValue)) {
-        const keyData = expectBytes(cborValue);
-        return SigningPublicKey.fromSchnorr(SchnorrPublicKey.from(keyData));
-      }
-
-      // Array format for ECDSA, Ed25519, Sr25519
-      if (isArray(cborValue)) {
-        const elements = expectArray(cborValue);
-
-        if (elements.length !== 2) {
-          throw ComponentsError.invalidData("SigningPublicKey array must have 2 elements");
+  static get codec(): ComponentCodec<SigningPublicKey> {
+    return (SIGNING_PUBLIC_KEY_CODEC ??= defineCodec({
+      tags: [TAG_SIGNING_PUBLIC_KEY],
+      decodeUntagged: (cborValue) => {
+        // Wire format: Schnorr is a bare byte string
+        if (isBytes(cborValue)) {
+          const keyData = expectBytes(cborValue);
+          return SigningPublicKey.fromSchnorr(SchnorrPublicKey.from(keyData));
         }
 
-        const discriminator = expectUnsigned(elements[0]);
-        const keyData = expectBytes(elements[1]);
+        // Array format for ECDSA, Ed25519, Sr25519
+        if (isArray(cborValue)) {
+          const elements = expectArray(cborValue);
 
-        switch (Number(discriminator)) {
-          case 1: // ECDSA
-            return SigningPublicKey.fromEcdsa(ECPublicKey.from(keyData));
-          case 2: // Ed25519
-            return SigningPublicKey.fromEd25519(Ed25519PublicKey.from(keyData));
-          case 3: // Sr25519
-            return SigningPublicKey.fromSr25519(Sr25519PublicKey.from(keyData));
-          default:
-            throw ComponentsError.invalidData(
-              `Unknown SigningPublicKey discriminator: ${discriminator}`,
-            );
-        }
-      }
+          if (elements.length !== 2) {
+            throw ComponentsError.invalidData("SigningPublicKey array must have 2 elements");
+          }
 
-      // Tagged format for MLDSA / SSH
-      if (isTagged(cborValue)) {
-        const tagged = asTaggedValue(cborValue);
-        if (tagged?.[0].value === TAG_MLDSA_PUBLIC_KEY.value) {
-          const mldsaKey = MLDSAPublicKey.fromCbor(cborValue);
-          return SigningPublicKey.fromMldsa(mldsaKey);
-        }
-        if (tagged?.[0].value === TAG_SSH_TEXT_PUBLIC_KEY.value) {
-          const text = expectText(tagged[1]);
-          const sshKey = SSHPublicKey.fromOpenssh(text);
-          return SigningPublicKey.fromSsh(sshKey);
-        }
-      }
+          const discriminator = expectUnsigned(elements[0]);
+          const keyData = expectBytes(elements[1]);
 
-      throw ComponentsError.invalidData(
-        "SigningPublicKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
-      );
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+          switch (Number(discriminator)) {
+            case 1: // ECDSA
+              return SigningPublicKey.fromEcdsa(ECPublicKey.from(keyData));
+            case 2: // Ed25519
+              return SigningPublicKey.fromEd25519(Ed25519PublicKey.from(keyData));
+            case 3: // Sr25519
+              return SigningPublicKey.fromSr25519(Sr25519PublicKey.from(keyData));
+            default:
+              throw ComponentsError.invalidData(
+                `Unknown SigningPublicKey discriminator: ${discriminator}`,
+              );
+          }
+        }
+
+        // Tagged format for MLDSA / SSH
+        if (isTagged(cborValue)) {
+          const tagged = asTaggedValue(cborValue);
+          if (tagged?.[0].value === TAG_MLDSA_PUBLIC_KEY.value) {
+            const mldsaKey = MLDSAPublicKey.fromCbor(cborValue);
+            return SigningPublicKey.fromMldsa(mldsaKey);
+          }
+          if (tagged?.[0].value === TAG_SSH_TEXT_PUBLIC_KEY.value) {
+            const text = expectText(tagged[1]);
+            const sshKey = SSHPublicKey.fromOpenssh(text);
+            return SigningPublicKey.fromSsh(sshKey);
+          }
+        }
+
+        throw ComponentsError.invalidData(
+          "SigningPublicKey must be a byte string (Schnorr), array (ECDSA/Ed25519/Sr25519), tagged MLDSA, or tagged SSH",
+        );
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...SigningPublicKey.codec.tags];
@@ -661,7 +657,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   /**
    * Returns the untagged CBOR encoding.
    *
-   * Format (matching Rust bc-components):
+   * Format:
    * - Schnorr: h'<32-byte-x-only-public-key>' (bare byte string)
    * - ECDSA:   [1, h'<33-byte-compressed-public-key>']
    * - Ed25519: [2, h'<32-byte-public-key>']
@@ -673,7 +669,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         if (this._schnorrKey === undefined) {
           throw ComponentsError.invalidData("Schnorr public key is missing");
         }
-        // Rust: CBOR::to_byte_string(key.bytes) - bare byte string
+        // CBOR::to_byte_string(key.bytes) - bare byte string
         return cbor(this._schnorrKey.bytes);
       }
       case SignatureScheme.Ecdsa: {
@@ -700,7 +696,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         if (this._mldsaKey === undefined) {
           throw ComponentsError.invalidData("MLDSA public key is missing");
         }
-        // Rust: delegates to MLDSAPublicKey (which produces tagged CBOR)
+        // delegates to MLDSAPublicKey (which produces tagged CBOR)
         return this._mldsaKey.toCbor();
       }
       case SignatureScheme.SshEd25519:
@@ -710,7 +706,6 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         if (this._sshKey === undefined) {
           throw ComponentsError.invalidData("SSH public key is missing");
         }
-        // Mirror Rust `SigningPublicKey::SSH(key) => to_tagged_value(TAG_SSH_TEXT_PUBLIC_KEY, openssh)`
         // (`signing_public_key.rs:441-443`).
         return taggedValue(TAG_SSH_TEXT_PUBLIC_KEY, this._sshKey.toOpenssh());
       }
@@ -749,7 +744,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
    *
    * Only valid when this `SigningPublicKey` wraps an `SSHPublicKey`
    * (i.e. one of the four `SignatureScheme.SshXxx` variants). Mirrors
-   * Rust's `SigningPublicKey::SSH(key) => key.to_openssh()` usage at
+   * the reference implementation's `SigningPublicKey::SSH(key) => key.to_openssh()` usage at
    * `signing_public_key.rs:442`.
    */
   toSshOpenssh(): string {

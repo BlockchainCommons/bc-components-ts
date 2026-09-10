@@ -22,7 +22,6 @@
  * For X25519, the public key is serialized with tag 40011.
  * For MLKEM, the public key is serialized with tag 40101.
  *
- * Ported from bc-components-rust/src/encapsulation/encapsulation_public_key.rs
  */
 
 import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
@@ -67,6 +66,9 @@ function isMlkemScheme(scheme: EncapsulationScheme): boolean {
     scheme === EncapsulationScheme.MLKEM1024
   );
 }
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let ENCAPSULATION_PUBLIC_KEY_CODEC: ComponentCodec<EncapsulationPublicKey> | undefined;
 
 /**
  * Represents a public key for key encapsulation.
@@ -269,8 +271,6 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
   /**
    * Get string representation.
    *
-   * Mirrors Rust `Display for EncapsulationPublicKey`
-   * (`bc-components-rust/src/encapsulation/encapsulation_public_key.rs:191-205`):
    *   `EncapsulationPublicKey(<ref_hex_short>, <inner_key_display>)`
    * where ref_hex_short is computed from the tagged-CBOR form.
    */
@@ -307,17 +307,19 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
-  static readonly codec: ComponentCodec<EncapsulationPublicKey> = defineCodec({
-    tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_PUBLIC_KEY],
-    decodeUntagged: (cborValue) =>
-      EncapsulationPublicKey.fromX25519PublicKey(X25519PublicKey.from(expectBytes(cborValue))),
-    decodeTagged: (tag, content, whole) =>
-      tag.value === TAG_MLKEM_PUBLIC_KEY.value
-        ? EncapsulationPublicKey.fromMlkem(MLKEMPublicKey.fromCbor(whole))
-        : EncapsulationPublicKey.codec.decodeUntagged(content),
-    encodeUntagged: (value) => value.untaggedCbor(),
-    encode: (value) => value.toCbor(),
-  });
+  static get codec(): ComponentCodec<EncapsulationPublicKey> {
+    return (ENCAPSULATION_PUBLIC_KEY_CODEC ??= defineCodec({
+      tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_PUBLIC_KEY],
+      decodeUntagged: (cborValue) =>
+        EncapsulationPublicKey.fromX25519PublicKey(X25519PublicKey.from(expectBytes(cborValue))),
+      decodeTagged: (tag, content, whole) =>
+        tag.value === TAG_MLKEM_PUBLIC_KEY.value
+          ? EncapsulationPublicKey.fromMlkem(MLKEMPublicKey.fromCbor(whole))
+          : EncapsulationPublicKey.codec.decodeUntagged(content),
+      encodeUntagged: (value) => value.untaggedCbor(),
+      encode: (value) => value.toCbor(),
+    }));
+  }
 
   /**
    * Returns the CBOR tags associated with this public key.

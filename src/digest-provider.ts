@@ -5,7 +5,6 @@
  *
  * DigestProvider interface for types that can provide a cryptographic digest.
  *
- * Ported from bc-components-rust/src/digest_provider.rs
  *
  * A type that can provide a single unique digest that characterizes its contents.
  * This trait is used to define a common interface for objects that can produce

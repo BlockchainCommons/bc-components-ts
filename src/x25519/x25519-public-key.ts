@@ -23,7 +23,6 @@
  * #6.40011(h'<32-byte-public-key>')
  * ```
  *
- * Ported from bc-components-rust/src/x25519/x25519_public_key.rs
  */
 
 import { X25519_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
@@ -34,6 +33,9 @@ import { X25519_PUBLIC_KEY as TAG_X25519_PUBLIC_KEY } from "@blockchaincommons/t
 import { Digest } from "../digest.js";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let X25519_PUBLIC_KEY_CODEC: ComponentCodec<X25519PublicKey> | undefined;
 
 export class X25519PublicKey implements ToCbor, ToUR {
   static readonly KEY_SIZE: number = X25519_PUBLIC_KEY_SIZE;
@@ -102,8 +104,6 @@ export class X25519PublicKey implements ToCbor, ToUR {
   /**
    * Get string representation.
    *
-   * Mirrors Rust `Display for X25519PublicKey`
-   * (`bc-components-rust/src/x25519/x25519_public_key.rs:166-168`):
    *   `X25519PublicKey(<ref_hex_short>)` where the reference is
    *   computed from the **tagged-CBOR** form of the key.
    */
@@ -117,14 +117,16 @@ export class X25519PublicKey implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<X25519PublicKey> = defineCodec({
-    tags: [TAG_X25519_PUBLIC_KEY],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return X25519PublicKey.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<X25519PublicKey> {
+    return (X25519_PUBLIC_KEY_CODEC ??= defineCodec({
+      tags: [TAG_X25519_PUBLIC_KEY],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return X25519PublicKey.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...X25519PublicKey.codec.tags];

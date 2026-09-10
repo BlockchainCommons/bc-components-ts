@@ -4,7 +4,6 @@
  * SSH-DSA digital signature algorithm (FIPS 186-4 §4) with RFC 6979
  * deterministic k generation.
  *
- * Mirrors the Rust `dsa` crate (RustCrypto, used by `ssh-key` 0.6.7) so
  * signatures are byte-identical given the same key + message + hash.
  *
  * Used only for SSH-DSA (`ssh-dss`):
@@ -13,7 +12,7 @@
  *   - signature is fixed 40 bytes: r (20) || s (20)
  *
  * Note: DSA with q=160 / SHA-1 is cryptographically deprecated. We
- * support it only for parity with Rust's `bc-components-rust` SSH
+ * support it only for parity with the reference implementation's the reference implementation SSH
  * keygen path, which itself is feature-gated and primarily used in
  * legacy-interop tests. Do NOT use this module for new keys.
  */
@@ -189,7 +188,7 @@ export interface DsaVerifyParams extends DsaPublicParams {
 /**
  * Sign `messageDigest` with the DSA private key, returning a fixed-length
  * `r || s` signature. Uses RFC 6979 deterministic `k` so signatures match
- * Rust's `dsa` crate byte-for-byte.
+ * the reference implementation's `dsa` crate byte-for-byte.
  *
  * Output length is `2 * (qlen / 8)` = 40 bytes for SSH-DSA-1024.
  */
@@ -204,7 +203,7 @@ export function dsaSign(params: DsaSignParams): Uint8Array {
   // Loop in case (r, s) hits the (rare) degenerate case where r=0 or s=0.
   // RFC 6979 §3.2 defines the next-k recovery as continuing the HMAC
   // chain — but for q=160 + SHA-1 the probability of this is ~2^-160, so
-  // we treat it as fatal here (matching Rust `dsa` crate behaviour).
+  // we treat it as fatal here.
   const k = rfc6979Nonce(q, params.x, params.messageDigest);
   const r = modpow(g, k, p) % q;
   if (r === 0n) {

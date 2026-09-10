@@ -23,7 +23,6 @@
  * #6.40010(h'<32-byte-private-key>')
  * ```
  *
- * Ported from bc-components-rust/src/x25519/x25519_private_key.rs
  */
 
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
@@ -36,6 +35,9 @@ import { ComponentsError } from "../error.js";
 import { X25519PublicKey } from "./x25519-public-key.js";
 import { SymmetricKey } from "../symmetric/symmetric-key.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let X25519_PRIVATE_KEY_CODEC: ComponentCodec<X25519PrivateKey> | undefined;
 
 export class X25519PrivateKey implements ToCbor, ToUR {
   static readonly KEY_SIZE: number = X25519_PRIVATE_KEY_SIZE;
@@ -175,14 +177,16 @@ export class X25519PrivateKey implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<X25519PrivateKey> = defineCodec({
-    tags: [TAG_X25519_PRIVATE_KEY],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return X25519PrivateKey.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<X25519PrivateKey> {
+    return (X25519_PRIVATE_KEY_CODEC ??= defineCodec({
+      tags: [TAG_X25519_PRIVATE_KEY],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return X25519PrivateKey.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...X25519PrivateKey.codec.tags];

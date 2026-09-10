@@ -21,7 +21,6 @@
  * - `KeyDerivationParams`: Union type for method-specific parameters
  * - Individual parameter types: `HKDFParams`, `PBKDF2Params`, `ScryptParams`, `Argon2idParams`, `SSHAgentParams`
  *
- * Ported from bc-components-rust/src/encrypted_key/mod.rs
  */
 
 // Enums

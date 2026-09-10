@@ -5,7 +5,6 @@
  *
  * An "Apparently Random Identifier" (ARID)
  *
- * Ported from bc-components-rust/src/id/arid.rs
  *
  * An ARID is a cryptographically strong, universally unique identifier with
  * the following properties:
@@ -58,6 +57,9 @@ import { ARID as TAG_ARID } from "@blockchaincommons/tags";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let A_R_I_D_CODEC: ComponentCodec<ARID> | undefined;
 
 export class ARID implements ToCbor, ToUR {
   static readonly ARID_SIZE = 32;
@@ -162,14 +164,16 @@ export class ARID implements ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<ARID> = defineCodec({
-    tags: [TAG_ARID],
-    decodeUntagged: (cbor) => {
-      const data = expectBytes(cbor);
-      return ARID.from(data);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+  static get codec(): ComponentCodec<ARID> {
+    return (A_R_I_D_CODEC ??= defineCodec({
+      tags: [TAG_ARID],
+      decodeUntagged: (cbor) => {
+        const data = expectBytes(cbor);
+        return ARID.from(data);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...ARID.codec.tags];

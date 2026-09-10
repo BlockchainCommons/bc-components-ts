@@ -12,7 +12,6 @@
  * - X25519: Curve25519-based Diffie-Hellman key exchange (default)
  * - MLKEM512, MLKEM768, MLKEM1024: ML-KEM at various security levels
  *
- * Ported from bc-components-rust/src/encapsulation/encapsulation_scheme.rs
  */
 
 import { MLKEMLevel } from "../mlkem/mlkem-level.js";
@@ -21,28 +20,31 @@ import { ComponentsError } from "../error.js";
 /**
  * Available key encapsulation schemes.
  */
-export enum EncapsulationScheme {
+export const EncapsulationScheme = {
   /**
    * X25519 Diffie-Hellman key exchange (default).
    * Based on Curve25519 as defined in RFC 7748.
    */
-  X25519 = "x25519",
+  X25519: "x25519",
 
   /**
    * ML-KEM-512 post-quantum key encapsulation (NIST security level 1).
    */
-  MLKEM512 = "mlkem512",
+  MLKEM512: "mlkem512",
 
   /**
    * ML-KEM-768 post-quantum key encapsulation (NIST security level 3).
    */
-  MLKEM768 = "mlkem768",
+  MLKEM768: "mlkem768",
 
   /**
    * ML-KEM-1024 post-quantum key encapsulation (NIST security level 5).
    */
-  MLKEM1024 = "mlkem1024",
-}
+  MLKEM1024: "mlkem1024",
+} as const;
+
+/** One of the `EncapsulationScheme` values. */
+export type EncapsulationScheme = (typeof EncapsulationScheme)[keyof typeof EncapsulationScheme];
 
 /**
  * Returns the default encapsulation scheme (X25519).

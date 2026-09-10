@@ -23,7 +23,6 @@
  * })
  * ```
  *
- * Ported from bc-components-rust/src/ec_key/ec_uncompressed_public_key.rs
  */
 
 import { ecdsa, ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE } from "@blockchaincommons/crypto";
@@ -48,6 +47,9 @@ const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
 import { ComponentsError } from "../error.js";
 import { bytesToHex, hexToBytes, toBase64 } from "../utils.js";
 import type { ECKeyBase } from "./ec-key-base.js";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let E_C_UNCOMPRESSED_PUBLIC_KEY_CODEC: ComponentCodec<ECUncompressedPublicKey> | undefined;
 
 export class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR {
   static readonly KEY_SIZE: number = ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE;
@@ -133,28 +135,32 @@ export class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR {
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<ECUncompressedPublicKey> = defineCodec({
-    tags: [TAG_EC_KEY, TAG_EC_KEY_V1],
-    decodeUntagged: (cborValue) => {
-      const map = expectMap(cborValue);
+  static get codec(): ComponentCodec<ECUncompressedPublicKey> {
+    return (E_C_UNCOMPRESSED_PUBLIC_KEY_CODEC ??= defineCodec({
+      tags: [TAG_EC_KEY, TAG_EC_KEY_V1],
+      decodeUntagged: (cborValue) => {
+        const map = expectMap(cborValue);
 
-      // Check that key 2 is not present (would indicate private key)
-      const isPrivate = mapGetBoolean(map, 2);
-      if (isPrivate === true) {
-        throw ComponentsError.invalidData("Expected ECUncompressedPublicKey but found private key");
-      }
+        // Check that key 2 is not present (would indicate private key)
+        const isPrivate = mapGetBoolean(map, 2);
+        if (isPrivate === true) {
+          throw ComponentsError.invalidData(
+            "Expected ECUncompressedPublicKey but found private key",
+          );
+        }
 
-      // Get key data from key 3
-      // CborMap.extract() returns native types (Uint8Array for byte strings)
-      const keyData = mapGetBytes(map, 3);
-      if (keyData === undefined || keyData.length === 0) {
-        throw ComponentsError.invalidData("ECUncompressedPublicKey CBOR must have key 3 (data)");
-      }
+        // Get key data from key 3
+        // CborMap.extract() returns native types (Uint8Array for byte strings)
+        const keyData = mapGetBytes(map, 3);
+        if (keyData === undefined || keyData.length === 0) {
+          throw ComponentsError.invalidData("ECUncompressedPublicKey CBOR must have key 3 (data)");
+        }
 
-      return ECUncompressedPublicKey.from(keyData);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return ECUncompressedPublicKey.from(keyData);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...ECUncompressedPublicKey.codec.tags];

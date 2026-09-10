@@ -19,7 +19,6 @@
  *
  * UR type: `crypto-prvkeys`
  *
- * Ported from bc-components-rust/src/private_keys.rs
  */
 
 import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
@@ -53,6 +52,9 @@ export interface PrivateKeysProvider {
    */
   privateKeys(): PrivateKeys;
 }
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let PRIVATE_KEYS_CODEC: ComponentCodec<PrivateKeys> | undefined;
 
 /**
  * PrivateKeys - Container for a signing key and an encapsulation key.
@@ -117,7 +119,7 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
   /**
    * Returns the encapsulation private key.
    *
-   * Note: Named to match Rust's API (which has a typo but we maintain compatibility)
+   * Note: Named to match the reference implementation's API (which has a typo but we maintain compatibility)
    */
   encapsulationPrivateKey(): EncapsulationPrivateKey {
     return this._encapsulationPrivateKey;
@@ -194,8 +196,6 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
   }
 
   /**
-   * Mirror of Rust `Display for PrivateKeys`
-   * (`bc-components-rust/src/private_keys.rs:229-238`):
    *   `PrivateKeys(<refHexShort>, <signingPrivateKey>, <encapsulationPrivateKey>)`
    * The previous abbreviated form (`PrivateKeys(<short>)` only) was a
    * parity drift caught by the E1a summarizer audit.
@@ -211,24 +211,26 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
   // ============================================================================
 
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static readonly codec: ComponentCodec<PrivateKeys> = defineCodec({
-    tags: [TAG_PRIVATE_KEYS],
-    decodeUntagged: (cborValue) => {
-      const elements = expectArray(cborValue);
+  static get codec(): ComponentCodec<PrivateKeys> {
+    return (PRIVATE_KEYS_CODEC ??= defineCodec({
+      tags: [TAG_PRIVATE_KEYS],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
 
-      if (elements.length !== 2) {
-        throw ComponentsError.invalidData(
-          `PrivateKeys must have 2 elements, got ${elements.length}`,
-        );
-      }
+        if (elements.length !== 2) {
+          throw ComponentsError.invalidData(
+            `PrivateKeys must have 2 elements, got ${elements.length}`,
+          );
+        }
 
-      const signingPrivateKey = SigningPrivateKey.fromCbor(elements[0]);
-      const encapsulationPrivateKey = EncapsulationPrivateKey.fromCbor(elements[1]);
+        const signingPrivateKey = SigningPrivateKey.fromCbor(elements[0]);
+        const encapsulationPrivateKey = EncapsulationPrivateKey.fromCbor(elements[1]);
 
-      return new PrivateKeys(signingPrivateKey, encapsulationPrivateKey);
-    },
-    encodeUntagged: (value) => value.untaggedCbor(),
-  });
+        return new PrivateKeys(signingPrivateKey, encapsulationPrivateKey);
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
 
   cborTags(): Tag[] {
     return [...PrivateKeys.codec.tags];
