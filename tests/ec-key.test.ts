@@ -32,9 +32,9 @@ const TEST_MESSAGE = new TextEncoder().encode("Hello, World!");
 describe("ECPrivateKey", () => {
   describe("creation", () => {
     it("should create a new random key", () => {
-      const key = ECPrivateKey.new();
+      const key = ECPrivateKey.random();
       expect(key).toBeInstanceOf(ECPrivateKey);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes.length).toBe(32);
     });
 
     it("should create unique random keys", () => {
@@ -45,37 +45,37 @@ describe("ECPrivateKey", () => {
 
     it("should create from raw data", () => {
       const data = hexToBytes(TEST_PRIVATE_KEY_HEX);
-      const key = ECPrivateKey.fromData(data);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      const key = ECPrivateKey.from(data);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should create using fromDataRef", () => {
       const data = hexToBytes(TEST_PRIVATE_KEY_HEX);
-      const key = ECPrivateKey.fromDataRef(data);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      const key = ECPrivateKey.from(data);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const data = new Uint8Array(16);
-      expect(() => ECPrivateKey.fromDataRef(data)).toThrow();
+      expect(() => ECPrivateKey.from(data)).toThrow();
     });
 
     it("should create using from (legacy alias)", () => {
       const data = hexToBytes(TEST_PRIVATE_KEY_HEX);
       const key = ECPrivateKey.from(data);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should create from hex string", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should create using provided RNG", () => {
       const rng = new SecureRng();
-      const key = ECPrivateKey.newUsing(rng);
+      const key = ECPrivateKey.random({ rng: rng });
       expect(key).toBeInstanceOf(ECPrivateKey);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes.length).toBe(32);
     });
   });
 
@@ -90,7 +90,7 @@ describe("ECPrivateKey", () => {
 
     it("should create keypair using provided RNG", () => {
       const rng = new SecureRng();
-      const [privateKey, publicKey] = ECPrivateKey.keypairUsing(rng);
+      const [privateKey, publicKey] = ECPrivateKey.keypair({ rng: rng });
 
       expect(privateKey).toBeInstanceOf(ECPrivateKey);
       expect(publicKey).toBeInstanceOf(ECPublicKey);
@@ -103,7 +103,7 @@ describe("ECPrivateKey", () => {
       const keyMaterial = new TextEncoder().encode("test key material");
       const key = ECPrivateKey.deriveFromKeyMaterial(keyMaterial);
       expect(key).toBeInstanceOf(ECPrivateKey);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes.length).toBe(32);
     });
 
     it("should produce deterministic keys from same material", () => {
@@ -125,13 +125,13 @@ describe("ECPrivateKey", () => {
   describe("accessors", () => {
     it("should return data as bytes", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      expect(key.data()).toBeInstanceOf(Uint8Array);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes).toBeInstanceOf(Uint8Array);
+      expect(key.bytes.length).toBe(32);
     });
 
     it("should return hex representation", () => {
       const key = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
       expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
@@ -151,7 +151,7 @@ describe("ECPrivateKey", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
       expect(publicKey).toBeInstanceOf(ECPublicKey);
-      expect(publicKey.data().length).toBe(33);
+      expect(publicKey.bytes.length).toBe(33);
     });
 
     it("should cache derived public key", () => {
@@ -167,7 +167,7 @@ describe("ECPrivateKey", () => {
       const privateKey = ECPrivateKey.random();
       const schnorrPubKey = privateKey.schnorrPublicKey();
       expect(schnorrPubKey).toBeInstanceOf(SchnorrPublicKey);
-      expect(schnorrPubKey.data().length).toBe(32);
+      expect(schnorrPubKey.bytes.length).toBe(32);
     });
 
     it("should cache derived Schnorr public key", () => {
@@ -328,30 +328,30 @@ describe("ECPublicKey", () => {
     it("should create from raw data", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const data = publicKey.data();
+      const data = publicKey.bytes;
 
-      const restored = ECPublicKey.fromData(data);
+      const restored = ECPublicKey.from(data);
       expect(restored.equals(publicKey)).toBe(true);
     });
 
     it("should create using fromDataRef", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const data = publicKey.data();
+      const data = publicKey.bytes;
 
-      const restored = ECPublicKey.fromDataRef(data);
+      const restored = ECPublicKey.from(data);
       expect(restored.equals(publicKey)).toBe(true);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const data = new Uint8Array(16);
-      expect(() => ECPublicKey.fromDataRef(data)).toThrow();
+      expect(() => ECPublicKey.from(data)).toThrow();
     });
 
     it("should create using from (legacy alias)", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const data = publicKey.data();
+      const data = publicKey.bytes;
 
       const restored = ECPublicKey.from(data);
       expect(restored.equals(publicKey)).toBe(true);
@@ -360,7 +360,7 @@ describe("ECPublicKey", () => {
     it("should create from hex string", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const hex = publicKey.hex();
+      const hex = publicKey.toHex();
 
       const restored = ECPublicKey.fromHex(hex);
       expect(restored.equals(publicKey)).toBe(true);
@@ -371,15 +371,15 @@ describe("ECPublicKey", () => {
     it("should return data as bytes", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
-      expect(publicKey.data()).toBeInstanceOf(Uint8Array);
-      expect(publicKey.data().length).toBe(33);
+      expect(publicKey.bytes).toBeInstanceOf(Uint8Array);
+      expect(publicKey.bytes.length).toBe(33);
     });
 
     it("should return hex representation", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
-      expect(publicKey.hex().length).toBe(66); // 33 bytes = 66 hex chars
-      expect(publicKey.toHex()).toBe(publicKey.hex());
+      expect(publicKey.toHex().length).toBe(66); // 33 bytes = 66 hex chars
+      expect(publicKey.toHex()).toBe(publicKey.toHex());
     });
 
     it("should return base64 representation", () => {
@@ -402,7 +402,7 @@ describe("ECPublicKey", () => {
       const uncompressed = publicKey.uncompressedPublicKey();
 
       expect(uncompressed).toBeInstanceOf(ECUncompressedPublicKey);
-      expect(uncompressed.data().length).toBe(65);
+      expect(uncompressed.bytes.length).toBe(65);
     });
   });
 
@@ -416,7 +416,7 @@ describe("ECPublicKey", () => {
     it("should be equal to another key with same data", () => {
       const privateKey = ECPrivateKey.random();
       const publicKey1 = privateKey.publicKey();
-      const publicKey2 = ECPublicKey.fromData(publicKey1.data());
+      const publicKey2 = ECPublicKey.from(publicKey1.bytes);
       expect(publicKey1.equals(publicKey2)).toBe(true);
     });
 
@@ -477,30 +477,30 @@ describe("ECUncompressedPublicKey", () => {
     it("should create from raw data", () => {
       const privateKey = ECPrivateKey.random();
       const uncompressed = privateKey.publicKey().uncompressedPublicKey();
-      const data = uncompressed.data();
+      const data = uncompressed.bytes;
 
-      const restored = ECUncompressedPublicKey.fromData(data);
+      const restored = ECUncompressedPublicKey.from(data);
       expect(restored.equals(uncompressed)).toBe(true);
     });
 
     it("should create using fromDataRef", () => {
       const privateKey = ECPrivateKey.random();
       const uncompressed = privateKey.publicKey().uncompressedPublicKey();
-      const data = uncompressed.data();
+      const data = uncompressed.bytes;
 
-      const restored = ECUncompressedPublicKey.fromDataRef(data);
+      const restored = ECUncompressedPublicKey.from(data);
       expect(restored.equals(uncompressed)).toBe(true);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const data = new Uint8Array(16);
-      expect(() => ECUncompressedPublicKey.fromDataRef(data)).toThrow();
+      expect(() => ECUncompressedPublicKey.from(data)).toThrow();
     });
 
     it("should create from hex string", () => {
       const privateKey = ECPrivateKey.random();
       const uncompressed = privateKey.publicKey().uncompressedPublicKey();
-      const hex = uncompressed.hex();
+      const hex = uncompressed.toHex();
 
       const restored = ECUncompressedPublicKey.fromHex(hex);
       expect(restored.equals(uncompressed)).toBe(true);
@@ -511,14 +511,14 @@ describe("ECUncompressedPublicKey", () => {
     it("should return data as bytes", () => {
       const privateKey = ECPrivateKey.random();
       const uncompressed = privateKey.publicKey().uncompressedPublicKey();
-      expect(uncompressed.data()).toBeInstanceOf(Uint8Array);
-      expect(uncompressed.data().length).toBe(65);
+      expect(uncompressed.bytes).toBeInstanceOf(Uint8Array);
+      expect(uncompressed.bytes.length).toBe(65);
     });
 
     it("should return hex representation", () => {
       const privateKey = ECPrivateKey.random();
       const uncompressed = privateKey.publicKey().uncompressedPublicKey();
-      expect(uncompressed.hex().length).toBe(130); // 65 bytes = 130 hex chars
+      expect(uncompressed.toHex().length).toBe(130); // 65 bytes = 130 hex chars
     });
   });
 
@@ -530,7 +530,7 @@ describe("ECUncompressedPublicKey", () => {
       const compressedData = uncompressed.compressedData();
 
       expect(compressedData.length).toBe(33);
-      expect(bytesToHex(compressedData)).toBe(publicKey.hex());
+      expect(bytesToHex(compressedData)).toBe(publicKey.toHex());
     });
   });
 
@@ -574,30 +574,30 @@ describe("SchnorrPublicKey", () => {
     it("should create from raw data", () => {
       const privateKey = ECPrivateKey.random();
       const schnorrPubKey = privateKey.schnorrPublicKey();
-      const data = schnorrPubKey.data();
+      const data = schnorrPubKey.bytes;
 
-      const restored = SchnorrPublicKey.fromData(data);
+      const restored = SchnorrPublicKey.from(data);
       expect(restored.equals(schnorrPubKey)).toBe(true);
     });
 
     it("should create using fromDataRef", () => {
       const privateKey = ECPrivateKey.random();
       const schnorrPubKey = privateKey.schnorrPublicKey();
-      const data = schnorrPubKey.data();
+      const data = schnorrPubKey.bytes;
 
-      const restored = SchnorrPublicKey.fromDataRef(data);
+      const restored = SchnorrPublicKey.from(data);
       expect(restored.equals(schnorrPubKey)).toBe(true);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const data = new Uint8Array(16);
-      expect(() => SchnorrPublicKey.fromDataRef(data)).toThrow();
+      expect(() => SchnorrPublicKey.from(data)).toThrow();
     });
 
     it("should create from hex string", () => {
       const privateKey = ECPrivateKey.random();
       const schnorrPubKey = privateKey.schnorrPublicKey();
-      const hex = schnorrPubKey.hex();
+      const hex = schnorrPubKey.toHex();
 
       const restored = SchnorrPublicKey.fromHex(hex);
       expect(restored.equals(schnorrPubKey)).toBe(true);
@@ -608,15 +608,15 @@ describe("SchnorrPublicKey", () => {
     it("should return data as bytes", () => {
       const privateKey = ECPrivateKey.random();
       const schnorrPubKey = privateKey.schnorrPublicKey();
-      expect(schnorrPubKey.data()).toBeInstanceOf(Uint8Array);
-      expect(schnorrPubKey.data().length).toBe(32);
+      expect(schnorrPubKey.bytes).toBeInstanceOf(Uint8Array);
+      expect(schnorrPubKey.bytes.length).toBe(32);
     });
 
     it("should return hex representation", () => {
       const privateKey = ECPrivateKey.random();
       const schnorrPubKey = privateKey.schnorrPublicKey();
-      expect(schnorrPubKey.hex().length).toBe(64); // 32 bytes = 64 hex chars
-      expect(schnorrPubKey.toHex()).toBe(schnorrPubKey.hex());
+      expect(schnorrPubKey.toHex().length).toBe(64); // 32 bytes = 64 hex chars
+      expect(schnorrPubKey.toHex()).toBe(schnorrPubKey.toHex());
     });
 
     it("should return base64 representation", () => {
@@ -668,7 +668,7 @@ describe("SchnorrPublicKey", () => {
     it("should be equal to another key with same data", () => {
       const privateKey = ECPrivateKey.random();
       const key1 = privateKey.schnorrPublicKey();
-      const key2 = SchnorrPublicKey.fromData(key1.data());
+      const key2 = SchnorrPublicKey.from(key1.bytes);
       expect(key1.equals(key2)).toBe(true);
     });
 
@@ -704,7 +704,7 @@ describe("EC key integration", () => {
     const uncompressed = compressed.uncompressedPublicKey();
     const recompressed = uncompressed.compressedData();
 
-    expect(bytesToHex(recompressed)).toBe(compressed.hex());
+    expect(bytesToHex(recompressed)).toBe(compressed.toHex());
   });
 
   it("should work with serialized keys", () => {
@@ -742,13 +742,13 @@ describe("EC key integration", () => {
 describe("EC Key Base Interfaces (Rust trait parity)", () => {
   describe("ECKeyBase interface", () => {
     it("ECPrivateKey implements ECKeyBase", () => {
-      const key = ECPrivateKey.new();
+      const key = ECPrivateKey.random();
       expect(isECKeyBase(key)).toBe(true);
 
       // Type assertion works
       const ecKeyBase: ECKeyBase = key;
-      expect(ecKeyBase.data()).toBeInstanceOf(Uint8Array);
-      expect(typeof ecKeyBase.hex()).toBe("string");
+      expect(ecKeyBase.bytes).toBeInstanceOf(Uint8Array);
+      expect(typeof ecKeyBase.toHex()).toBe("string");
     });
 
     it("ECPublicKey implements ECKeyBase", () => {
@@ -756,8 +756,8 @@ describe("EC Key Base Interfaces (Rust trait parity)", () => {
       expect(isECKeyBase(key)).toBe(true);
 
       const ecKeyBase: ECKeyBase = key;
-      expect(ecKeyBase.data()).toBeInstanceOf(Uint8Array);
-      expect(typeof ecKeyBase.hex()).toBe("string");
+      expect(ecKeyBase.bytes).toBeInstanceOf(Uint8Array);
+      expect(typeof ecKeyBase.toHex()).toBe("string");
     });
 
     it("ECUncompressedPublicKey implements ECKeyBase", () => {
@@ -766,18 +766,18 @@ describe("EC Key Base Interfaces (Rust trait parity)", () => {
       expect(isECKeyBase(key)).toBe(true);
 
       const ecKeyBase: ECKeyBase = key;
-      expect(ecKeyBase.data()).toBeInstanceOf(Uint8Array);
-      expect(typeof ecKeyBase.hex()).toBe("string");
+      expect(ecKeyBase.bytes).toBeInstanceOf(Uint8Array);
+      expect(typeof ecKeyBase.toHex()).toBe("string");
     });
 
     it("SchnorrPublicKey implements ECKeyBase", () => {
-      const privateKey = ECPrivateKey.new();
+      const privateKey = ECPrivateKey.random();
       const key = privateKey.schnorrPublicKey();
       expect(isECKeyBase(key)).toBe(true);
 
       const ecKeyBase: ECKeyBase = key;
-      expect(ecKeyBase.data()).toBeInstanceOf(Uint8Array);
-      expect(typeof ecKeyBase.hex()).toBe("string");
+      expect(ecKeyBase.bytes).toBeInstanceOf(Uint8Array);
+      expect(typeof ecKeyBase.toHex()).toBe("string");
     });
 
     it("isECKeyBase returns false for non-EC objects", () => {
@@ -790,7 +790,7 @@ describe("EC Key Base Interfaces (Rust trait parity)", () => {
 
   describe("ECKey interface", () => {
     it("ECPrivateKey implements ECKey", () => {
-      const key = ECPrivateKey.new();
+      const key = ECPrivateKey.random();
       expect(isECKey(key)).toBe(true);
 
       const ecKey: ECKey = key;
@@ -822,12 +822,12 @@ describe("EC Key Base Interfaces (Rust trait parity)", () => {
     });
 
     it("isECPublicKeyBase returns false for ECPrivateKey", () => {
-      const key = ECPrivateKey.new();
+      const key = ECPrivateKey.random();
       expect(isECPublicKeyBase(key)).toBe(false);
     });
 
     it("isECPublicKeyBase returns false for SchnorrPublicKey", () => {
-      const privateKey = ECPrivateKey.new();
+      const privateKey = ECPrivateKey.random();
       const key = privateKey.schnorrPublicKey();
       expect(isECPublicKeyBase(key)).toBe(false);
     });
@@ -836,22 +836,22 @@ describe("EC Key Base Interfaces (Rust trait parity)", () => {
   describe("interface polymorphism", () => {
     it("can work with any ECKeyBase polymorphically", () => {
       const keys: ECKeyBase[] = [
-        ECPrivateKey.new(),
-        ECPrivateKey.new().publicKey(),
-        ECPrivateKey.new().publicKey().uncompressedPublicKey(),
-        ECPrivateKey.new().schnorrPublicKey(),
+        ECPrivateKey.random(),
+        ECPrivateKey.random().publicKey(),
+        ECPrivateKey.random().publicKey().uncompressedPublicKey(),
+        ECPrivateKey.random().schnorrPublicKey(),
       ];
 
       for (const key of keys) {
-        expect(key.data()).toBeInstanceOf(Uint8Array);
-        expect(key.data().length).toBeGreaterThan(0);
-        expect(typeof key.hex()).toBe("string");
-        expect(key.hex().length).toBeGreaterThan(0);
+        expect(key.bytes).toBeInstanceOf(Uint8Array);
+        expect(key.bytes.length).toBeGreaterThan(0);
+        expect(typeof key.toHex()).toBe("string");
+        expect(key.toHex().length).toBeGreaterThan(0);
       }
     });
 
     it("can work with any ECKey polymorphically", () => {
-      const privateKey = ECPrivateKey.new();
+      const privateKey = ECPrivateKey.random();
       const publicKey = privateKey.publicKey();
 
       const keys: ECKey[] = [privateKey, publicKey];

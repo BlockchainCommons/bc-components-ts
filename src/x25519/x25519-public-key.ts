@@ -54,65 +54,31 @@ export class X25519PublicKey implements ToCbor, ToUR {
   /**
    * Restore an X25519PublicKey from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): X25519PublicKey {
-    return new X25519PublicKey(new Uint8Array(data));
-  }
-
-  /**
-   * Restore an X25519PublicKey from a reference to an array of bytes.
-   * Validates the length.
-   */
-  static fromDataRef(data: Uint8Array): X25519PublicKey {
-    if (data.length !== X25519_PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(X25519_PUBLIC_KEY_SIZE, data.length);
-    }
-    return X25519PublicKey.fromData(data);
-  }
-
-  /**
-   * Create an X25519PublicKey from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): X25519PublicKey {
-    return X25519PublicKey.fromData(data);
+    return new X25519PublicKey(new Uint8Array(data));
   }
 
   /**
    * Restore an X25519PublicKey from a hex string.
    */
   static fromHex(hex: string): X25519PublicKey {
-    return X25519PublicKey.fromData(hexToBytes(hex));
+    return X25519PublicKey.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get a reference to the fixed-size array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the raw public key bytes (copy).
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -155,7 +121,7 @@ export class X25519PublicKey implements ToCbor, ToUR {
     tags: [TAG_X25519_PUBLIC_KEY],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return X25519PublicKey.fromDataRef(data);
+      return X25519PublicKey.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

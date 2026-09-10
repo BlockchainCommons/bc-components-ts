@@ -83,29 +83,20 @@ export class EncryptedMessage implements ToCbor, ToUR {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Restores an EncryptedMessage from its components.
-   */
-  static new(
-    ciphertext: Uint8Array,
-    aad: Uint8Array,
-    nonce: Nonce,
-    auth: Uint8Array | AuthenticationTag,
-  ): EncryptedMessage {
-    const authTag = auth instanceof AuthenticationTag ? auth : AuthenticationTag.fromData(auth);
-    return new EncryptedMessage(ciphertext, aad, nonce, authTag);
-  }
-
-  /**
-   * Create an EncryptedMessage from components (legacy alias).
-   */
-  static from(
-    nonce: Nonce,
-    ciphertext: Uint8Array,
-    tag: AuthenticationTag,
-    aad?: Uint8Array,
-  ): EncryptedMessage {
-    return new EncryptedMessage(ciphertext, aad ?? new Uint8Array(0), nonce, tag);
+  /** Assemble a message from its parts (no encryption happens here). */
+  static from({
+    ciphertext,
+    nonce,
+    authTag,
+    aad = new Uint8Array(0),
+  }: {
+    ciphertext: Uint8Array;
+    nonce: Nonce;
+    authTag: AuthenticationTag | Uint8Array;
+    aad?: Uint8Array;
+  }): EncryptedMessage {
+    const tag = authTag instanceof AuthenticationTag ? authTag : AuthenticationTag.from(authTag);
+    return new EncryptedMessage(ciphertext, aad, nonce, tag);
   }
 
   // ============================================================================
@@ -115,28 +106,28 @@ export class EncryptedMessage implements ToCbor, ToUR {
   /**
    * Returns a reference to the ciphertext data.
    */
-  ciphertext(): Uint8Array {
+  get ciphertext(): Uint8Array {
     return this._ciphertext;
   }
 
   /**
    * Returns a reference to the additional authenticated data (AAD).
    */
-  aad(): Uint8Array {
+  get aad(): Uint8Array {
     return this._aad;
   }
 
   /**
    * Returns a reference to the nonce value used for encryption.
    */
-  nonce(): Nonce {
+  get nonce(): Nonce {
     return this._nonce;
   }
 
   /**
    * Returns a reference to the authentication tag value used for encryption.
    */
-  authenticationTag(): AuthenticationTag {
+  get authenticationTag(): AuthenticationTag {
     return this._auth;
   }
 
@@ -214,12 +205,17 @@ export class EncryptedMessage implements ToCbor, ToUR {
 
       const ciphertext = expectBytes(elements[0]);
       const nonceData = expectBytes(elements[1]);
-      const nonce = Nonce.fromDataRef(nonceData);
+      const nonce = Nonce.from(nonceData);
       const authData = expectBytes(elements[2]);
-      const auth = AuthenticationTag.fromDataRef(authData);
+      const auth = AuthenticationTag.from(authData);
       const aad = elements.length > 3 ? expectBytes(elements[3]) : new Uint8Array(0);
 
-      return EncryptedMessage.new(ciphertext, aad, nonce, auth);
+      return EncryptedMessage.from({
+        ciphertext: ciphertext,
+        aad: aad,
+        nonce: nonce,
+        authTag: auth,
+      });
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });
@@ -235,8 +231,8 @@ export class EncryptedMessage implements ToCbor, ToUR {
   untaggedCbor(): Cbor {
     const elements: Cbor[] = [
       cbor(this._ciphertext),
-      cbor(this._nonce.data()),
-      cbor(this._auth.data()),
+      cbor(this._nonce.bytes),
+      cbor(this._auth.bytes),
     ];
 
     if (this._aad.length > 0) {

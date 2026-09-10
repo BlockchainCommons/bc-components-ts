@@ -12,28 +12,28 @@ describe("JSON", () => {
     it("should create from string", () => {
       const json = JSON.fromString('{"key": "value"}');
       expect(json.asStr()).toBe('{"key": "value"}');
-      expect(json.len()).toBe(16);
+      expect(json.byteLength).toBe(16);
       expect(json.isEmpty()).toBe(false);
     });
 
     it("should create from bytes", () => {
       const data = new TextEncoder().encode("[1, 2, 3]");
-      const json = JSON.fromData(data);
-      expect(json.asBytes()).toEqual(data);
+      const json = JSON.from(data);
+      expect(json.bytes).toEqual(data);
       expect(json.asStr()).toBe("[1, 2, 3]");
     });
 
     it("should handle empty JSON", () => {
       const json = JSON.fromString("");
       expect(json.isEmpty()).toBe(true);
-      expect(json.len()).toBe(0);
+      expect(json.byteLength).toBe(0);
     });
   });
 
   describe("hex encoding", () => {
     it("should convert to and from hex", () => {
       const json = JSON.fromString("test");
-      const hex = json.hex();
+      const hex = json.toHex();
       const json2 = JSON.fromHex(hex);
       expect(json.equals(json2)).toBe(true);
     });
@@ -81,8 +81,8 @@ describe("JSON", () => {
   describe("data access", () => {
     it("should return copy of data", () => {
       const json = JSON.fromString("data");
-      const bytes1 = json.toData();
-      const bytes2 = json.toData();
+      const bytes1 = json.bytes;
+      const bytes2 = json.bytes;
 
       // Should be equal but different arrays
       expect(bytes1).toEqual(bytes2);

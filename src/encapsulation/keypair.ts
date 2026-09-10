@@ -53,7 +53,7 @@ export function createEncapsulationKeypairUsing(
 ): [EncapsulationPrivateKey, EncapsulationPublicKey] {
   switch (scheme) {
     case EncapsulationScheme.X25519:
-      return EncapsulationPrivateKey.keypairUsing(rng);
+      return EncapsulationPrivateKey.keypair({ rng: rng });
     case EncapsulationScheme.MLKEM512:
     case EncapsulationScheme.MLKEM768:
     case EncapsulationScheme.MLKEM1024:

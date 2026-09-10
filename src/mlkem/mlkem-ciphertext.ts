@@ -83,28 +83,17 @@ export class MLKEMCiphertext implements ToCbor, ToUR {
   /**
    * Returns the security level of this ciphertext.
    */
-  level(): MLKEMLevel {
+  get level(): MLKEMLevel {
     return this._level;
   }
 
-  /**
-   * Returns the raw ciphertext bytes.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Returns a copy of the raw ciphertext bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
-  /**
-   * Returns the size of the ciphertext in bytes.
-   */
-  size(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 

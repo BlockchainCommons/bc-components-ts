@@ -96,28 +96,17 @@ export class MLKEMPublicKey implements ToCbor, ToUR {
   /**
    * Returns the security level of this key.
    */
-  level(): MLKEMLevel {
+  get level(): MLKEMLevel {
     return this._level;
   }
 
-  /**
-   * Returns the raw key bytes.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Returns a copy of the raw key bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
-  /**
-   * Returns the size of the key in bytes.
-   */
-  size(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 
@@ -132,7 +121,7 @@ export class MLKEMPublicKey implements ToCbor, ToUR {
    */
   encapsulate(): MLKEMEncapsulationPair {
     const result = mlkemEncapsulate(this._level, this._data);
-    const sharedSecret = SymmetricKey.fromData(result.sharedSecret);
+    const sharedSecret = SymmetricKey.from(result.sharedSecret);
     const ciphertext = MLKEMCiphertext.fromBytes(this._level, result.ciphertext);
     return { sharedSecret, ciphertext };
   }

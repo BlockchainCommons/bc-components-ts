@@ -27,17 +27,12 @@ export declare class Argon2idParams implements KeyDerivation {
     static readonly INDEX: KeyDerivationMethod;
     private readonly _salt;
     private constructor();
-    /**
-     * Create new Argon2id parameters with default settings.
-     * Uses a random 16-byte salt.
-     */
-    static new(): Argon2idParams;
-    /**
-     * Create Argon2id parameters with a custom salt.
-     */
-    static newOpt(salt: Salt): Argon2idParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt }?: {
+        salt?: Salt;
+    }): Argon2idParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -81,24 +76,12 @@ export declare class ARID implements ToCbor, ToUR {
     static readonly ARID_SIZE = 32;
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random ARID.
-     */
-    static new(): ARID;
-    /**
-     * Create a new random ARID (alias for new()).
-     */
-    static random(): ARID;
+    /** A fresh random ARID; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): ARID;
     /**
      * Restore an ARID from a fixed-size array of bytes.
-     */
-    static fromData(data: Uint8Array): ARID;
-    /**
-     * Create a new ARID from a reference to an array of bytes.
-     */
-    static fromDataRef(data: Uint8Array): ARID;
-    /**
-     * Create an ARID from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): ARID;
     /**
@@ -107,24 +90,10 @@ export declare class ARID implements ToCbor, ToUR {
      * @throws Error if the string is not exactly 64 hexadecimal digits.
      */
     static fromHex(hex: string): ARID;
-    /**
-     * Get the data of the ARID as an array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the data of the ARID as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw ARID bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * The data as a hexadecimal string.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -169,31 +138,13 @@ export declare class AuthenticationTag {
     /**
      * Restore an AuthenticationTag from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): AuthenticationTag;
-    /**
-     * Restore an AuthenticationTag from a reference to an array of bytes.
-     */
-    static fromDataRef(data: Uint8Array): AuthenticationTag;
-    /**
-     * Create an AuthenticationTag from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): AuthenticationTag;
     /**
      * Create an AuthenticationTag from hex string.
      */
     static fromHex(hex: string): AuthenticationTag;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the reference as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw tag bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
      */
@@ -366,7 +317,12 @@ export declare class Compressed implements ToCbor, DigestProvider {
      * @returns A new `Compressed` object
      * @throws ComponentsError if the compressed data is larger than the decompressed size
      */
-    static new(checksum: number, decompressedSize: number, compressedData: Uint8Array, digest?: Digest): Compressed;
+    static fromParts({ checksum, decompressedSize, compressedData, digest }: {
+        checksum: number;
+        decompressedSize: number;
+        compressedData: Uint8Array;
+        digest?: Digest | undefined;
+    }): Compressed;
     /**
      * Creates a new `Compressed` object by compressing the provided data.
      *
@@ -396,15 +352,15 @@ export declare class Compressed implements ToCbor, DigestProvider {
     /**
      * Returns the size of the compressed data in bytes.
      */
-    compressedSize(): number;
+    get compressedSize(): number;
     /**
      * Returns the size of the decompressed data in bytes.
      */
-    decompressedSize(): number;
+    get decompressedSize(): number;
     /**
      * Returns the CRC32 checksum of the decompressed data.
      */
-    checksum(): number;
+    get checksum(): number;
     /**
      * Returns the compression ratio of the data.
      *
@@ -416,7 +372,7 @@ export declare class Compressed implements ToCbor, DigestProvider {
      * - Values equal to 1.0 indicate no compression was applied
      * - Values of NaN can occur if the decompressed size is zero
      */
-    compressionRatio(): number;
+    get compressionRatio(): number;
     /**
      * Returns the digest of the compressed data, if available.
      *
@@ -608,19 +564,12 @@ export declare class Digest implements DigestProvider, ToCbor, ToUR {
     static readonly DIGEST_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Get the digest data.
-     */
-    data(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Create a Digest from a 32-byte array.
      */
-    static fromData(data: Uint8Array): Digest;
-    /**
-     * Create a Digest from data, validating the length.
-     * Alias for fromData for compatibility with Rust API.
-     */
-    static fromDataRef(data: Uint8Array): Digest;
+    static from(data: Uint8Array): Digest;
     /**
      * Create a Digest from hex string.
      *
@@ -655,19 +604,7 @@ export declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     static hash(data: Uint8Array): Digest;
     /**
-     * Get the raw digest bytes as a copy.
-     */
-    toData(): Uint8Array;
-    /**
-     * Get a reference to the raw digest bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -783,11 +720,11 @@ export declare interface ECKeyBase {
     /**
      * Returns the key's binary data.
      */
-    data(): Uint8Array;
+    readonly bytes: Uint8Array;
     /**
      * Returns the key as a hexadecimal string.
      */
-    hex(): string;
+    toHex(): string;
 }
 
 export declare class ECPrivateKey implements ECKey, ToCbor, ToUR {
@@ -796,27 +733,14 @@ export declare class ECPrivateKey implements ECKey, ToCbor, ToUR {
     private _publicKey?;
     private _schnorrPublicKey?;
     private constructor();
-    /**
-     * Generate a new random ECPrivateKey.
-     */
-    static new(): ECPrivateKey;
-    /**
-     * Generate a new random ECPrivateKey.
-     */
-    static random(): ECPrivateKey;
-    /**
-     * Generate a new random ECPrivateKey using provided RNG.
-     */
-    static newUsing(rng: RandomNumberGenerator): ECPrivateKey;
-    /**
-     * Generate a new random ECPrivateKey and corresponding ECPublicKey.
-     */
-    static keypair(): [ECPrivateKey, ECPublicKey];
-    /**
-     * Generate a new random ECPrivateKey and corresponding ECPublicKey
-     * using the given random number generator.
-     */
-    static keypairUsing(rng: RandomNumberGenerator): [ECPrivateKey, ECPublicKey];
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): ECPrivateKey;
+    /** A fresh private key and its public key. */
+    static keypair({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [ECPrivateKey, ECPublicKey];
     /**
      * Derive an ECPrivateKey from the given key material.
      *
@@ -827,34 +751,15 @@ export declare class ECPrivateKey implements ECKey, ToCbor, ToUR {
     /**
      * Restore an ECPrivateKey from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): ECPrivateKey;
-    /**
-     * Restore an ECPrivateKey from a reference to an array of bytes.
-     * Validates the length.
-     */
-    static fromDataRef(data: Uint8Array): ECPrivateKey;
-    /**
-     * Create an ECPrivateKey from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): ECPrivateKey;
     /**
      * Restore an ECPrivateKey from a hex string.
      */
     static fromHex(hex: string): ECPrivateKey;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the raw private key bytes (copy).
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -923,34 +828,15 @@ export declare class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
     /**
      * Restore an ECPublicKey from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): ECPublicKey;
-    /**
-     * Restore an ECPublicKey from a reference to an array of bytes.
-     * Validates the length.
-     */
-    static fromDataRef(data: Uint8Array): ECPublicKey;
-    /**
-     * Create an ECPublicKey from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): ECPublicKey;
     /**
      * Restore an ECPublicKey from a hex string.
      */
     static fromHex(hex: string): ECPublicKey;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the raw public key bytes (copy).
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -1035,34 +921,15 @@ export declare class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR 
     /**
      * Restore an ECUncompressedPublicKey from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): ECUncompressedPublicKey;
-    /**
-     * Restore an ECUncompressedPublicKey from a reference to an array of bytes.
-     * Validates the length.
-     */
-    static fromDataRef(data: Uint8Array): ECUncompressedPublicKey;
-    /**
-     * Create an ECUncompressedPublicKey from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): ECUncompressedPublicKey;
     /**
      * Restore an ECUncompressedPublicKey from a hex string.
      */
     static fromHex(hex: string): ECUncompressedPublicKey;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the raw public key bytes (copy).
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -1111,28 +978,20 @@ export declare class Ed25519PrivateKey {
      * Create an Ed25519PrivateKey from hex string (64 hex characters)
      */
     static fromHex(hex: string): Ed25519PrivateKey;
-    /**
-     * Generate a random Ed25519PrivateKey
-     */
-    static random(): Ed25519PrivateKey;
-    /**
-     * Generate a random Ed25519PrivateKey using provided RNG
-     */
-    static randomUsing(rng: RandomNumberGenerator): Ed25519PrivateKey;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Ed25519PrivateKey;
     /**
      * Derives an Ed25519 private key from the given key material via
      * HKDF-SHA-256 with salt `"signing"` and empty info (matches Rust
      * `bc_crypto::derive_signing_private_key`).
      */
     static deriveFromKeyMaterial(keyMaterial: Uint8Array): Ed25519PrivateKey;
-    /**
-     * Get the raw seed bytes (32 bytes).
-     */
-    data(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /** Alias of {@link Ed25519PrivateKey.data}. */
-    asBytes(): Uint8Array;
     /** Backwards-compatible alias of {@link Ed25519PrivateKey.data}. */
-    toData(): Uint8Array;
     /**
      * Get hex string representation of the seed
      */
@@ -1167,23 +1026,14 @@ export declare class Ed25519PublicKey {
      */
     static from(data: Uint8Array): Ed25519PublicKey;
     /**
-     * Mirror of Rust `Ed25519PublicKey::from_data` — exact-length copy.
-     */
-    static fromData(data: Uint8Array): Ed25519PublicKey;
-    /**
-     * Mirror of Rust `Ed25519PublicKey::from_data_ref` — validates length.
-     */
-    static fromDataRef(data: Uint8Array): Ed25519PublicKey;
-    /**
      * Create an Ed25519PublicKey from hex string.
      */
     static fromHex(hex: string): Ed25519PublicKey;
     /** Returns the 32 raw public key bytes (copy). */
-    data(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /** Alias of {@link Ed25519PublicKey.data}. */
-    asBytes(): Uint8Array;
     /** Backwards-compatible alias of {@link Ed25519PublicKey.data}. */
-    toData(): Uint8Array;
     /**
      * Get hex string representation
      */
@@ -1242,7 +1092,7 @@ export declare class EncapsulationCiphertext implements ToCbor {
     /**
      * Returns the encapsulation scheme.
      */
-    encapsulationScheme(): EncapsulationScheme;
+    get encapsulationScheme(): EncapsulationScheme;
     /**
      * Returns true if this is an X25519 ciphertext.
      */
@@ -1264,15 +1114,13 @@ export declare class EncapsulationCiphertext implements ToCbor {
     /**
      * Returns the X25519 public key if available, or null.
      */
-    toX25519(): X25519PublicKey | null;
+    asX25519(): X25519PublicKey | undefined;
     /**
      * Returns the MLKEM ciphertext if available, or null.
      */
-    toMlkem(): MLKEMCiphertext | null;
-    /**
-     * Returns the raw ciphertext data.
-     */
-    data(): Uint8Array;
+    asMlkem(): MLKEMCiphertext | undefined;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Compare with another EncapsulationCiphertext.
      */
@@ -1325,46 +1173,26 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbo
      * Create an EncapsulationPrivateKey from raw MLKEM private key bytes.
      */
     static fromMlkemData(level: MLKEMLevel, data: Uint8Array): EncapsulationPrivateKey;
-    /**
-     * Generate a new random X25519 encapsulation private key.
-     */
-    static new(): EncapsulationPrivateKey;
-    /**
-     * Generate a new random X25519 encapsulation private key.
-     */
-    static random(): EncapsulationPrivateKey;
-    /**
-     * Generate a new random X25519 encapsulation private key using provided RNG.
-     */
-    static newUsing(rng: RandomNumberGenerator): EncapsulationPrivateKey;
-    /**
-     * Generate a new MLKEM encapsulation private key.
-     */
-    static newMlkem(level?: MLKEMLevel): EncapsulationPrivateKey;
-    /**
-     * Generate a new MLKEM encapsulation private key using provided RNG.
-     */
-    static newMlkemUsing(level: MLKEMLevel, rng: RandomNumberGenerator): EncapsulationPrivateKey;
-    /**
-     * Generate a new keypair for X25519.
-     */
-    static keypair(): [EncapsulationPrivateKey, EncapsulationPublicKey];
-    /**
-     * Generate a new keypair using the given RNG (X25519).
-     */
-    static keypairUsing(rng: RandomNumberGenerator): [EncapsulationPrivateKey, EncapsulationPublicKey];
-    /**
-     * Generate a new MLKEM keypair.
-     */
-    static mlkemKeypair(level?: MLKEMLevel): [EncapsulationPrivateKey, EncapsulationPublicKey];
-    /**
-     * Generate a new MLKEM keypair using the given RNG.
-     */
-    static mlkemKeypairUsing(level: MLKEMLevel, rng: RandomNumberGenerator): [EncapsulationPrivateKey, EncapsulationPublicKey];
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): EncapsulationPrivateKey;
+    /** A fresh ML-KEM private key at `level`; pass `rng` to make it deterministic. */
+    static randomMlkem(level?: MLKEMLevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): EncapsulationPrivateKey;
+    /** A fresh private key and its public key. */
+    static keypair({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [EncapsulationPrivateKey, EncapsulationPublicKey];
+    /** A fresh ML-KEM private key at `level` and its public key. */
+    static mlkemKeypair(level?: MLKEMLevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [EncapsulationPrivateKey, EncapsulationPublicKey];
     /**
      * Returns the encapsulation scheme.
      */
-    encapsulationScheme(): EncapsulationScheme;
+    get encapsulationScheme(): EncapsulationScheme;
     /**
      * Returns true if this is an X25519 private key.
      */
@@ -1386,15 +1214,13 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbo
     /**
      * Returns the X25519 private key if available, or null.
      */
-    toX25519(): X25519PrivateKey | null;
+    asX25519(): X25519PrivateKey | undefined;
     /**
      * Returns the MLKEM private key if available, or null.
      */
-    toMlkem(): MLKEMPrivateKey | null;
-    /**
-     * Returns the raw private key data.
-     */
-    data(): Uint8Array;
+    asMlkem(): MLKEMPrivateKey | undefined;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get the public key corresponding to this private key.
      */
@@ -1469,7 +1295,7 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
     /**
      * Returns the encapsulation scheme.
      */
-    encapsulationScheme(): EncapsulationScheme;
+    get encapsulationScheme(): EncapsulationScheme;
     /**
      * Returns true if this is an X25519 public key.
      */
@@ -1491,15 +1317,13 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
     /**
      * Returns the X25519 public key if available, or null.
      */
-    toX25519(): X25519PublicKey | null;
+    asX25519(): X25519PublicKey | undefined;
     /**
      * Returns the MLKEM public key if available, or null.
      */
-    toMlkem(): MLKEMPublicKey | null;
-    /**
-     * Returns the raw public key data.
-     */
-    data(): Uint8Array;
+    asMlkem(): MLKEMPublicKey | undefined;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Returns this object as an EncapsulationPublicKey.
      *
@@ -1612,15 +1436,15 @@ export declare class EncryptedKey implements ToCbor, ToUR {
     /**
      * Returns the encrypted message.
      */
-    encryptedMessage(): EncryptedMessage;
+    get encryptedMessage(): EncryptedMessage;
     /**
      * Returns the key derivation parameters.
      */
-    params(): KeyDerivationParams;
+    get params(): KeyDerivationParams;
     /**
      * Returns the key derivation method.
      */
-    method(): KeyDerivationMethod;
+    get method(): KeyDerivationMethod;
     /**
      * Check if this uses a password-based key derivation method.
      */
@@ -1671,30 +1495,29 @@ export declare class EncryptedMessage implements ToCbor, ToUR {
     private readonly _nonce;
     private readonly _auth;
     private constructor();
-    /**
-     * Restores an EncryptedMessage from its components.
-     */
-    static new(ciphertext: Uint8Array, aad: Uint8Array, nonce: Nonce, auth: Uint8Array | AuthenticationTag): EncryptedMessage;
-    /**
-     * Create an EncryptedMessage from components (legacy alias).
-     */
-    static from(nonce: Nonce, ciphertext: Uint8Array, tag: AuthenticationTag, aad?: Uint8Array): EncryptedMessage;
+    /** Assemble a message from its parts (no encryption happens here). */
+    static from({ ciphertext, nonce, authTag, aad }: {
+        ciphertext: Uint8Array;
+        nonce: Nonce;
+        authTag: AuthenticationTag | Uint8Array;
+        aad?: Uint8Array;
+    }): EncryptedMessage;
     /**
      * Returns a reference to the ciphertext data.
      */
-    ciphertext(): Uint8Array;
+    get ciphertext(): Uint8Array;
     /**
      * Returns a reference to the additional authenticated data (AAD).
      */
-    aad(): Uint8Array;
+    get aad(): Uint8Array;
     /**
      * Returns a reference to the nonce value used for encryption.
      */
-    nonce(): Nonce;
+    get nonce(): Nonce;
     /**
      * Returns a reference to the authentication tag value used for encryption.
      */
-    authenticationTag(): AuthenticationTag;
+    get authenticationTag(): AuthenticationTag;
     /**
      * Returns a CBOR representation in the AAD field, if it exists.
      */
@@ -1834,19 +1657,15 @@ export declare class HKDFParams implements KeyDerivation {
     private readonly _salt;
     private readonly _hashType;
     private constructor();
-    /**
-     * Create new HKDF parameters with default settings.
-     * Uses a random 16-byte salt and SHA-256.
-     */
-    static new(): HKDFParams;
-    /**
-     * Create HKDF parameters with custom settings.
-     */
-    static newOpt(salt: Salt, hashType: HashType): HKDFParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt, hashType }?: {
+        salt?: Salt;
+        hashType?: HashType;
+    }): HKDFParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the hash type. */
-    hashType(): HashType;
+    get hashType(): HashType;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -1904,24 +1723,14 @@ export declare class HKDFRng implements RandomNumberGenerator {
     private readonly _pageLength;
     /** Current page index */
     private _pageIndex;
-    private constructor();
     /**
-     * Creates a new `HKDFRng` with a custom page length.
-     *
-     * @param keyMaterial - The seed material to derive random numbers from
-     * @param salt - A salt value to mix with the key material
-     * @param pageLength - The number of bytes to generate in each HKDF call
-     * @returns A new `HKDFRng` instance configured with the specified parameters
+     * @param keyMaterial - The input key material for HKDF
+     * @param salt - The salt string; page `i` uses `"<salt>-<i>"`
+     * @param pageLength - Bytes of output derived per page (32 by default)
      */
-    static newWithPageLength(keyMaterial: Uint8Array, salt: string, pageLength: number): HKDFRng;
-    /**
-     * Creates a new `HKDFRng` with the default page length of 32 bytes.
-     *
-     * @param keyMaterial - The seed material to derive random numbers from
-     * @param salt - A salt value to mix with the key material
-     * @returns A new `HKDFRng` instance configured with the specified key material and salt
-     */
-    static new(keyMaterial: Uint8Array, salt: string): HKDFRng;
+    constructor(keyMaterial: Uint8Array, salt: string, { pageLength }?: {
+        pageLength?: number;
+    });
     /**
      * Refills the internal buffer with new deterministic random bytes.
      *
@@ -1979,22 +1788,10 @@ export declare class HKDFRng implements RandomNumberGenerator {
      * @param data - The buffer to fill with random bytes
      */
     fillRandomData(data: Uint8Array): void;
-    /**
-     * Returns the key material (for testing purposes).
-     */
-    getKeyMaterial(): Uint8Array;
-    /**
-     * Returns the salt (for testing purposes).
-     */
-    getSalt(): string;
-    /**
-     * Returns the page length (for testing purposes).
-     */
-    getPageLength(): number;
-    /**
-     * Returns the current page index (for testing purposes).
-     */
-    getPageIndex(): number;
+    get keyMaterial(): Uint8Array;
+    get salt(): string;
+    get pageLength(): number;
+    get pageIndex(): number;
 }
 
 /** Details of an `InvalidData` failure. */
@@ -2098,7 +1895,7 @@ declare class JSON_2 implements ToCbor {
     /**
      * Create a new JSON instance from byte data.
      */
-    static fromData(data: Uint8Array): JSON_2;
+    static from(data: Uint8Array): JSON_2;
     /**
      * Create a new JSON instance from a string.
      */
@@ -2107,18 +1904,14 @@ declare class JSON_2 implements ToCbor {
      * Create a new JSON instance from a hexadecimal string.
      */
     static fromHex(hex: string): JSON_2;
-    /**
-     * Return the length of the JSON data in bytes.
-     */
-    len(): number;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Return true if the JSON data is empty.
      */
     isEmpty(): boolean;
-    /**
-     * Return the data as a byte slice.
-     */
-    asBytes(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Return the data as a UTF-8 string slice.
      *
@@ -2128,11 +1921,7 @@ declare class JSON_2 implements ToCbor {
     /**
      * Return the data as a hexadecimal string.
      */
-    hex(): string;
-    /**
-     * Return a copy of the underlying data.
-     */
-    toData(): Uint8Array;
+    toHex(): string;
     /**
      * Compare with another JSON.
      */
@@ -2401,19 +2190,10 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
-    /**
-     * Generate a new random MLDSAPrivateKey with the specified security level.
-     *
-     * @param level - The ML-DSA security level (default: MLDSA65)
-     */
-    static new(level?: MLDSALevel): MLDSAPrivateKey;
-    /**
-     * Generate a new random MLDSAPrivateKey using the provided RNG.
-     *
-     * @param level - The ML-DSA security level
-     * @param rng - Random number generator
-     */
-    static newUsing(level: MLDSALevel, rng: RandomNumberGenerator): MLDSAPrivateKey;
+    /** A fresh private key at `level`; pass `rng` to make it deterministic. */
+    static random(level?: MLDSALevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): MLDSAPrivateKey;
     /**
      * Create an MLDSAPrivateKey from raw bytes.
      *
@@ -2421,37 +2201,18 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
      * @param data - The private key bytes
      */
     static fromBytes(level: MLDSALevel, data: Uint8Array): MLDSAPrivateKey;
-    /**
-     * Generate a keypair and return both private and public keys.
-     *
-     * @param level - The ML-DSA security level (default: MLDSA65)
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypair(level?: MLDSALevel): [MLDSAPrivateKey, MLDSAPublicKey];
-    /**
-     * Generate a keypair using the provided RNG.
-     *
-     * @param level - The ML-DSA security level
-     * @param rng - Random number generator
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypairUsing(level: MLDSALevel, rng: RandomNumberGenerator): [MLDSAPrivateKey, MLDSAPublicKey];
+    /** A fresh private key at `level` and its public key. */
+    static keypair(level?: MLDSALevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [MLDSAPrivateKey, MLDSAPublicKey];
     /**
      * Returns the security level of this key.
      */
-    level(): MLDSALevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLDSALevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Sign a message with this private key.
      *
@@ -2514,19 +2275,11 @@ export declare class MLDSAPublicKey implements ToCbor, ToUR {
     /**
      * Returns the security level of this key.
      */
-    level(): MLDSALevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLDSALevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Verify a signature against a message.
      *
@@ -2592,19 +2345,11 @@ export declare class MLDSASignature implements ToCbor, ToUR {
     /**
      * Returns the security level of this signature.
      */
-    level(): MLDSALevel;
-    /**
-     * Returns the raw signature bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw signature bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the signature in bytes.
-     */
-    size(): number;
+    get level(): MLDSALevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Compare with another MLDSASignature.
      */
@@ -2673,19 +2418,11 @@ export declare class MLKEMCiphertext implements ToCbor, ToUR {
     /**
      * Returns the security level of this ciphertext.
      */
-    level(): MLKEMLevel;
-    /**
-     * Returns the raw ciphertext bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw ciphertext bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the ciphertext in bytes.
-     */
-    size(): number;
+    get level(): MLKEMLevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Compare with another MLKEMCiphertext.
      */
@@ -2812,19 +2549,10 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
-    /**
-     * Generate a new random MLKEMPrivateKey with the specified security level.
-     *
-     * @param level - The ML-KEM security level (default: MLKEM768)
-     */
-    static new(level?: MLKEMLevel): MLKEMPrivateKey;
-    /**
-     * Generate a new random MLKEMPrivateKey using the provided RNG.
-     *
-     * @param level - The ML-KEM security level
-     * @param rng - Random number generator
-     */
-    static newUsing(level: MLKEMLevel, rng: RandomNumberGenerator): MLKEMPrivateKey;
+    /** A fresh private key at `level`; pass `rng` to make it deterministic. */
+    static random(level?: MLKEMLevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): MLKEMPrivateKey;
     /**
      * Create an MLKEMPrivateKey from raw bytes.
      *
@@ -2832,37 +2560,18 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
      * @param data - The private key bytes
      */
     static fromBytes(level: MLKEMLevel, data: Uint8Array): MLKEMPrivateKey;
-    /**
-     * Generate a keypair and return both private and public keys.
-     *
-     * @param level - The ML-KEM security level (default: MLKEM768)
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypair(level?: MLKEMLevel): [MLKEMPrivateKey, MLKEMPublicKey];
-    /**
-     * Generate a keypair using the provided RNG.
-     *
-     * @param level - The ML-KEM security level
-     * @param rng - Random number generator
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypairUsing(level: MLKEMLevel, rng: RandomNumberGenerator): [MLKEMPrivateKey, MLKEMPublicKey];
+    /** A fresh private key at `level` and its public key. */
+    static keypair(level?: MLKEMLevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [MLKEMPrivateKey, MLKEMPublicKey];
     /**
      * Returns the security level of this key.
      */
-    level(): MLKEMLevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLKEMLevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Decapsulate a shared secret from a ciphertext.
      *
@@ -2926,19 +2635,11 @@ export declare class MLKEMPublicKey implements ToCbor, ToUR {
     /**
      * Returns the security level of this key.
      */
-    level(): MLKEMLevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLKEMLevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Encapsulate a new shared secret.
      *
@@ -2989,24 +2690,12 @@ export declare class Nonce implements ToCbor, ToUR {
     static readonly NONCE_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random nonce.
-     */
-    static new(): Nonce;
-    /**
-     * Create a new random nonce (alias for compatibility).
-     */
-    static random(): Nonce;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Nonce;
     /**
      * Restores a nonce from data.
-     */
-    static fromData(data: Uint8Array): Nonce;
-    /**
-     * Restores a nonce from data (validates length).
-     */
-    static fromDataRef(data: Uint8Array): Nonce;
-    /**
-     * Create a Nonce from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): Nonce;
     /**
@@ -3015,28 +2704,10 @@ export declare class Nonce implements ToCbor, ToUR {
      * @throws Error if the string is not exactly 24 hexadecimal digits.
      */
     static fromHex(hex: string): Nonce;
-    /**
-     * Generate a random nonce using provided RNG.
-     */
-    static randomUsing(rng: RandomNumberGenerator): Nonce;
-    /**
-     * Get the data of the nonce.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the nonce as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw nonce bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * The data as a hexadecimal string.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -3077,21 +2748,18 @@ export declare class PBKDF2Params implements KeyDerivation {
     private readonly _iterations;
     private readonly _hashType;
     private constructor();
-    /**
-     * Create new PBKDF2 parameters with default settings.
-     * Uses a random 16-byte salt, 100,000 iterations, and SHA-256.
-     */
-    static new(): PBKDF2Params;
-    /**
-     * Create PBKDF2 parameters with custom settings.
-     */
-    static newOpt(salt: Salt, iterations: number, hashType: HashType): PBKDF2Params;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt, iterations, hashType }?: {
+        salt?: Salt;
+        iterations?: number;
+        hashType?: HashType;
+    }): PBKDF2Params;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the number of iterations. */
-    iterations(): number;
+    get iterations(): number;
     /** Returns the hash type. */
-    hashType(): HashType;
+    get hashType(): HashType;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -3140,28 +2808,18 @@ export declare function pbkdf2Params(params?: PBKDF2Params): KeyDerivationParams
 export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random PrivateKeyBase.
-     */
-    static new(): PrivateKeyBase;
-    /**
-     * Create a new random PrivateKeyBase using the provided RNG.
-     */
-    static newUsing(rng: RandomNumberGenerator): PrivateKeyBase;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): PrivateKeyBase;
     /**
      * Create a PrivateKeyBase from raw bytes.
      *
      * @param data - 32 bytes of key material
      */
-    static fromData(data: Uint8Array): PrivateKeyBase;
-    /**
-     * Returns the raw key material.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key material.
-     */
-    data(): Uint8Array;
+    static from(data: Uint8Array): PrivateKeyBase;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Derive an Ed25519 signing private key.
      *
@@ -3351,14 +3009,15 @@ export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider
     private readonly _signingPrivateKey;
     private readonly _encapsulationPrivateKey;
     private constructor();
-    /**
-     * Create a new PrivateKeys container with the given keys.
-     */
-    static withKeys(signingPrivateKey: SigningPrivateKey, encapsulationPrivateKey: EncapsulationPrivateKey): PrivateKeys;
-    /**
-     * Create a new PrivateKeys container with random Ed25519/X25519 keys.
-     */
-    static new(): PrivateKeys;
+    /** Bundle a signing key with an encapsulation key. */
+    static from({ signing, encapsulation }: {
+        signing: SigningPrivateKey;
+        encapsulation: EncapsulationPrivateKey;
+    }): PrivateKeys;
+    /** Fresh Ed25519 signing and X25519 encapsulation keys. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): PrivateKeys;
     /**
      * Generate a new PrivateKeys container with random Ed25519/X25519 keys.
      * This is an alias for new() for API compatibility.
@@ -3367,7 +3026,7 @@ export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider
     /**
      * Returns the signing private key.
      */
-    signingPrivateKey(): SigningPrivateKey;
+    get signingPrivateKey(): SigningPrivateKey;
     /**
      * Returns the encapsulation private key.
      *
@@ -3453,13 +3112,9 @@ export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvide
     private readonly _encapsulationPublicKey;
     private constructor();
     /**
-     * Create a new PublicKeys container with the given keys.
-     */
-    static new(signingPublicKey: SigningPublicKey, encapsulationPublicKey: EncapsulationPublicKey): PublicKeys;
-    /**
      * Returns the signing public key.
      */
-    signingPublicKey(): SigningPublicKey;
+    get signingPublicKey(): SigningPublicKey;
     /**
      * Returns the encapsulation public key.
      *
@@ -3517,6 +3172,11 @@ export declare class PublicKeys implements Verifier, Encrypter, ReferenceProvide
     /** As a UR, typed by the first tag's name. */
     toUR(): UR;
     /** Decode tagged or untagged CBOR. */
+    /** Bundle a signing key with an encapsulation key. */
+    static from({ signing, encapsulation }: {
+        signing: SigningPublicKey;
+        encapsulation: EncapsulationPublicKey;
+    }): PublicKeys;
     static fromCbor(cborValue: Cbor): PublicKeys;
 }
 
@@ -3547,29 +3207,26 @@ export declare class Reference implements ToCbor, DigestProvider, ReferenceProvi
     private readonly _data;
     private constructor();
     /** Create a Reference from exactly 32 bytes. Mirrors Rust `Reference::from_data`. */
-    static fromData(data: Uint8Array): Reference;
+    static from(data: Uint8Array): Reference;
     /** Alias of `fromData` for parity with Rust `from_data_ref`. */
-    static fromDataRef(data: Uint8Array): Reference;
     /** Create a Reference from a Digest's underlying bytes. */
     static fromDigest(digest: Digest): Reference;
     /** Backwards-compatible alias of `fromDigest`. */
-    static from(digest: Digest): Reference;
     /** Create a Reference from a 64-character hex string. */
     static fromHex(hex: string): Reference;
     /**
      * Create a Reference whose bytes are the SHA-256 digest of the input.
      *
      * @deprecated Prefer `Reference.fromDigest(Digest.fromImage(data))` for
-     *   clarity, or `Reference.fromData(data)` if `data` is already 32 bytes
+     *   clarity, or `Reference.from(data)` if `data` is already 32 bytes
      *   that should be wrapped without hashing (matches Rust `from_data`).
      */
     static hash(data: Uint8Array): Reference;
     /** Returns the 32 reference bytes (copy). */
-    data(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /** Alias of `data()`. */
-    asBytes(): Uint8Array;
     /** Returns a `Digest` constructed from these 32 bytes (no hashing). */
-    getDigest(): Digest;
     /** The full 64-character lowercase hex of the reference. */
     refHex(): string;
     /** The first 4 bytes of the reference. */
@@ -3649,87 +3306,34 @@ export declare class Salt implements ToCbor, ToUR {
      * Create a new salt from data.
      * Note: Does not validate minimum size to allow for CBOR deserialization.
      */
-    static fromData(data: Uint8Array): Salt;
-    /**
-     * Create a Salt from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): Salt;
     /**
      * Create a new salt from the given hexadecimal string.
      */
     static fromHex(hex: string): Salt;
-    /**
-     * Create a specific number of bytes of salt.
-     *
-     * @throws Error if the number of bytes is less than 8.
-     */
-    static newWithLen(count: number): Salt;
-    /**
-     * Create a specific number of bytes of salt using provided RNG.
-     *
-     * @throws Error if the number of bytes is less than 8.
-     */
-    static newWithLenUsing(count: number, rng: RandomNumberGenerator): Salt;
-    /**
-     * Create a number of bytes of salt chosen randomly from the given range.
-     *
-     * @throws Error if the minimum number of bytes is less than 8.
-     */
-    static newInRange(minSize: number, maxSize: number): Salt;
-    /**
-     * Create a number of bytes of salt chosen randomly from the given range using provided RNG.
-     *
-     * @throws Error if the minimum number of bytes is less than 8.
-     */
-    static newInRangeUsing(minSize: number, maxSize: number, rng: RandomNumberGenerator): Salt;
-    /**
-     * Create a number of bytes of salt generally proportionate to the size of
-     * the object being salted.
-     */
-    static newForSize(size: number): Salt;
-    /**
-     * Create a number of bytes of salt generally proportionate to the size of
-     * the object being salted using provided RNG.
-     */
-    static newForSizeUsing(size: number, rng: RandomNumberGenerator): Salt;
-    /**
-     * Generate a random salt with specified size (legacy alias for newWithLen).
-     */
-    static random(size?: number): Salt;
-    /**
-     * Generate a random salt with specified size using provided RNG (legacy alias).
-     */
-    static randomUsing(rng: RandomNumberGenerator, size?: number): Salt;
-    /**
-     * Generate a proportionally-sized salt (legacy alias for newForSize).
-     */
-    static proportional(dataSize: number): Salt;
-    /**
-     * Return the length of the salt.
-     */
-    len(): number;
-    /**
-     * Return the length of the salt (alias for len).
-     */
-    size(): number;
+    /** A random salt of `length` bytes (16 by default); pass `rng` to make it deterministic. */
+    static random({ length, rng }?: {
+        length?: number;
+        rng?: RandomNumberGenerator;
+    }): Salt;
+    /** A random salt of a random length in `[minSize, maxSize]`. */
+    static randomInRange(minSize: number, maxSize: number, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Salt;
+    /** A random salt sized for a payload of `size` bytes (5–25% of it, at least the minimum). */
+    static forSize(size: number, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Salt;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Return true if the salt is empty (this is not recommended).
      */
     isEmpty(): boolean;
-    /**
-     * Return the data of the salt.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw salt bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * The data as a hexadecimal string.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -3769,34 +3373,15 @@ export declare class SchnorrPublicKey implements ECKeyBase {
     /**
      * Restore a SchnorrPublicKey from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): SchnorrPublicKey;
-    /**
-     * Restore a SchnorrPublicKey from a reference to an array of bytes.
-     * Validates the length.
-     */
-    static fromDataRef(data: Uint8Array): SchnorrPublicKey;
-    /**
-     * Create a SchnorrPublicKey from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): SchnorrPublicKey;
     /**
      * Restore a SchnorrPublicKey from a hex string.
      */
     static fromHex(hex: string): SchnorrPublicKey;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the raw public key bytes (copy).
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -3821,7 +3406,7 @@ export declare class SchnorrPublicKey implements ECKeyBase {
      * Mirrors Rust `Display for SchnorrPublicKey`
      * (`bc-components-rust/src/ec_key/schnorr_public_key.rs:116-120`)
      * — the reference is computed from the **raw 32-byte key data**
-     * (not the tagged-CBOR form): `Reference::from_digest(Digest::from_image(self.data()))`.
+     * (not the tagged-CBOR form): `Reference::from_digest(Digest::from_image(self.bytes))`.
      * `ref_hex_short()` returns the first 8 hex chars of that
      * reference's binary form (= SHA-256(data)[0..4]).
      */
@@ -3843,23 +3428,21 @@ export declare class ScryptParams implements KeyDerivation {
     private readonly _r;
     private readonly _p;
     private constructor();
-    /**
-     * Create new Scrypt parameters with default settings.
-     * Uses a random 16-byte salt, log_n=15, r=8, p=1.
-     */
-    static new(): ScryptParams;
-    /**
-     * Create Scrypt parameters with custom settings.
-     */
-    static newOpt(salt: Salt, logN: number, r: number, p: number): ScryptParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt, logN, r, p }?: {
+        salt?: Salt;
+        logN?: number;
+        r?: number;
+        p?: number;
+    }): ScryptParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the log_n parameter. */
-    logN(): number;
+    get logN(): number;
     /** Returns the r parameter (block size). */
-    r(): number;
+    get r(): number;
     /** Returns the p parameter (parallelism). */
-    p(): number;
+    get p(): number;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -3911,44 +3494,25 @@ export declare class SealedMessage implements ToCbor, ToUR {
      */
     static from(message: EncryptedMessage, encapsulatedKey: EncapsulationCiphertext): SealedMessage;
     /**
-     * Seal a message for a recipient (no additional authenticated data).
-     *
-     * @param plaintext - The message to encrypt
-     * @param recipient - The recipient's public key
-     * @returns A sealed message that only the recipient can decrypt
+     * Encrypt `plaintext` to `recipient`: a fresh shared secret is
+     * encapsulated to the recipient's key and encrypts the plaintext.
      */
-    static new(plaintext: Uint8Array, recipient: EncapsulationPublicKey): SealedMessage;
-    /**
-     * Seal a message for a recipient with additional authenticated data.
-     *
-     * @param plaintext - The message to encrypt
-     * @param recipient - The recipient's public key
-     * @param aad - Additional authenticated data (not encrypted but authenticated)
-     * @returns A sealed message that only the recipient can decrypt
-     */
-    static newWithAad(plaintext: Uint8Array, recipient: EncapsulationPublicKey, aad: Uint8Array): SealedMessage;
-    /**
-     * Seal a message with optional test nonce (for deterministic testing).
-     *
-     * @param plaintext - The message to encrypt
-     * @param recipient - The recipient's public key
-     * @param aad - Additional authenticated data
-     * @param testNonce - Optional fixed nonce for testing (DO NOT use in production)
-     * @returns A sealed message
-     */
-    static newOpt(plaintext: Uint8Array, recipient: EncapsulationPublicKey, aad: Uint8Array, testNonce?: Nonce): SealedMessage;
+    static seal(plaintext: Uint8Array, recipient: EncapsulationPublicKey, { aad, nonce }?: {
+        aad?: Uint8Array;
+        nonce?: Nonce;
+    }): SealedMessage;
     /**
      * Returns the encrypted message.
      */
-    message(): EncryptedMessage;
+    get message(): EncryptedMessage;
     /**
      * Returns the encapsulation ciphertext (ephemeral public key for X25519).
      */
-    encapsulatedKey(): EncapsulationCiphertext;
+    get encapsulatedKey(): EncapsulationCiphertext;
     /**
      * Returns the encapsulation scheme used.
      */
-    encapsulationScheme(): EncapsulationScheme;
+    get encapsulationScheme(): EncapsulationScheme;
     /**
      * Decrypt the sealed message using the recipient's private key.
      *
@@ -3992,42 +3556,13 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     private _creationDate;
     private constructor();
     /**
-     * Create a new random seed with default length (16 bytes).
-     *
-     * Rust equivalent: `Seed::new()`
+     * A random seed of `length` bytes (16 by default), with optional metadata;
+     * pass `rng` to make it deterministic.
      */
-    static new(): Seed;
-    /**
-     * Create a new random seed with a specified length.
-     *
-     * Rust equivalent: `Seed::new_with_len(count)`
-     *
-     * @param count - Number of bytes (must be >= 16)
-     * @throws ComponentsError if count < 16
-     */
-    static newWithLen(count: number): Seed;
-    /**
-     * Create a new random seed with a specified length using provided RNG.
-     *
-     * Rust equivalent: `Seed::new_with_len_using(count, rng)`
-     *
-     * @param count - Number of bytes (must be >= 16)
-     * @param rng - Random number generator
-     * @throws ComponentsError if count < 16
-     */
-    static newWithLenUsing(count: number, rng: RandomNumberGenerator): Seed;
-    /**
-     * Create a new seed from data and optional metadata.
-     *
-     * Rust equivalent: `Seed::new_opt(data, name, note, creation_date)`
-     *
-     * @param data - Seed bytes (must be >= 16 bytes)
-     * @param name - Optional name for the seed
-     * @param note - Optional note for the seed
-     * @param creationDate - Optional creation date
-     * @throws ComponentsError if data < 16 bytes
-     */
-    static newOpt(data: Uint8Array, name: string | undefined, note: string | undefined, creationDate: Date | undefined): Seed;
+    static random({ length, rng, ...metadata }?: {
+        length?: number;
+        rng?: RandomNumberGenerator;
+    } & SeedMetadata): Seed;
     /**
      * Create a Seed from raw bytes with optional metadata.
      *
@@ -4044,39 +3579,8 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
      * @param metadata - Optional metadata object
      */
     static fromHex(hex: string, metadata?: SeedMetadata): Seed;
-    /**
-     * Generate a random seed with specified size (default 32 bytes).
-     *
-     * Convenience method that wraps `newWithLen()`.
-     *
-     * @param size - Number of bytes (must be >= 16, default 32)
-     * @param metadata - Optional metadata object
-     */
-    static random(size?: number, metadata?: SeedMetadata): Seed;
-    /**
-     * Generate a random seed using provided RNG.
-     *
-     * Convenience method that wraps `newWithLenUsing()`.
-     *
-     * @param rng - Random number generator
-     * @param size - Number of bytes (must be >= 16, default 32)
-     * @param metadata - Optional metadata object
-     */
-    static randomUsing(rng: RandomNumberGenerator, size?: number, metadata?: SeedMetadata): Seed;
-    /**
-     * Return the data of the seed as a reference to the internal bytes.
-     *
-     * Rust equivalent: `seed.as_bytes()`
-     *
-     * Note: Returns a reference to internal data. For a copy, use `toData()`.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw seed bytes (copy).
-     *
-     * Note: Returns a copy to prevent external mutation of the seed's internal state.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
      */
@@ -4085,64 +3589,31 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
      * Get base64 representation.
      */
     toBase64(): string;
-    /**
-     * Get seed size in bytes.
-     */
-    size(): number;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Return the name of the seed.
      *
-     * Rust equivalent: `seed.name()` - returns empty string if not set.
+     * Rust equivalent: `seed.name` - returns empty string if not set.
      */
-    name(): string;
-    /**
-     * Set the name of the seed.
-     *
-     * Rust equivalent: `seed.set_name(name)`
-     */
-    setName(name: string): void;
+    /** The optional metadata as one object. */
+    get metadata(): SeedMetadata;
+    get name(): string;
+    set name(name: string);
     /**
      * Return the note of the seed.
      *
-     * Rust equivalent: `seed.note()` - returns empty string if not set.
+     * Rust equivalent: `seed.note` - returns empty string if not set.
      */
-    note(): string;
-    /**
-     * Set the note of the seed.
-     *
-     * Rust equivalent: `seed.set_note(note)`
-     */
-    setNote(note: string): void;
+    get note(): string;
+    set note(note: string);
     /**
      * Return the creation date of the seed.
      *
      * Rust equivalent: `seed.creation_date()`
      */
-    creationDate(): Date | undefined;
-    /**
-     * Set the creation date of the seed.
-     *
-     * Rust equivalent: `seed.set_creation_date(date)`
-     */
-    setCreationDate(creationDate: Date | undefined): void;
-    /**
-     * Return the creation date of the seed (alias for creationDate).
-     *
-     * @deprecated Use `creationDate()` for Rust API parity.
-     */
-    createdAt(): Date | undefined;
-    /**
-     * Set the creation date of the seed (alias for setCreationDate).
-     *
-     * @deprecated Use `setCreationDate()` for Rust API parity.
-     */
-    setCreatedAt(date: Date): void;
-    /**
-     * Get metadata as an object.
-     *
-     * TypeScript convenience method - returns a snapshot of current metadata.
-     */
-    getMetadata(): SeedMetadata;
+    get creationDate(): Date | undefined;
+    set creationDate(creationDate: Date | undefined);
     /**
      * Compare with another Seed.
      */
@@ -4181,9 +3652,9 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
 }
 
 export declare interface SeedMetadata {
-    name?: string;
-    note?: string;
-    createdAt?: Date;
+    name?: string | undefined;
+    note?: string | undefined;
+    creationDate?: Date | undefined;
 }
 
 /**
@@ -4281,22 +3752,20 @@ export declare class Signature implements ToCbor {
     /**
      * Returns the signature scheme used to create this signature.
      */
-    scheme(): SignatureScheme;
+    get scheme(): SignatureScheme;
     /**
      * Returns a human-readable string identifying the signature type.
      * @returns A string like "Ed25519", "Schnorr", "ECDSA", "Sr25519", "MLDSA-44", etc.
      */
-    signatureType(): string;
-    /**
-     * Returns the raw signature data.
-     */
-    data(): Uint8Array;
+    get signatureType(): string;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Returns the Schnorr signature data if this is a Schnorr signature.
      *
-     * @returns The 64-byte signature data if this is a Schnorr signature, null otherwise
+     * @returns The 64-byte signature data if this is a Schnorr signature, undefined otherwise
      */
-    toSchnorr(): Uint8Array | null;
+    asSchnorr(): Uint8Array | undefined;
     /**
      * Checks if this is a Schnorr signature.
      */
@@ -4304,9 +3773,9 @@ export declare class Signature implements ToCbor {
     /**
      * Returns the ECDSA signature data if this is an ECDSA signature.
      *
-     * @returns The 64-byte signature data if this is an ECDSA signature, null otherwise
+     * @returns The 64-byte signature data if this is an ECDSA signature, undefined otherwise
      */
-    toEcdsa(): Uint8Array | null;
+    asEcdsa(): Uint8Array | undefined;
     /**
      * Checks if this is an ECDSA signature.
      */
@@ -4314,9 +3783,9 @@ export declare class Signature implements ToCbor {
     /**
      * Returns the Ed25519 signature data if this is an Ed25519 signature.
      *
-     * @returns The 64-byte signature data if this is an Ed25519 signature, null otherwise
+     * @returns The 64-byte signature data if this is an Ed25519 signature, undefined otherwise
      */
-    toEd25519(): Uint8Array | null;
+    asEd25519(): Uint8Array | undefined;
     /**
      * Checks if this is an Ed25519 signature.
      */
@@ -4324,9 +3793,9 @@ export declare class Signature implements ToCbor {
     /**
      * Returns the Sr25519 signature data if this is an Sr25519 signature.
      *
-     * @returns The 64-byte signature data if this is an Sr25519 signature, null otherwise
+     * @returns The 64-byte signature data if this is an Sr25519 signature, undefined otherwise
      */
-    toSr25519(): Uint8Array | null;
+    asSr25519(): Uint8Array | undefined;
     /**
      * Checks if this is an Sr25519 signature.
      */
@@ -4334,9 +3803,9 @@ export declare class Signature implements ToCbor {
     /**
      * Returns the MLDSASignature if this is an MLDSA signature.
      *
-     * @returns The MLDSASignature if this is an MLDSA signature, null otherwise
+     * @returns The MLDSASignature if this is an MLDSA signature, undefined otherwise
      */
-    toMldsa(): MLDSASignature | null;
+    asMldsa(): MLDSASignature | undefined;
     /**
      * Checks if this is an MLDSA signature.
      */
@@ -4347,9 +3816,9 @@ export declare class Signature implements ToCbor {
      * Mirrors Rust `Signature::to_ssh`
      * (`bc-components-rust/src/signing/signature.rs:459`).
      *
-     * @returns The SSHSignature if this is an SSH signature, null otherwise
+     * @returns The SSHSignature if this is an SSH signature, undefined otherwise
      */
-    toSsh(): SSHSignature | null;
+    asSsh(): SSHSignature | undefined;
     /**
      * Checks if this is an SSH signature.
      */
@@ -4542,35 +4011,35 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      * @param key - The EC private key to use for Schnorr signing
      * @returns A new Schnorr signing private key
      */
-    static newSchnorr(key: ECPrivateKey): SigningPrivateKey;
+    static fromSchnorr(key: ECPrivateKey): SigningPrivateKey;
     /**
      * Creates a new ECDSA signing private key from an ECPrivateKey.
      *
      * @param key - The EC private key to use for ECDSA signing
      * @returns A new ECDSA signing private key
      */
-    static newEcdsa(key: ECPrivateKey): SigningPrivateKey;
+    static fromEcdsa(key: ECPrivateKey): SigningPrivateKey;
     /**
      * Creates a new Ed25519 signing private key from an Ed25519PrivateKey.
      *
      * @param key - The Ed25519 private key to use
      * @returns A new Ed25519 signing private key
      */
-    static newEd25519(key: Ed25519PrivateKey): SigningPrivateKey;
+    static fromEd25519(key: Ed25519PrivateKey): SigningPrivateKey;
     /**
      * Creates a new SR25519 signing private key from an Sr25519PrivateKey.
      *
      * @param key - The SR25519 private key to use
      * @returns A new SR25519 signing private key
      */
-    static newSr25519(key: Sr25519PrivateKey): SigningPrivateKey;
+    static fromSr25519(key: Sr25519PrivateKey): SigningPrivateKey;
     /**
      * Creates a new MLDSA signing private key from an MLDSAPrivateKey.
      *
      * @param key - The MLDSA private key to use
      * @returns A new MLDSA signing private key
      */
-    static newMldsa(key: MLDSAPrivateKey): SigningPrivateKey;
+    static fromMldsa(key: MLDSAPrivateKey): SigningPrivateKey;
     /**
      * Creates a new SSH signing private key from an SSHPrivateKey.
      *
@@ -4582,74 +4051,58 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      */
     static fromSsh(key: SSHPrivateKey): SigningPrivateKey;
     /**
-     * Creates a new random Ed25519 signing private key.
-     *
-     * @returns A new random Ed25519 signing private key
+     * A fresh signing key; Ed25519 unless `scheme` says otherwise. SSH schemes
+     * derive from a `PrivateKeyBase` instead.
      */
-    static random(): SigningPrivateKey;
-    /**
-     * Creates a new random Schnorr signing private key.
-     *
-     * @returns A new random Schnorr signing private key
-     */
-    static randomSchnorr(): SigningPrivateKey;
-    /**
-     * Creates a new random ECDSA signing private key.
-     *
-     * @returns A new random ECDSA signing private key
-     */
-    static randomEcdsa(): SigningPrivateKey;
-    /**
-     * Creates a new random SR25519 signing private key.
-     *
-     * @returns A new random SR25519 signing private key
-     */
-    static randomSr25519(): SigningPrivateKey;
+    static random({ scheme, rng }?: {
+        scheme?: SignatureScheme;
+        rng?: RandomNumberGenerator;
+    }): SigningPrivateKey;
     /**
      * Returns the signature scheme of this key.
      */
-    scheme(): SignatureScheme;
+    get scheme(): SignatureScheme;
     /**
      * Returns a human-readable string identifying the key type.
      * @returns A string like "Ed25519", "Schnorr", "ECDSA", "Sr25519", "MLDSA-44", etc.
      */
-    keyType(): string;
+    get keyType(): string;
     /**
      * Returns the underlying EC private key if this is a Schnorr or ECDSA key.
      *
-     * @returns The EC private key if this is a Schnorr or ECDSA key, null otherwise
+     * @returns The EC private key if this is a Schnorr or ECDSA key, undefined otherwise
      */
-    toEc(): ECPrivateKey | null;
+    asEc(): ECPrivateKey | undefined;
     /**
      * Returns the underlying Schnorr private key if this is a Schnorr key.
      *
-     * @returns The EC private key if this is a Schnorr key, null otherwise
+     * @returns The EC private key if this is a Schnorr key, undefined otherwise
      */
-    toSchnorr(): ECPrivateKey | null;
+    asSchnorr(): ECPrivateKey | undefined;
     /**
      * Returns the underlying ECDSA private key if this is an ECDSA key.
      *
-     * @returns The EC private key if this is an ECDSA key, null otherwise
+     * @returns The EC private key if this is an ECDSA key, undefined otherwise
      */
-    toEcdsa(): ECPrivateKey | null;
+    asEcdsa(): ECPrivateKey | undefined;
     /**
      * Returns the underlying Ed25519 private key if this is an Ed25519 key.
      *
-     * @returns The Ed25519 private key if this is an Ed25519 key, null otherwise
+     * @returns The Ed25519 private key if this is an Ed25519 key, undefined otherwise
      */
-    toEd25519(): Ed25519PrivateKey | null;
+    asEd25519(): Ed25519PrivateKey | undefined;
     /**
      * Returns the underlying Sr25519 private key if this is an Sr25519 key.
      *
-     * @returns The Sr25519 private key if this is an Sr25519 key, null otherwise
+     * @returns The Sr25519 private key if this is an Sr25519 key, undefined otherwise
      */
-    toSr25519(): Sr25519PrivateKey | null;
+    asSr25519(): Sr25519PrivateKey | undefined;
     /**
      * Returns the underlying MLDSA private key if this is an MLDSA key.
      *
-     * @returns The MLDSA private key if this is an MLDSA key, null otherwise
+     * @returns The MLDSA private key if this is an MLDSA key, undefined otherwise
      */
-    toMldsa(): MLDSAPrivateKey | null;
+    asMldsa(): MLDSAPrivateKey | undefined;
     /**
      * Checks if this is a Schnorr signing key.
      */
@@ -4682,9 +4135,9 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
      * Mirrors Rust `SigningPrivateKey::to_ssh`
      * (`bc-components-rust/src/signing/signing_private_key.rs:387`).
      *
-     * @returns The SSHPrivateKey if this is an SSH key, null otherwise
+     * @returns The SSHPrivateKey if this is an SSH key, undefined otherwise
      */
-    toSsh(): SSHPrivateKey | null;
+    asSsh(): SSHPrivateKey | undefined;
     /**
      * Checks if this is an SSH signing key.
      */
@@ -4898,36 +4351,36 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
     /**
      * Returns the signature scheme of this key.
      */
-    scheme(): SignatureScheme;
+    get scheme(): SignatureScheme;
     /**
      * Returns a human-readable string identifying the key type.
      * @returns A string like "Ed25519", "Schnorr", "ECDSA", "Sr25519", "MLDSA-44", etc.
      */
-    keyType(): string;
+    get keyType(): string;
     /**
      * Returns the underlying Schnorr public key if this is a Schnorr key.
      *
-     * @returns The SchnorrPublicKey if this is a Schnorr key, null otherwise
+     * @returns The SchnorrPublicKey if this is a Schnorr key, undefined otherwise
      */
-    toSchnorr(): SchnorrPublicKey | null;
+    asSchnorr(): SchnorrPublicKey | undefined;
     /**
      * Returns the underlying ECDSA public key if this is an ECDSA key.
      *
-     * @returns The ECPublicKey if this is an ECDSA key, null otherwise
+     * @returns The ECPublicKey if this is an ECDSA key, undefined otherwise
      */
-    toEcdsa(): ECPublicKey | null;
+    asEcdsa(): ECPublicKey | undefined;
     /**
      * Returns the underlying Ed25519 public key if this is an Ed25519 key.
      *
-     * @returns The Ed25519 public key if this is an Ed25519 key, null otherwise
+     * @returns The Ed25519 public key if this is an Ed25519 key, undefined otherwise
      */
-    toEd25519(): Ed25519PublicKey | null;
+    asEd25519(): Ed25519PublicKey | undefined;
     /**
      * Returns the underlying Sr25519 public key if this is an Sr25519 key.
      *
-     * @returns The Sr25519 public key if this is an Sr25519 key, null otherwise
+     * @returns The Sr25519 public key if this is an Sr25519 key, undefined otherwise
      */
-    toSr25519(): Sr25519PublicKey | null;
+    asSr25519(): Sr25519PublicKey | undefined;
     /**
      * Checks if this is a Schnorr signing key.
      */
@@ -4947,9 +4400,9 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
     /**
      * Returns the underlying MLDSA public key if this is an MLDSA key.
      *
-     * @returns The MLDSAPublicKey if this is an MLDSA key, null otherwise
+     * @returns The MLDSAPublicKey if this is an MLDSA key, undefined otherwise
      */
-    toMldsa(): MLDSAPublicKey | null;
+    asMldsa(): MLDSAPublicKey | undefined;
     /**
      * Checks if this is an MLDSA signing key.
      */
@@ -4960,9 +4413,9 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
      * Mirrors Rust `SigningPublicKey::to_ssh`
      * (`bc-components-rust/src/signing/signing_public_key.rs:272`).
      *
-     * @returns The SSHPublicKey if this is an SSH key, null otherwise
+     * @returns The SSHPublicKey if this is an SSH key, undefined otherwise
      */
-    toSsh(): SSHPublicKey | null;
+    asSsh(): SSHPublicKey | undefined;
     /**
      * Checks if this is an SSH signing key.
      */
@@ -5056,23 +4509,14 @@ export declare class Sr25519PrivateKey {
     private readonly _seed;
     private _cachedPublicKey?;
     private constructor();
-    /**
-     * Create a new random Sr25519 private key.
-     */
-    static random(): Sr25519PrivateKey;
-    /**
-     * Create a new random Sr25519 private key using the provided RNG.
-     */
-    static randomUsing(rng: RandomNumberGenerator): Sr25519PrivateKey;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Sr25519PrivateKey;
     /**
      * Create an Sr25519 private key from a 32-byte seed.
      */
-    static fromSeed(seed: Uint8Array): Sr25519PrivateKey;
-    /**
-     * Create an Sr25519 private key from raw data.
-     * Alias for fromSeed.
-     */
-    static from(data: Uint8Array): Sr25519PrivateKey;
+    static from(seed: Uint8Array): Sr25519PrivateKey;
     /**
      * Create an Sr25519 private key from a hex string.
      */
@@ -5084,27 +4528,12 @@ export declare class Sr25519PrivateKey {
      * @returns A new Sr25519 private key
      */
     static deriveFromKeyMaterial(keyMaterial: Uint8Array): Sr25519PrivateKey;
-    /**
-     * Generate a keypair and return both private and public keys.
-     *
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypair(): [Sr25519PrivateKey, Sr25519PublicKey];
-    /**
-     * Generate a keypair using the provided RNG.
-     *
-     * @param rng - Random number generator
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypairUsing(rng: RandomNumberGenerator): [Sr25519PrivateKey, Sr25519PublicKey];
-    /**
-     * Returns the raw seed bytes.
-     */
-    toData(): Uint8Array;
-    /**
-     * Returns the raw seed bytes (alias for toData).
-     */
-    asBytes(): Uint8Array;
+    /** A fresh private key and its public key. */
+    static keypair({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [Sr25519PrivateKey, Sr25519PublicKey];
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Returns the hex representation of the seed.
      */
@@ -5161,14 +4590,8 @@ export declare class Sr25519PublicKey {
      * Create an Sr25519 public key from a hex string.
      */
     static fromHex(hex: string): Sr25519PublicKey;
-    /**
-     * Returns the raw key bytes.
-     */
-    toData(): Uint8Array;
-    /**
-     * Returns the raw key bytes (alias for toData).
-     */
-    asBytes(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Returns the hex representation of the key.
      */
@@ -5238,23 +4661,15 @@ export declare class SSHAgentParams implements KeyDerivation {
     private readonly _salt;
     private readonly _id;
     private constructor();
-    /**
-     * Create new SSH agent parameters with default salt and specified key ID.
-     *
-     * @param id - The SSH key identity (usually the key comment or public key fingerprint)
-     */
-    static new(id: string): SSHAgentParams;
-    /**
-     * Create SSH agent parameters with custom salt and key ID.
-     *
-     * @param salt - The salt for key derivation
-     * @param id - The SSH key identity
-     */
-    static newOpt(salt: Salt, id: string): SSHAgentParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ id, salt }: {
+        id: string;
+        salt?: Salt;
+    }): SSHAgentParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the SSH key identity. */
-    id(): string;
+    get id(): string;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -5556,19 +4971,19 @@ export declare const SSKRShare: {
 export declare class SSKRShareCbor implements ToCbor {
     private readonly _data;
     private constructor();
-    static fromData(data: Uint8Array): SSKRShareCbor;
+    static from(data: Uint8Array): SSKRShareCbor;
     static fromHex(hex: string): SSKRShareCbor;
-    asBytes(): Uint8Array;
-    data(): Uint8Array;
-    hex(): string;
-    identifier(): number;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    toHex(): string;
+    get identifier(): number;
     identifierHex(): string;
-    groupThreshold(): number;
-    groupCount(): number;
-    groupIndex(): number;
-    memberThreshold(): number;
-    memberIndex(): number;
-    shareValue(): Uint8Array;
+    get groupThreshold(): number;
+    get groupCount(): number;
+    get groupIndex(): number;
+    get memberThreshold(): number;
+    get memberIndex(): number;
+    get shareValue(): Uint8Array;
     equals(other: SSKRShareCbor): boolean;
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
@@ -5589,52 +5004,22 @@ export declare class SymmetricKey implements ToCbor {
     static readonly SYMMETRIC_KEY_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random symmetric key.
-     */
-    static new(): SymmetricKey;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): SymmetricKey;
     /**
      * Create a new symmetric key from data.
-     */
-    static fromData(data: Uint8Array): SymmetricKey;
-    /**
-     * Create a new symmetric key from data (validates length).
-     */
-    static fromDataRef(data: Uint8Array): SymmetricKey;
-    /**
-     * Create a SymmetricKey from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): SymmetricKey;
     /**
      * Create a SymmetricKey from hex string.
      */
     static fromHex(hex: string): SymmetricKey;
-    /**
-     * Generate a random symmetric key.
-     */
-    static random(): SymmetricKey;
-    /**
-     * Generate a random symmetric key using provided RNG.
-     */
-    static randomUsing(rng: RandomNumberGenerator): SymmetricKey;
-    /**
-     * Get the data of the symmetric key.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the data of the symmetric key as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get a copy of the raw key bytes.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -5696,15 +5081,7 @@ export declare class URI implements ToCbor, ToUR {
     /**
      * Creates a new `URI` from a string with validation.
      */
-    static new(uri: string): URI;
-    /**
-     * Create a URI from string (legacy alias).
-     */
     static from(uri: string): URI;
-    /**
-     * Parse a URI string (alias for new()).
-     */
-    static parse(uriString: string): URI;
     /**
      * Get the URI as a string reference.
      */
@@ -5720,11 +5097,11 @@ export declare class URI implements ToCbor, ToUR {
     /**
      * Get the raw URI string.
      */
-    getRaw(): string;
+    get raw(): string;
     /**
      * Get scheme (e.g., "http", "https", "urn").
      */
-    scheme(): string | null;
+    get scheme(): string | null;
     /**
      * Get path component.
      */
@@ -5752,7 +5129,7 @@ export declare class URI implements ToCbor, ToUR {
     /**
      * Get the length of the URI string.
      */
-    length(): number;
+    get length(): number;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
     static readonly codec: ComponentCodec<URI>;
     cborTags(): Tag[];
@@ -5773,19 +5150,7 @@ export declare class UUID implements ToCbor, ToUR {
     private readonly _data;
     private constructor();
     /**
-     * Create a new random UUID (v4).
-     */
-    static new(): UUID;
-    /**
      * Create a UUID from raw bytes.
-     */
-    static fromData(data: Uint8Array): UUID;
-    /**
-     * Restores a UUID from data (validates length).
-     */
-    static fromDataRef(data: Uint8Array): UUID;
-    /**
-     * Create a UUID from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): UUID;
     /**
@@ -5800,25 +5165,13 @@ export declare class UUID implements ToCbor, ToUR {
     /**
      * Generate a random UUID (v4)
      */
-    static random(): UUID;
-    /**
-     * Get the data of the UUID.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the UUID as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw UUID bytes as a copy.
-     */
-    toData(): Uint8Array;
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): UUID;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation (lowercase, matching Rust implementation).
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -5871,27 +5224,14 @@ export declare class X25519PrivateKey implements ToCbor, ToUR {
     private readonly _data;
     private _publicKey?;
     private constructor();
-    /**
-     * Generate a new random X25519PrivateKey.
-     */
-    static new(): X25519PrivateKey;
-    /**
-     * Generate a new random X25519PrivateKey.
-     */
-    static random(): X25519PrivateKey;
-    /**
-     * Generate a new random X25519PrivateKey using provided RNG.
-     */
-    static newUsing(rng: RandomNumberGenerator): X25519PrivateKey;
-    /**
-     * Generate a new random X25519PrivateKey and corresponding X25519PublicKey.
-     */
-    static keypair(): [X25519PrivateKey, X25519PublicKey];
-    /**
-     * Generate a new random X25519PrivateKey and corresponding X25519PublicKey
-     * using the given random number generator.
-     */
-    static keypairUsing(rng: RandomNumberGenerator): [X25519PrivateKey, X25519PublicKey];
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): X25519PrivateKey;
+    /** A fresh private key and its public key. */
+    static keypair({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [X25519PrivateKey, X25519PublicKey];
     /**
      * Derive an X25519PrivateKey from the given key material.
      *
@@ -5902,34 +5242,15 @@ export declare class X25519PrivateKey implements ToCbor, ToUR {
     /**
      * Restore an X25519PrivateKey from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): X25519PrivateKey;
-    /**
-     * Restore an X25519PrivateKey from a reference to an array of bytes.
-     * Validates the length.
-     */
-    static fromDataRef(data: Uint8Array): X25519PrivateKey;
-    /**
-     * Create an X25519PrivateKey from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): X25519PrivateKey;
     /**
      * Restore an X25519PrivateKey from a hex string.
      */
     static fromHex(hex: string): X25519PrivateKey;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the raw private key bytes (copy).
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -5984,34 +5305,15 @@ export declare class X25519PublicKey implements ToCbor, ToUR {
     /**
      * Restore an X25519PublicKey from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): X25519PublicKey;
-    /**
-     * Restore an X25519PublicKey from a reference to an array of bytes.
-     * Validates the length.
-     */
-    static fromDataRef(data: Uint8Array): X25519PublicKey;
-    /**
-     * Create an X25519PublicKey from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): X25519PublicKey;
     /**
      * Restore an X25519PublicKey from a hex string.
      */
     static fromHex(hex: string): X25519PublicKey;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the raw public key bytes (copy).
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -6053,16 +5355,6 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
     /**
      * Create a new XID from data.
      */
-    static fromData(data: Uint8Array): XID;
-    /**
-     * Create a new XID from data (validates length).
-     *
-     * Returns error if the data is not the correct length.
-     */
-    static fromDataRef(data: Uint8Array): XID;
-    /**
-     * Create an XID from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): XID;
     /**
      * Create an XID from hex string (64 hex characters).
@@ -6074,17 +5366,12 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
      * Note: In practice, XIDs should be created from the SHA-256 hash of a
      * public signing key's CBOR encoding.
      */
-    static random(): XID;
-    /**
-     * Create a new XID from the given public key (the "genesis key").
-     *
-     * The XID is the SHA-256 digest of the CBOR encoding of the public key.
-     * This matches Rust's `XID::new(genesis_key: impl AsRef<SigningPublicKey>)`.
-     */
-    static newFromSigningKey(signingPublicKey: SigningPublicKey): XID;
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): XID;
     /**
      * Mirror of Rust's `From<&SigningPublicKey> for XID`.
-     * Equivalent to {@link XID.newFromSigningKey}; provided for API parity.
+     * Derived from the SHA-256 digest of the key's tagged CBOR.
      */
     static fromSigningPublicKey(signingPublicKey: SigningPublicKey): XID;
     /**
@@ -6109,18 +5396,8 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
      * the XID data. This matches Rust's `XID::validate(&self, key: &SigningPublicKey)`.
      */
     validate(signingPublicKey: SigningPublicKey): boolean;
-    /**
-     * Return the data of the XID.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the data of the XID as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get a copy of the raw XID bytes.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation (lowercase, matching Rust implementation).
      */
@@ -6162,7 +5439,7 @@ export declare class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider
      * raw XID data.
      *
      * Mirrors Rust's `impl ReferenceProvider for XID { fn reference(&self) ->
-     * Reference { Reference::from_data(*self.data()) } }` — note this is a
+     * Reference { Reference::from_data(*self.bytes) } }` — note this is a
      * direct wrap, not a SHA-256 hash of the XID.
      */
     reference(): Reference;

@@ -85,28 +85,17 @@ export class MLDSAPublicKey implements ToCbor, ToUR {
   /**
    * Returns the security level of this key.
    */
-  level(): MLDSALevel {
+  get level(): MLDSALevel {
     return this._level;
   }
 
-  /**
-   * Returns the raw key bytes.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Returns a copy of the raw key bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
-  /**
-   * Returns the size of the key in bytes.
-   */
-  size(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 
@@ -118,10 +107,10 @@ export class MLDSAPublicKey implements ToCbor, ToUR {
    * @returns True if the signature is valid
    */
   verify(signature: MLDSASignature, message: Uint8Array): boolean {
-    if (signature.level() !== this._level) {
+    if (signature.level !== this._level) {
       return false;
     }
-    return mldsaVerify(this._level, this._data, message, signature.asBytes());
+    return mldsaVerify(this._level, this._data, message, signature.bytes);
   }
 
   // ============================================================================

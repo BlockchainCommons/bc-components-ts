@@ -59,8 +59,14 @@ export function keypairOpt(
   const [signingPrivateKey, signingPublicKey] = createSigningKeypair(signatureScheme);
   const [encapsulationPrivateKey, encapsulationPublicKey] =
     createEncapsulationKeypair(encapsulationScheme);
-  const privateKeys = PrivateKeys.withKeys(signingPrivateKey, encapsulationPrivateKey);
-  const publicKeys = PublicKeys.new(signingPublicKey, encapsulationPublicKey);
+  const privateKeys = PrivateKeys.from({
+    signing: signingPrivateKey,
+    encapsulation: encapsulationPrivateKey,
+  });
+  const publicKeys = PublicKeys.from({
+    signing: signingPublicKey,
+    encapsulation: encapsulationPublicKey,
+  });
   return [privateKeys, publicKeys];
 }
 
@@ -83,7 +89,13 @@ export function keypairOptUsing(
     rng,
     encapsulationScheme,
   );
-  const privateKeys = PrivateKeys.withKeys(signingPrivateKey, encapsulationPrivateKey);
-  const publicKeys = PublicKeys.new(signingPublicKey, encapsulationPublicKey);
+  const privateKeys = PrivateKeys.from({
+    signing: signingPrivateKey,
+    encapsulation: encapsulationPrivateKey,
+  });
+  const publicKeys = PublicKeys.from({
+    signing: signingPublicKey,
+    encapsulation: encapsulationPublicKey,
+  });
   return [privateKeys, publicKeys];
 }

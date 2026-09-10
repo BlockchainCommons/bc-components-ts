@@ -36,12 +36,12 @@ export interface ECKeyBase {
   /**
    * Returns the key's binary data.
    */
-  data(): Uint8Array;
+  readonly bytes: Uint8Array;
 
   /**
    * Returns the key as a hexadecimal string.
    */
-  hex(): string;
+  toHex(): string;
 }
 
 /**
@@ -50,7 +50,7 @@ export interface ECKeyBase {
 export function isECKeyBase(obj: unknown): obj is ECKeyBase {
   if (obj === null || typeof obj !== "object") return false;
   const candidate = obj as ECKeyBase;
-  return typeof candidate.data === "function" && typeof candidate.hex === "function";
+  return candidate.bytes instanceof Uint8Array && typeof candidate.toHex === "function";
 }
 
 /**

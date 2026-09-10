@@ -16,9 +16,9 @@ describe("Compressed", () => {
       const compressed = Compressed.fromDecompressedData(source);
 
       // Verify compression occurred
-      expect(compressed.compressedSize()).toBeLessThan(source.length);
-      expect(compressed.compressionRatio()).toBeLessThan(0.7);
-      expect(compressed.decompressedSize()).toBe(source.length);
+      expect(compressed.compressedSize).toBeLessThan(source.length);
+      expect(compressed.compressionRatio).toBeLessThan(0.7);
+      expect(compressed.decompressedSize).toBe(source.length);
 
       // Verify decompression
       const decompressed = compressed.decompress();
@@ -31,9 +31,9 @@ describe("Compressed", () => {
 
       // Medium text may or may not compress depending on content
       // It should at least not be larger than original
-      expect(compressed.compressedSize()).toBeLessThanOrEqual(source.length);
-      expect(compressed.compressionRatio()).toBeLessThanOrEqual(1.0);
-      expect(compressed.decompressedSize()).toBe(source.length);
+      expect(compressed.compressedSize).toBeLessThanOrEqual(source.length);
+      expect(compressed.compressionRatio).toBeLessThanOrEqual(1.0);
+      expect(compressed.decompressedSize).toBe(source.length);
 
       // Verify decompression
       const decompressed = compressed.decompress();
@@ -45,9 +45,9 @@ describe("Compressed", () => {
       const compressed = Compressed.fromDecompressedData(source);
 
       // Small data shouldn't be compressed (compression would increase size)
-      expect(compressed.compressedSize()).toBe(source.length);
-      expect(compressed.compressionRatio()).toBe(1.0);
-      expect(compressed.decompressedSize()).toBe(source.length);
+      expect(compressed.compressedSize).toBe(source.length);
+      expect(compressed.compressionRatio).toBe(1.0);
+      expect(compressed.decompressedSize).toBe(source.length);
 
       // Verify decompression
       const decompressed = compressed.decompress();
@@ -58,9 +58,9 @@ describe("Compressed", () => {
       const source = new Uint8Array(0);
       const compressed = Compressed.fromDecompressedData(source);
 
-      expect(compressed.compressedSize()).toBe(0);
-      expect(compressed.decompressedSize()).toBe(0);
-      expect(compressed.compressionRatio()).toBe(Number.NaN);
+      expect(compressed.compressedSize).toBe(0);
+      expect(compressed.decompressedSize).toBe(0);
+      expect(compressed.compressionRatio).toBe(Number.NaN);
 
       // Verify decompression
       const decompressed = compressed.decompress();
@@ -171,7 +171,7 @@ describe("Compressed", () => {
       const compressed = Compressed.fromDecompressedData(source);
 
       // Should have very good compression
-      expect(compressed.compressionRatio()).toBeLessThan(0.5);
+      expect(compressed.compressionRatio).toBeLessThan(0.5);
     });
   });
 });
@@ -188,7 +188,7 @@ describe("Compressed - miniz_oxide interop (RUST_DIVERGENCES D3)", () => {
     const bytes = Uint8Array.from(RUST_TAGGED_HEX.match(/../g)!.map((b) => parseInt(b, 16)));
     const c = Compressed.fromCbor(decodeCbor(bytes));
     expect(new TextDecoder().decode(c.decompress())).toBe(TEXT);
-    expect(c.decompressedSize()).toBe(TEXT.length);
+    expect(c.decompressedSize).toBe(TEXT.length);
   });
 
   it("produces a different but equivalent stream with pako", () => {

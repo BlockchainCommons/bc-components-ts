@@ -29,7 +29,7 @@ function expectTaggedAt(bytes: Uint8Array, tag: number) {
 describe("ML-KEM CBOR layout (matches Rust pqcrypto-mlkem)", () => {
   for (const level of [MLKEMLevel.MLKEM512, MLKEMLevel.MLKEM768, MLKEMLevel.MLKEM1024]) {
     it(`${String(level)} key generation produces correctly-sized keys`, () => {
-      const priv = MLKEMPrivateKey.new(level);
+      const priv = MLKEMPrivateKey.random(level);
       const pub = priv.publicKey();
 
       // Sizes match NIST FIPS-203 (and Rust pqcrypto-mlkem).
@@ -38,24 +38,24 @@ describe("ML-KEM CBOR layout (matches Rust pqcrypto-mlkem)", () => {
       const expectedPub =
         level === MLKEMLevel.MLKEM512 ? 800 : level === MLKEMLevel.MLKEM768 ? 1184 : 1568;
 
-      expect(priv.data().length).toBe(expectedPriv);
-      expect(pub.data().length).toBe(expectedPub);
+      expect(priv.bytes.length).toBe(expectedPriv);
+      expect(pub.bytes.length).toBe(expectedPub);
     });
 
     it(`${String(level)} private key tagged CBOR begins with tag 40100`, () => {
-      const priv = MLKEMPrivateKey.new(level);
+      const priv = MLKEMPrivateKey.random(level);
       expectTaggedAt(priv.toCbor().toData(), 40100);
     });
 
     it(`${String(level)} public key tagged CBOR begins with tag 40101`, () => {
-      const priv = MLKEMPrivateKey.new(level);
+      const priv = MLKEMPrivateKey.random(level);
       expectTaggedAt(priv.publicKey().toCbor().toData(), 40101);
     });
 
     it(`${String(level)} encapsulation: ciphertext tagged with 40102`, () => {
-      const priv = MLKEMPrivateKey.new(level);
+      const priv = MLKEMPrivateKey.random(level);
       const { sharedSecret, ciphertext } = priv.publicKey().encapsulate();
-      expect(sharedSecret.data().length).toBe(32);
+      expect(sharedSecret.bytes.length).toBe(32);
       expectTaggedAt(ciphertext.toCbor().toData(), 40102);
 
       // Round-trip
@@ -64,9 +64,9 @@ describe("ML-KEM CBOR layout (matches Rust pqcrypto-mlkem)", () => {
     });
 
     it(`${String(level)} private key roundtrips through tagged CBOR`, () => {
-      const priv = MLKEMPrivateKey.new(level);
+      const priv = MLKEMPrivateKey.random(level);
       const decoded = MLKEMPrivateKey.fromCbor(decodeCbor(priv.toCbor().toData()));
-      expect(decoded.data()).toEqual(priv.data());
+      expect(decoded.bytes).toEqual(priv.bytes);
     });
   }
 });

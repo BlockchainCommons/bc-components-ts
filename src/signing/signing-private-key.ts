@@ -59,6 +59,7 @@ import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
+import { secureRng } from "@blockchaincommons/rand";
 
 /**
  * A private key used for creating digital signatures.
@@ -104,7 +105,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @param key - The EC private key to use for Schnorr signing
    * @returns A new Schnorr signing private key
    */
-  static newSchnorr(key: ECPrivateKey): SigningPrivateKey {
+  static fromSchnorr(key: ECPrivateKey): SigningPrivateKey {
     return new SigningPrivateKey(SignatureScheme.Schnorr, key, undefined, undefined, undefined);
   }
 
@@ -114,7 +115,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @param key - The EC private key to use for ECDSA signing
    * @returns A new ECDSA signing private key
    */
-  static newEcdsa(key: ECPrivateKey): SigningPrivateKey {
+  static fromEcdsa(key: ECPrivateKey): SigningPrivateKey {
     return new SigningPrivateKey(SignatureScheme.Ecdsa, key, undefined, undefined, undefined);
   }
 
@@ -124,7 +125,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @param key - The Ed25519 private key to use
    * @returns A new Ed25519 signing private key
    */
-  static newEd25519(key: Ed25519PrivateKey): SigningPrivateKey {
+  static fromEd25519(key: Ed25519PrivateKey): SigningPrivateKey {
     return new SigningPrivateKey(SignatureScheme.Ed25519, undefined, key, undefined, undefined);
   }
 
@@ -134,7 +135,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @param key - The SR25519 private key to use
    * @returns A new SR25519 signing private key
    */
-  static newSr25519(key: Sr25519PrivateKey): SigningPrivateKey {
+  static fromSr25519(key: Sr25519PrivateKey): SigningPrivateKey {
     return new SigningPrivateKey(SignatureScheme.Sr25519, undefined, undefined, key, undefined);
   }
 
@@ -144,10 +145,10 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @param key - The MLDSA private key to use
    * @returns A new MLDSA signing private key
    */
-  static newMldsa(key: MLDSAPrivateKey): SigningPrivateKey {
+  static fromMldsa(key: MLDSAPrivateKey): SigningPrivateKey {
     // Determine the SignatureScheme based on the MLDSA level
     let scheme: SignatureScheme;
-    switch (key.level()) {
+    switch (key.level) {
       case MLDSALevel.MLDSA44:
         scheme = SignatureScheme.MLDSA44;
         break;
@@ -158,7 +159,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
         scheme = SignatureScheme.MLDSA87;
         break;
       default:
-        throw ComponentsError.invalidData(`Unknown MLDSA level: ${key.level()}`);
+        throw ComponentsError.invalidData(`Unknown MLDSA level: ${String(key.level)}`);
     }
     return new SigningPrivateKey(scheme, undefined, undefined, undefined, key);
   }
@@ -196,39 +197,36 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   }
 
   /**
-   * Creates a new random Ed25519 signing private key.
-   *
-   * @returns A new random Ed25519 signing private key
+   * A fresh signing key; Ed25519 unless `scheme` says otherwise. SSH schemes
+   * derive from a `PrivateKeyBase` instead.
    */
-  static random(): SigningPrivateKey {
-    return SigningPrivateKey.newEd25519(Ed25519PrivateKey.random());
-  }
-
-  /**
-   * Creates a new random Schnorr signing private key.
-   *
-   * @returns A new random Schnorr signing private key
-   */
-  static randomSchnorr(): SigningPrivateKey {
-    return SigningPrivateKey.newSchnorr(ECPrivateKey.random());
-  }
-
-  /**
-   * Creates a new random ECDSA signing private key.
-   *
-   * @returns A new random ECDSA signing private key
-   */
-  static randomEcdsa(): SigningPrivateKey {
-    return SigningPrivateKey.newEcdsa(ECPrivateKey.random());
-  }
-
-  /**
-   * Creates a new random SR25519 signing private key.
-   *
-   * @returns A new random SR25519 signing private key
-   */
-  static randomSr25519(): SigningPrivateKey {
-    return SigningPrivateKey.newSr25519(Sr25519PrivateKey.random());
+  static random({
+    scheme = SignatureScheme.Ed25519,
+    rng = secureRng(),
+  }: { scheme?: SignatureScheme; rng?: RandomNumberGenerator } = {}): SigningPrivateKey {
+    switch (scheme) {
+      case SignatureScheme.Schnorr:
+        return SigningPrivateKey.fromSchnorr(ECPrivateKey.random({ rng }));
+      case SignatureScheme.Ecdsa:
+        return SigningPrivateKey.fromEcdsa(ECPrivateKey.random({ rng }));
+      case SignatureScheme.Ed25519:
+        return SigningPrivateKey.fromEd25519(Ed25519PrivateKey.random({ rng }));
+      case SignatureScheme.Sr25519:
+        return SigningPrivateKey.fromSr25519(Sr25519PrivateKey.random({ rng }));
+      case SignatureScheme.MLDSA44:
+        return SigningPrivateKey.fromMldsa(MLDSAPrivateKey.random(MLDSALevel.MLDSA44, { rng }));
+      case SignatureScheme.MLDSA65:
+        return SigningPrivateKey.fromMldsa(MLDSAPrivateKey.random(MLDSALevel.MLDSA65, { rng }));
+      case SignatureScheme.MLDSA87:
+        return SigningPrivateKey.fromMldsa(MLDSAPrivateKey.random(MLDSALevel.MLDSA87, { rng }));
+      case SignatureScheme.SshEd25519:
+      case SignatureScheme.SshDsa:
+      case SignatureScheme.SshEcdsaP256:
+      case SignatureScheme.SshEcdsaP384:
+        throw ComponentsError.general(
+          "SSH signing keys derive from a PrivateKeyBase: use base.sshSigningPrivateKey(algorithm)",
+        );
+    }
   }
 
   // ============================================================================
@@ -238,7 +236,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   /**
    * Returns the signature scheme of this key.
    */
-  scheme(): SignatureScheme {
+  get scheme(): SignatureScheme {
     return this._type;
   }
 
@@ -246,7 +244,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * Returns a human-readable string identifying the key type.
    * @returns A string like "Ed25519", "Schnorr", "ECDSA", "Sr25519", "MLDSA-44", etc.
    */
-  keyType(): string {
+  get keyType(): string {
     switch (this._type) {
       case SignatureScheme.Ed25519:
         return "Ed25519";
@@ -278,76 +276,76 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   /**
    * Returns the underlying EC private key if this is a Schnorr or ECDSA key.
    *
-   * @returns The EC private key if this is a Schnorr or ECDSA key, null otherwise
+   * @returns The EC private key if this is a Schnorr or ECDSA key, undefined otherwise
    */
-  toEc(): ECPrivateKey | null {
+  asEc(): ECPrivateKey | undefined {
     if (
       (this._type === SignatureScheme.Schnorr || this._type === SignatureScheme.Ecdsa) &&
       this._ecKey !== undefined
     ) {
       return this._ecKey;
     }
-    return null;
+    return undefined;
   }
 
   /**
    * Returns the underlying Schnorr private key if this is a Schnorr key.
    *
-   * @returns The EC private key if this is a Schnorr key, null otherwise
+   * @returns The EC private key if this is a Schnorr key, undefined otherwise
    */
-  toSchnorr(): ECPrivateKey | null {
+  asSchnorr(): ECPrivateKey | undefined {
     if (this._type === SignatureScheme.Schnorr && this._ecKey !== undefined) {
       return this._ecKey;
     }
-    return null;
+    return undefined;
   }
 
   /**
    * Returns the underlying ECDSA private key if this is an ECDSA key.
    *
-   * @returns The EC private key if this is an ECDSA key, null otherwise
+   * @returns The EC private key if this is an ECDSA key, undefined otherwise
    */
-  toEcdsa(): ECPrivateKey | null {
+  asEcdsa(): ECPrivateKey | undefined {
     if (this._type === SignatureScheme.Ecdsa && this._ecKey !== undefined) {
       return this._ecKey;
     }
-    return null;
+    return undefined;
   }
 
   /**
    * Returns the underlying Ed25519 private key if this is an Ed25519 key.
    *
-   * @returns The Ed25519 private key if this is an Ed25519 key, null otherwise
+   * @returns The Ed25519 private key if this is an Ed25519 key, undefined otherwise
    */
-  toEd25519(): Ed25519PrivateKey | null {
+  asEd25519(): Ed25519PrivateKey | undefined {
     if (this._type === SignatureScheme.Ed25519 && this._ed25519Key !== undefined) {
       return this._ed25519Key;
     }
-    return null;
+    return undefined;
   }
 
   /**
    * Returns the underlying Sr25519 private key if this is an Sr25519 key.
    *
-   * @returns The Sr25519 private key if this is an Sr25519 key, null otherwise
+   * @returns The Sr25519 private key if this is an Sr25519 key, undefined otherwise
    */
-  toSr25519(): Sr25519PrivateKey | null {
+  asSr25519(): Sr25519PrivateKey | undefined {
     if (this._type === SignatureScheme.Sr25519 && this._sr25519Key !== undefined) {
       return this._sr25519Key;
     }
-    return null;
+    return undefined;
   }
 
   /**
    * Returns the underlying MLDSA private key if this is an MLDSA key.
    *
-   * @returns The MLDSA private key if this is an MLDSA key, null otherwise
+   * @returns The MLDSA private key if this is an MLDSA key, undefined otherwise
    */
-  toMldsa(): MLDSAPrivateKey | null {
+  asMldsa(): MLDSAPrivateKey | undefined {
     if (isMldsaScheme(this._type) && this._mldsaKey !== undefined) {
       return this._mldsaKey;
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -442,10 +440,10 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * Mirrors Rust `SigningPrivateKey::to_ssh`
    * (`bc-components-rust/src/signing/signing_private_key.rs:387`).
    *
-   * @returns The SSHPrivateKey if this is an SSH key, null otherwise
+   * @returns The SSHPrivateKey if this is an SSH key, undefined otherwise
    */
-  toSsh(): SSHPrivateKey | null {
-    return this._sshKey ?? null;
+  asSsh(): SSHPrivateKey | undefined {
+    return this._sshKey ?? undefined;
   }
 
   /**
@@ -542,7 +540,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    */
   reference(): Reference {
     const digest = Digest.fromImage(this.toCbor().toData());
-    return Reference.from(digest);
+    return Reference.fromDigest(digest);
   }
 
   // ============================================================================
@@ -656,8 +654,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
     if (this._type !== SignatureScheme.Schnorr || this._ecKey === undefined) {
       return false;
     }
-    const sigData = signature.toSchnorr();
-    if (sigData === null) {
+    const sigData = signature.asSchnorr();
+    if (sigData === undefined) {
       return false;
     }
     return this._ecKey.schnorrPublicKey().schnorrVerify(sigData, message);
@@ -678,8 +676,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @throws Error if this is not a Schnorr key
    */
   schnorrSign(message: Uint8Array, rng: RandomNumberGenerator): Signature {
-    const privateKey = this.toSchnorr();
-    if (privateKey === null) {
+    const privateKey = this.asSchnorr();
+    if (privateKey === undefined) {
       throw ComponentsError.invalidData("Invalid key type for Schnorr signing");
     }
     const sigData = privateKey.schnorrSignUsing(message, rng);
@@ -696,8 +694,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @throws Error if this is not an ECDSA key
    */
   ecdsaSign(message: Uint8Array): Signature {
-    const privateKey = this.toEcdsa();
-    if (privateKey === null) {
+    const privateKey = this.asEcdsa();
+    if (privateKey === undefined) {
       throw ComponentsError.invalidData("Invalid key type for ECDSA signing");
     }
     const sigData = privateKey.ecdsaSign(message);
@@ -714,8 +712,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @throws Error if this is not an Ed25519 key
    */
   ed25519Sign(message: Uint8Array): Signature {
-    const privateKey = this.toEd25519();
-    if (privateKey === null) {
+    const privateKey = this.asEd25519();
+    if (privateKey === undefined) {
       throw ComponentsError.invalidData("Invalid key type for Ed25519 signing");
     }
     const sigData = privateKey.sign(message);
@@ -732,8 +730,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @throws Error if this is not an SR25519 key
    */
   sr25519Sign(message: Uint8Array): Signature {
-    const privateKey = this.toSr25519();
-    if (privateKey === null) {
+    const privateKey = this.asSr25519();
+    if (privateKey === undefined) {
       throw ComponentsError.invalidData("Invalid key type for SR25519 signing");
     }
     const sigData = privateKey.sign(message);
@@ -750,8 +748,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @throws Error if this is not an MLDSA key
    */
   mldsaSign(message: Uint8Array): Signature {
-    const privateKey = this.toMldsa();
-    if (privateKey === null) {
+    const privateKey = this.asMldsa();
+    if (privateKey === undefined) {
       throw ComponentsError.invalidData("Invalid key type for MLDSA signing");
     }
     const mldsaSig = privateKey.sign(message);
@@ -769,7 +767,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
       // Rust format: Schnorr is a bare byte string
       if (isBytes(cborValue)) {
         const keyData = expectBytes(cborValue);
-        return SigningPrivateKey.newSchnorr(ECPrivateKey.from(keyData));
+        return SigningPrivateKey.fromSchnorr(ECPrivateKey.from(keyData));
       }
 
       // Array format for ECDSA, Ed25519, Sr25519
@@ -785,11 +783,11 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
 
         switch (Number(discriminator)) {
           case 1: // ECDSA
-            return SigningPrivateKey.newEcdsa(ECPrivateKey.from(keyData));
+            return SigningPrivateKey.fromEcdsa(ECPrivateKey.from(keyData));
           case 2: // Ed25519
-            return SigningPrivateKey.newEd25519(Ed25519PrivateKey.from(keyData));
+            return SigningPrivateKey.fromEd25519(Ed25519PrivateKey.from(keyData));
           case 3: // Sr25519
-            return SigningPrivateKey.newSr25519(Sr25519PrivateKey.from(keyData));
+            return SigningPrivateKey.fromSr25519(Sr25519PrivateKey.from(keyData));
           default:
             throw ComponentsError.invalidData(
               `Unknown SigningPrivateKey discriminator: ${discriminator}`,
@@ -802,7 +800,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
         const tagged = asTaggedValue(cborValue);
         if (tagged?.[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
           const mldsaKey = MLDSAPrivateKey.fromCbor(cborValue);
-          return SigningPrivateKey.newMldsa(mldsaKey);
+          return SigningPrivateKey.fromMldsa(mldsaKey);
         }
         if (tagged?.[0].value === TAG_SSH_TEXT_PRIVATE_KEY.value) {
           const text = expectText(tagged[1]);
@@ -838,26 +836,26 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
         if (this._ecKey === undefined) {
           throw ComponentsError.invalidData("EC private key is missing");
         }
-        // Rust: CBOR::to_byte_string(key.data()) - bare byte string
-        return cbor(this._ecKey.toData());
+        // Rust: CBOR::to_byte_string(key.bytes) - bare byte string
+        return cbor(this._ecKey.bytes);
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecKey === undefined) {
           throw ComponentsError.invalidData("EC private key is missing");
         }
-        return cbor([1, cbor(this._ecKey.toData())]);
+        return cbor([1, cbor(this._ecKey.bytes)]);
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
           throw ComponentsError.invalidData("Ed25519 private key is missing");
         }
-        return cbor([2, cbor(this._ed25519Key.toData())]);
+        return cbor([2, cbor(this._ed25519Key.bytes)]);
       }
       case SignatureScheme.Sr25519: {
         if (this._sr25519Key === undefined) {
           throw ComponentsError.invalidData("Sr25519 private key is missing");
         }
-        return cbor([3, cbor(this._sr25519Key.toData())]);
+        return cbor([3, cbor(this._sr25519Key.bytes)]);
       }
       case SignatureScheme.MLDSA44:
       case SignatureScheme.MLDSA65:

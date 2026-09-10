@@ -189,7 +189,7 @@ export class Signature implements ToCbor {
   static mldsaFromSignature(sig: MLDSASignature): Signature {
     // Determine the SignatureScheme based on the MLDSA level
     let scheme: SignatureScheme;
-    switch (sig.level()) {
+    switch (sig.level) {
       case MLDSALevel.MLDSA44:
         scheme = SignatureScheme.MLDSA44;
         break;
@@ -200,9 +200,9 @@ export class Signature implements ToCbor {
         scheme = SignatureScheme.MLDSA87;
         break;
       default:
-        throw ComponentsError.invalidData(`Unknown MLDSA level: ${sig.level()}`);
+        throw ComponentsError.invalidData(`Unknown MLDSA level: ${String(sig.level)}`);
     }
-    return new Signature(scheme, sig.data(), sig);
+    return new Signature(scheme, sig.bytes, sig);
   }
 
   /**
@@ -247,7 +247,7 @@ export class Signature implements ToCbor {
   /**
    * Returns the signature scheme used to create this signature.
    */
-  scheme(): SignatureScheme {
+  get scheme(): SignatureScheme {
     return this._type;
   }
 
@@ -255,7 +255,7 @@ export class Signature implements ToCbor {
    * Returns a human-readable string identifying the signature type.
    * @returns A string like "Ed25519", "Schnorr", "ECDSA", "Sr25519", "MLDSA-44", etc.
    */
-  signatureType(): string {
+  get signatureType(): string {
     switch (this._type) {
       case SignatureScheme.Ed25519:
         return "Ed25519";
@@ -284,23 +284,21 @@ export class Signature implements ToCbor {
     }
   }
 
-  /**
-   * Returns the raw signature data.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
   }
 
   /**
    * Returns the Schnorr signature data if this is a Schnorr signature.
    *
-   * @returns The 64-byte signature data if this is a Schnorr signature, null otherwise
+   * @returns The 64-byte signature data if this is a Schnorr signature, undefined otherwise
    */
-  toSchnorr(): Uint8Array | null {
+  asSchnorr(): Uint8Array | undefined {
     if (this._type === SignatureScheme.Schnorr) {
       return this._data;
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -313,13 +311,13 @@ export class Signature implements ToCbor {
   /**
    * Returns the ECDSA signature data if this is an ECDSA signature.
    *
-   * @returns The 64-byte signature data if this is an ECDSA signature, null otherwise
+   * @returns The 64-byte signature data if this is an ECDSA signature, undefined otherwise
    */
-  toEcdsa(): Uint8Array | null {
+  asEcdsa(): Uint8Array | undefined {
     if (this._type === SignatureScheme.Ecdsa) {
       return this._data;
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -332,13 +330,13 @@ export class Signature implements ToCbor {
   /**
    * Returns the Ed25519 signature data if this is an Ed25519 signature.
    *
-   * @returns The 64-byte signature data if this is an Ed25519 signature, null otherwise
+   * @returns The 64-byte signature data if this is an Ed25519 signature, undefined otherwise
    */
-  toEd25519(): Uint8Array | null {
+  asEd25519(): Uint8Array | undefined {
     if (this._type === SignatureScheme.Ed25519) {
       return this._data;
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -351,13 +349,13 @@ export class Signature implements ToCbor {
   /**
    * Returns the Sr25519 signature data if this is an Sr25519 signature.
    *
-   * @returns The 64-byte signature data if this is an Sr25519 signature, null otherwise
+   * @returns The 64-byte signature data if this is an Sr25519 signature, undefined otherwise
    */
-  toSr25519(): Uint8Array | null {
+  asSr25519(): Uint8Array | undefined {
     if (this._type === SignatureScheme.Sr25519) {
       return this._data;
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -370,13 +368,13 @@ export class Signature implements ToCbor {
   /**
    * Returns the MLDSASignature if this is an MLDSA signature.
    *
-   * @returns The MLDSASignature if this is an MLDSA signature, null otherwise
+   * @returns The MLDSASignature if this is an MLDSA signature, undefined otherwise
    */
-  toMldsa(): MLDSASignature | null {
+  asMldsa(): MLDSASignature | undefined {
     if (isMldsaScheme(this._type) && this._mldsaSignature !== undefined) {
       return this._mldsaSignature;
     }
-    return null;
+    return undefined;
   }
 
   /**
@@ -392,10 +390,10 @@ export class Signature implements ToCbor {
    * Mirrors Rust `Signature::to_ssh`
    * (`bc-components-rust/src/signing/signature.rs:459`).
    *
-   * @returns The SSHSignature if this is an SSH signature, null otherwise
+   * @returns The SSHSignature if this is an SSH signature, undefined otherwise
    */
-  toSsh(): SSHSignature | null {
-    return this._sshSig ?? null;
+  asSsh(): SSHSignature | undefined {
+    return this._sshSig ?? undefined;
   }
 
   /**

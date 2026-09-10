@@ -78,18 +78,8 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Create a new random PrivateKeyBase.
-   */
-  static new(): PrivateKeyBase {
-    const rng = secureRng();
-    return PrivateKeyBase.newUsing(rng);
-  }
-
-  /**
-   * Create a new random PrivateKeyBase using the provided RNG.
-   */
-  static newUsing(rng: RandomNumberGenerator): PrivateKeyBase {
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): PrivateKeyBase {
     const data = randomBytes(PRIVATE_KEY_BASE_DEFAULT_SIZE, { rng: rng });
     return new PrivateKeyBase(data);
   }
@@ -99,7 +89,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    *
    * @param data - 32 bytes of key material
    */
-  static fromData(data: Uint8Array): PrivateKeyBase {
+  static from(data: Uint8Array): PrivateKeyBase {
     return new PrivateKeyBase(data);
   }
 
@@ -107,17 +97,8 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Returns the raw key material.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Returns a copy of the raw key material.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
@@ -133,7 +114,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   ed25519SigningPrivateKey(): SigningPrivateKey {
     const derivedKey = this._deriveKey(SALT_SIGNING);
     const ed25519Key = Ed25519PrivateKey.from(derivedKey);
-    return SigningPrivateKey.newEd25519(ed25519Key);
+    return SigningPrivateKey.fromEd25519(ed25519Key);
   }
 
   /**
@@ -171,7 +152,10 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    * @returns PrivateKeys containing the derived signing and encapsulation keys
    */
   ed25519PrivateKeys(): PrivateKeys {
-    return PrivateKeys.withKeys(this.ed25519SigningPrivateKey(), this.encapsulationPrivateKey());
+    return PrivateKeys.from({
+      signing: this.ed25519SigningPrivateKey(),
+      encapsulation: this.encapsulationPrivateKey(),
+    });
   }
 
   /**
@@ -192,7 +176,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    */
   schnorrSigningPrivateKey(): SigningPrivateKey {
     const ecKey = ECPrivateKey.deriveFromKeyMaterial(this._data);
-    return SigningPrivateKey.newSchnorr(ecKey);
+    return SigningPrivateKey.fromSchnorr(ecKey);
   }
 
   /**
@@ -201,7 +185,10 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    * Matches Rust's PrivateKeyBase::schnorr_private_keys().
    */
   schnorrPrivateKeys(): PrivateKeys {
-    return PrivateKeys.withKeys(this.schnorrSigningPrivateKey(), this.encapsulationPrivateKey());
+    return PrivateKeys.from({
+      signing: this.schnorrSigningPrivateKey(),
+      encapsulation: this.encapsulationPrivateKey(),
+    });
   }
 
   /**
@@ -219,7 +206,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    */
   ecdsaSigningPrivateKey(): SigningPrivateKey {
     const ecKey = ECPrivateKey.deriveFromKeyMaterial(this._data);
-    return SigningPrivateKey.newEcdsa(ecKey);
+    return SigningPrivateKey.fromEcdsa(ecKey);
   }
 
   /**
@@ -228,7 +215,10 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    * Matches Rust's PrivateKeyBase::ecdsa_private_keys().
    */
   ecdsaPrivateKeys(): PrivateKeys {
-    return PrivateKeys.withKeys(this.ecdsaSigningPrivateKey(), this.encapsulationPrivateKey());
+    return PrivateKeys.from({
+      signing: this.ecdsaSigningPrivateKey(),
+      encapsulation: this.encapsulationPrivateKey(),
+    });
   }
 
   /**
@@ -260,7 +250,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    * @param comment   - Optional comment carried through the OpenSSH PEM
    */
   sshSigningPrivateKey(algorithm: SshAlgorithm, comment = ""): SigningPrivateKey {
-    const rng = HKDFRng.new(this._data, sshAlgorithmName(algorithm));
+    const rng = new HKDFRng(this._data, sshAlgorithmName(algorithm));
     let data: SshPrivateKeyData;
     switch (algorithm.kind) {
       case "ed25519": {
@@ -323,10 +313,10 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
    * (`bc-components-rust/src/private_key_base.rs:273-283`).
    */
   sshPrivateKeys(algorithm: SshAlgorithm, comment = ""): PrivateKeys {
-    return PrivateKeys.withKeys(
-      this.sshSigningPrivateKey(algorithm, comment),
-      this.encapsulationPrivateKey(),
-    );
+    return PrivateKeys.from({
+      signing: this.sshSigningPrivateKey(algorithm, comment),
+      encapsulation: this.encapsulationPrivateKey(),
+    });
   }
 
   /**
@@ -378,7 +368,7 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     tags: [TAG_PRIVATE_KEY_BASE],
     decodeUntagged: (cborValue) => {
       const data = expectBytes(cborValue);
-      return PrivateKeyBase.fromData(data);
+      return PrivateKeyBase.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

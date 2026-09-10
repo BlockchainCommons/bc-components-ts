@@ -22,16 +22,16 @@ describe("codable round-trips", () => {
         fc.uint8Array({ minLength: 16, maxLength: 16 }),
         (b, n, u) => {
           const items: { toCbor(): Cbor; toUR(): UR }[] = [
-            c.Digest.fromData(b),
-            c.ARID.fromData(b),
-            c.XID.fromData(b),
-            c.Reference.fromData(b),
-            c.SymmetricKey.fromData(b),
-            c.X25519PrivateKey.fromData(b),
-            c.Nonce.fromData(n),
-            c.UUID.fromData(u),
-            c.Salt.fromData(u),
-            c.PrivateKeyBase.fromData(b),
+            c.Digest.from(b),
+            c.ARID.from(b),
+            c.XID.from(b),
+            c.Reference.from(b),
+            c.SymmetricKey.from(b),
+            c.X25519PrivateKey.from(b),
+            c.Nonce.from(n),
+            c.UUID.from(u),
+            c.Salt.from(u),
+            c.PrivateKeyBase.from(b),
           ];
           const ctors = [
             c.Digest,
@@ -70,12 +70,11 @@ describe("codable round-trips", () => {
         fc.string({ maxLength: 40 }),
         fc.integer({ min: 0, max: 4102444800 }),
         (d, name, note, secs) => {
-          const seed = c.Seed.newOpt(
-            d,
-            name || undefined,
-            note || undefined,
-            new Date(secs * 1000),
-          );
+          const seed = c.Seed.from(d, {
+            name: name || undefined,
+            note: note || undefined,
+            creationDate: new Date(secs * 1000),
+          });
           const back = c.Seed.fromCbor(decodeCbor(seed.toCbor().toData()));
           return (
             back.equals(seed) && hexOf(back.toCbor().toData()) === hexOf(seed.toCbor().toData())
@@ -99,10 +98,10 @@ describe("crypto round-trips", () => {
       fc.property(bytes32, fc.uint8Array({ maxLength: 200 }), seed, (k, msg, sd) => {
         const rng = new SeededRng(sd);
         const keys = [
-          c.SigningPrivateKey.newSchnorr(c.ECPrivateKey.fromData(k)),
-          c.SigningPrivateKey.newEcdsa(c.ECPrivateKey.fromData(k)),
-          c.SigningPrivateKey.newEd25519(c.Ed25519PrivateKey.from(k)),
-          c.SigningPrivateKey.newSr25519(c.Sr25519PrivateKey.fromSeed(k)),
+          c.SigningPrivateKey.fromSchnorr(c.ECPrivateKey.from(k)),
+          c.SigningPrivateKey.fromEcdsa(c.ECPrivateKey.from(k)),
+          c.SigningPrivateKey.fromEd25519(c.Ed25519PrivateKey.from(k)),
+          c.SigningPrivateKey.fromSr25519(c.Sr25519PrivateKey.from(k)),
         ];
         return keys.every((priv, i) => {
           const sig =
@@ -128,8 +127,8 @@ describe("crypto round-trips", () => {
         fc.uint8Array({ maxLength: 300 }),
         fc.uint8Array({ maxLength: 40 }),
         (k, n, pt, aad) => {
-          const key = c.SymmetricKey.fromData(k);
-          const msg = key.encrypt(pt, aad.length ? aad : undefined, c.Nonce.fromData(n));
+          const key = c.SymmetricKey.from(k);
+          const msg = key.encrypt(pt, aad.length ? aad : undefined, c.Nonce.from(n));
           const back = c.EncryptedMessage.fromCbor(decodeCbor(msg.toCbor().toData()));
           return hexOf(key.decrypt(msg)) === hexOf(pt) && hexOf(key.decrypt(back)) === hexOf(pt);
         },
@@ -140,13 +139,12 @@ describe("crypto round-trips", () => {
   it("seal/open with x25519 and ML-KEM", () => {
     fc.assert(
       fc.property(bytes32, fc.uint8Array({ maxLength: 200 }), seed, (k, pt, sd) => {
-        const x = c.EncapsulationPrivateKey.fromX25519PrivateKey(c.X25519PrivateKey.fromData(k));
-        const kem = c.EncapsulationPrivateKey.newMlkemUsing(
-          c.MLKEMLevel.MLKEM512,
-          new SeededRng(sd),
-        );
+        const x = c.EncapsulationPrivateKey.fromX25519PrivateKey(c.X25519PrivateKey.from(k));
+        const kem = c.EncapsulationPrivateKey.randomMlkem(c.MLKEMLevel.MLKEM512, {
+          rng: new SeededRng(sd),
+        });
         return [x, kem].every((priv) => {
-          const sealed = c.SealedMessage.new(pt, priv.publicKey());
+          const sealed = c.SealedMessage.seal(pt, priv.publicKey());
           const back = c.SealedMessage.fromCbor(decodeCbor(sealed.toCbor().toData()));
           return (
             hexOf(sealed.decrypt(priv)) === hexOf(pt) && hexOf(back.decrypt(priv)) === hexOf(pt)
@@ -173,7 +171,7 @@ describe("crypto round-trips", () => {
   it("PrivateKeyBase(seed): publicKeys equals privateKeys().publicKeys()", () => {
     fc.assert(
       fc.property(fc.uint8Array({ minLength: 16, maxLength: 64 }), (s) => {
-        const pkb = c.PrivateKeyBase.fromData(s);
+        const pkb = c.PrivateKeyBase.from(s);
         return (
           pkb.ed25519PublicKeys().equals(pkb.ed25519PrivateKeys().publicKeys()) &&
           pkb.schnorrPublicKeys().equals(pkb.schnorrPrivateKeys().publicKeys()) &&

@@ -62,17 +62,8 @@ export class Sr25519PublicKey {
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Returns the raw key bytes.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
-  }
-
-  /**
-   * Returns the raw key bytes (alias for toData).
-   */
-  asBytes(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
   }
 

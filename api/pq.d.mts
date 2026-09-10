@@ -13,31 +13,13 @@ declare class AuthenticationTag {
     /**
      * Restore an AuthenticationTag from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): AuthenticationTag;
-    /**
-     * Restore an AuthenticationTag from a reference to an array of bytes.
-     */
-    static fromDataRef(data: Uint8Array): AuthenticationTag;
-    /**
-     * Create an AuthenticationTag from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): AuthenticationTag;
     /**
      * Create an AuthenticationTag from hex string.
      */
     static fromHex(hex: string): AuthenticationTag;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the reference as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw tag bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
      */
@@ -91,19 +73,12 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
     static readonly DIGEST_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Get the digest data.
-     */
-    data(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Create a Digest from a 32-byte array.
      */
-    static fromData(data: Uint8Array): Digest;
-    /**
-     * Create a Digest from data, validating the length.
-     * Alias for fromData for compatibility with Rust API.
-     */
-    static fromDataRef(data: Uint8Array): Digest;
+    static from(data: Uint8Array): Digest;
     /**
      * Create a Digest from hex string.
      *
@@ -138,19 +113,7 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     static hash(data: Uint8Array): Digest;
     /**
-     * Get the raw digest bytes as a copy.
-     */
-    toData(): Uint8Array;
-    /**
-     * Get a reference to the raw digest bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -230,30 +193,29 @@ declare class EncryptedMessage implements ToCbor, ToUR {
     private readonly _nonce;
     private readonly _auth;
     private constructor();
-    /**
-     * Restores an EncryptedMessage from its components.
-     */
-    static new(ciphertext: Uint8Array, aad: Uint8Array, nonce: Nonce, auth: Uint8Array | AuthenticationTag): EncryptedMessage;
-    /**
-     * Create an EncryptedMessage from components (legacy alias).
-     */
-    static from(nonce: Nonce, ciphertext: Uint8Array, tag: AuthenticationTag, aad?: Uint8Array): EncryptedMessage;
+    /** Assemble a message from its parts (no encryption happens here). */
+    static from({ ciphertext, nonce, authTag, aad }: {
+        ciphertext: Uint8Array;
+        nonce: Nonce;
+        authTag: AuthenticationTag | Uint8Array;
+        aad?: Uint8Array;
+    }): EncryptedMessage;
     /**
      * Returns a reference to the ciphertext data.
      */
-    ciphertext(): Uint8Array;
+    get ciphertext(): Uint8Array;
     /**
      * Returns a reference to the additional authenticated data (AAD).
      */
-    aad(): Uint8Array;
+    get aad(): Uint8Array;
     /**
      * Returns a reference to the nonce value used for encryption.
      */
-    nonce(): Nonce;
+    get nonce(): Nonce;
     /**
      * Returns a reference to the authentication tag value used for encryption.
      */
-    authenticationTag(): AuthenticationTag;
+    get authenticationTag(): AuthenticationTag;
     /**
      * Returns a CBOR representation in the AAD field, if it exists.
      */
@@ -358,19 +320,10 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
-    /**
-     * Generate a new random MLDSAPrivateKey with the specified security level.
-     *
-     * @param level - The ML-DSA security level (default: MLDSA65)
-     */
-    static new(level?: MLDSALevel): MLDSAPrivateKey;
-    /**
-     * Generate a new random MLDSAPrivateKey using the provided RNG.
-     *
-     * @param level - The ML-DSA security level
-     * @param rng - Random number generator
-     */
-    static newUsing(level: MLDSALevel, rng: RandomNumberGenerator): MLDSAPrivateKey;
+    /** A fresh private key at `level`; pass `rng` to make it deterministic. */
+    static random(level?: MLDSALevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): MLDSAPrivateKey;
     /**
      * Create an MLDSAPrivateKey from raw bytes.
      *
@@ -378,37 +331,18 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
      * @param data - The private key bytes
      */
     static fromBytes(level: MLDSALevel, data: Uint8Array): MLDSAPrivateKey;
-    /**
-     * Generate a keypair and return both private and public keys.
-     *
-     * @param level - The ML-DSA security level (default: MLDSA65)
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypair(level?: MLDSALevel): [MLDSAPrivateKey, MLDSAPublicKey];
-    /**
-     * Generate a keypair using the provided RNG.
-     *
-     * @param level - The ML-DSA security level
-     * @param rng - Random number generator
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypairUsing(level: MLDSALevel, rng: RandomNumberGenerator): [MLDSAPrivateKey, MLDSAPublicKey];
+    /** A fresh private key at `level` and its public key. */
+    static keypair(level?: MLDSALevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [MLDSAPrivateKey, MLDSAPublicKey];
     /**
      * Returns the security level of this key.
      */
-    level(): MLDSALevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLDSALevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Sign a message with this private key.
      *
@@ -471,19 +405,11 @@ export declare class MLDSAPublicKey implements ToCbor, ToUR {
     /**
      * Returns the security level of this key.
      */
-    level(): MLDSALevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLDSALevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Verify a signature against a message.
      *
@@ -549,19 +475,11 @@ export declare class MLDSASignature implements ToCbor, ToUR {
     /**
      * Returns the security level of this signature.
      */
-    level(): MLDSALevel;
-    /**
-     * Returns the raw signature bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw signature bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the signature in bytes.
-     */
-    size(): number;
+    get level(): MLDSALevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Compare with another MLDSASignature.
      */
@@ -630,19 +548,11 @@ export declare class MLKEMCiphertext implements ToCbor, ToUR {
     /**
      * Returns the security level of this ciphertext.
      */
-    level(): MLKEMLevel;
-    /**
-     * Returns the raw ciphertext bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw ciphertext bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the ciphertext in bytes.
-     */
-    size(): number;
+    get level(): MLKEMLevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Compare with another MLKEMCiphertext.
      */
@@ -769,19 +679,10 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
     private readonly _level;
     private readonly _data;
     private constructor();
-    /**
-     * Generate a new random MLKEMPrivateKey with the specified security level.
-     *
-     * @param level - The ML-KEM security level (default: MLKEM768)
-     */
-    static new(level?: MLKEMLevel): MLKEMPrivateKey;
-    /**
-     * Generate a new random MLKEMPrivateKey using the provided RNG.
-     *
-     * @param level - The ML-KEM security level
-     * @param rng - Random number generator
-     */
-    static newUsing(level: MLKEMLevel, rng: RandomNumberGenerator): MLKEMPrivateKey;
+    /** A fresh private key at `level`; pass `rng` to make it deterministic. */
+    static random(level?: MLKEMLevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): MLKEMPrivateKey;
     /**
      * Create an MLKEMPrivateKey from raw bytes.
      *
@@ -789,37 +690,18 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
      * @param data - The private key bytes
      */
     static fromBytes(level: MLKEMLevel, data: Uint8Array): MLKEMPrivateKey;
-    /**
-     * Generate a keypair and return both private and public keys.
-     *
-     * @param level - The ML-KEM security level (default: MLKEM768)
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypair(level?: MLKEMLevel): [MLKEMPrivateKey, MLKEMPublicKey];
-    /**
-     * Generate a keypair using the provided RNG.
-     *
-     * @param level - The ML-KEM security level
-     * @param rng - Random number generator
-     * @returns Tuple of [privateKey, publicKey]
-     */
-    static keypairUsing(level: MLKEMLevel, rng: RandomNumberGenerator): [MLKEMPrivateKey, MLKEMPublicKey];
+    /** A fresh private key at `level` and its public key. */
+    static keypair(level?: MLKEMLevel, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): [MLKEMPrivateKey, MLKEMPublicKey];
     /**
      * Returns the security level of this key.
      */
-    level(): MLKEMLevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLKEMLevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Decapsulate a shared secret from a ciphertext.
      *
@@ -883,19 +765,11 @@ export declare class MLKEMPublicKey implements ToCbor, ToUR {
     /**
      * Returns the security level of this key.
      */
-    level(): MLKEMLevel;
-    /**
-     * Returns the raw key bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Returns a copy of the raw key bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Returns the size of the key in bytes.
-     */
-    size(): number;
+    get level(): MLKEMLevel;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Encapsulate a new shared secret.
      *
@@ -946,24 +820,12 @@ declare class Nonce implements ToCbor, ToUR {
     static readonly NONCE_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random nonce.
-     */
-    static new(): Nonce;
-    /**
-     * Create a new random nonce (alias for compatibility).
-     */
-    static random(): Nonce;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Nonce;
     /**
      * Restores a nonce from data.
-     */
-    static fromData(data: Uint8Array): Nonce;
-    /**
-     * Restores a nonce from data (validates length).
-     */
-    static fromDataRef(data: Uint8Array): Nonce;
-    /**
-     * Create a Nonce from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): Nonce;
     /**
@@ -972,28 +834,10 @@ declare class Nonce implements ToCbor, ToUR {
      * @throws Error if the string is not exactly 24 hexadecimal digits.
      */
     static fromHex(hex: string): Nonce;
-    /**
-     * Generate a random nonce using provided RNG.
-     */
-    static randomUsing(rng: RandomNumberGenerator): Nonce;
-    /**
-     * Get the data of the nonce.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the nonce as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw nonce bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * The data as a hexadecimal string.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -1027,52 +871,22 @@ declare class SymmetricKey implements ToCbor {
     static readonly SYMMETRIC_KEY_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random symmetric key.
-     */
-    static new(): SymmetricKey;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): SymmetricKey;
     /**
      * Create a new symmetric key from data.
-     */
-    static fromData(data: Uint8Array): SymmetricKey;
-    /**
-     * Create a new symmetric key from data (validates length).
-     */
-    static fromDataRef(data: Uint8Array): SymmetricKey;
-    /**
-     * Create a SymmetricKey from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): SymmetricKey;
     /**
      * Create a SymmetricKey from hex string.
      */
     static fromHex(hex: string): SymmetricKey;
-    /**
-     * Generate a random symmetric key.
-     */
-    static random(): SymmetricKey;
-    /**
-     * Generate a random symmetric key using provided RNG.
-     */
-    static randomUsing(rng: RandomNumberGenerator): SymmetricKey;
-    /**
-     * Get the data of the symmetric key.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the data of the symmetric key as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get a copy of the raw key bytes.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**

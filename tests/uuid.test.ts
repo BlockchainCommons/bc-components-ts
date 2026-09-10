@@ -17,14 +17,14 @@ describe("UUID", () => {
 
   describe("creation", () => {
     it("should create a new random UUID", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
 
-      expect(uuid.data().length).toBe(UUID.UUID_SIZE);
+      expect(uuid.bytes.length).toBe(UUID.UUID_SIZE);
     });
 
     it("should create unique random UUIDs", () => {
-      const uuid1 = UUID.new();
-      const uuid2 = UUID.new();
+      const uuid1 = UUID.random();
+      const uuid2 = UUID.random();
 
       expect(uuid1.equals(uuid2)).toBe(false);
     });
@@ -32,41 +32,41 @@ describe("UUID", () => {
     it("should create a UUID using random (alias)", () => {
       const uuid = UUID.random();
 
-      expect(uuid.data().length).toBe(UUID.UUID_SIZE);
+      expect(uuid.bytes.length).toBe(UUID.UUID_SIZE);
     });
 
     it("should create a UUID from raw data", () => {
       const rawData = new Uint8Array(UUID.UUID_SIZE);
-      const uuid = UUID.fromData(rawData);
+      const uuid = UUID.from(rawData);
 
-      expect(uuid.data()).toEqual(rawData);
+      expect(uuid.bytes).toEqual(rawData);
     });
 
     it("should create a UUID using fromDataRef", () => {
       const rawData = new Uint8Array(UUID.UUID_SIZE);
-      const uuid = UUID.fromDataRef(rawData);
+      const uuid = UUID.from(rawData);
 
-      expect(uuid.data().length).toBe(UUID.UUID_SIZE);
+      expect(uuid.bytes.length).toBe(UUID.UUID_SIZE);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const wrongSizeData = new Uint8Array(UUID.UUID_SIZE + 1);
 
-      expect(() => UUID.fromDataRef(wrongSizeData)).toThrow();
+      expect(() => UUID.from(wrongSizeData)).toThrow();
     });
 
     it("should create a UUID using from (legacy alias)", () => {
       const rawData = new Uint8Array(UUID.UUID_SIZE);
       const uuid = UUID.from(rawData);
 
-      expect(uuid.data().length).toBe(UUID.UUID_SIZE);
+      expect(uuid.bytes.length).toBe(UUID.UUID_SIZE);
     });
 
     it("should create a UUID from hex string", () => {
       const uuid = UUID.fromHex(TEST_HEX);
 
-      expect(uuid.data().length).toBe(UUID.UUID_SIZE);
-      expect(uuid.hex()).toBe(TEST_HEX);
+      expect(uuid.bytes.length).toBe(UUID.UUID_SIZE);
+      expect(uuid.toHex()).toBe(TEST_HEX);
     });
 
     it("should create a UUID from string representation", () => {
@@ -78,29 +78,29 @@ describe("UUID", () => {
 
   describe("accessors", () => {
     it("should return data as bytes", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
 
-      expect(uuid.data()).toBeInstanceOf(Uint8Array);
-      expect(uuid.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(uuid.toData()).toBeInstanceOf(Uint8Array);
+      expect(uuid.bytes).toBeInstanceOf(Uint8Array);
+      expect(uuid.bytes).toBeInstanceOf(Uint8Array);
+      expect(uuid.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {
-      const uuid = UUID.new();
-      const hex = uuid.hex();
+      const uuid = UUID.random();
+      const hex = uuid.toHex();
 
       expect(typeof hex).toBe("string");
       expect(hex.length).toBe(UUID.UUID_SIZE * 2);
     });
 
     it("should return same hex from hex() and toHex()", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
 
-      expect(uuid.hex()).toBe(uuid.toHex());
+      expect(uuid.toHex()).toBe(uuid.toHex());
     });
 
     it("should return base64 representation", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
 
       expect(typeof uuid.toBase64()).toBe("string");
     });
@@ -132,8 +132,8 @@ describe("UUID", () => {
 
   describe("hex roundtrip", () => {
     it("should roundtrip through hex", () => {
-      const uuid = UUID.new();
-      const hex = uuid.hex();
+      const uuid = UUID.random();
+      const hex = uuid.toHex();
       const restored = UUID.fromHex(hex);
 
       expect(restored.equals(uuid)).toBe(true);
@@ -142,7 +142,7 @@ describe("UUID", () => {
 
   describe("string roundtrip", () => {
     it("should roundtrip through string", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const str = uuid.toString();
       const restored = UUID.fromString(str);
 
@@ -152,7 +152,7 @@ describe("UUID", () => {
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
 
       expect(uuid.equals(uuid)).toBe(true);
     });
@@ -174,7 +174,7 @@ describe("UUID", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const tags = uuid.cborTags();
 
       expect(tags.length).toBe(1);
@@ -182,21 +182,21 @@ describe("UUID", () => {
     });
 
     it("should serialize to untagged CBOR", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const untagged = uuid.untaggedCbor();
 
       expect(untagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const tagged = uuid.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const data = uuid.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
@@ -204,7 +204,7 @@ describe("UUID", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const data = uuid.toCbor().toData();
       const restored = UUID.fromCbor(decodeCbor(data));
 
@@ -212,7 +212,7 @@ describe("UUID", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const data = uuid.untaggedCbor().toData();
       const restored = UUID.fromCbor(decodeCbor(data));
 
@@ -222,21 +222,21 @@ describe("UUID", () => {
 
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const ur = uuid.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const urString = uuid.toUR().toString();
 
       expect(urString.startsWith("ur:uuid/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
-      const uuid = UUID.new();
+      const uuid = UUID.random();
       const urString = uuid.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), UUID.codec);
 

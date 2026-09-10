@@ -49,28 +49,21 @@ export class HKDFParams implements KeyDerivation {
     this._hashType = hashType;
   }
 
-  /**
-   * Create new HKDF parameters with default settings.
-   * Uses a random 16-byte salt and SHA-256.
-   */
-  static new(): HKDFParams {
-    return HKDFParams.newOpt(Salt.newWithLen(SALT_LEN), HashType.SHA256);
-  }
-
-  /**
-   * Create HKDF parameters with custom settings.
-   */
-  static newOpt(salt: Salt, hashType: HashType): HKDFParams {
+  /** Parameters with a fresh random salt unless one is given. */
+  static from({
+    salt = Salt.random({ length: SALT_LEN }),
+    hashType = HashType.SHA256,
+  }: { salt?: Salt; hashType?: HashType } = {}): HKDFParams {
     return new HKDFParams(salt, hashType);
   }
 
   /** Returns the salt. */
-  salt(): Salt {
+  get salt(): Salt {
     return this._salt;
   }
 
   /** Returns the hash type. */
-  hashType(): HashType {
+  get hashType(): HashType {
     return this._hashType;
   }
 
@@ -84,13 +77,13 @@ export class HKDFParams implements KeyDerivation {
    */
   lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Encode the method parameters as AAD
     const encodedMethod = this.toCbor().toData();
 
     // Encrypt the content key using the derived key
-    return derivedKey.encrypt(contentKey.data(), encodedMethod, Nonce.new());
+    return derivedKey.encrypt(contentKey.bytes, encodedMethod, Nonce.random());
   }
 
   /**
@@ -98,19 +91,19 @@ export class HKDFParams implements KeyDerivation {
    */
   unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Decrypt to get the content key
     const contentKeyData = derivedKey.decrypt(encryptedMessage);
-    return SymmetricKey.fromData(contentKeyData);
+    return SymmetricKey.from(contentKeyData);
   }
 
   private _deriveKey(secret: Uint8Array): Uint8Array {
     switch (this._hashType) {
       case HashType.SHA256:
-        return hkdfSha256(secret, this._salt.asBytes(), 32);
+        return hkdfSha256(secret, this._salt.bytes, 32);
       case HashType.SHA512:
-        return hkdfSha512(secret, this._salt.asBytes(), 32);
+        return hkdfSha512(secret, this._salt.bytes, 32);
       default:
         throw ComponentsError.invalidData(`Unknown hash type: ${String(this._hashType)}`);
     }

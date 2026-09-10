@@ -40,43 +40,41 @@ export class SSKRShareCbor implements ToCbor {
     }
     this._data = new Uint8Array(data);
   }
-  static fromData(data: Uint8Array): SSKRShareCbor {
+  static from(data: Uint8Array): SSKRShareCbor {
     return new SSKRShareCbor(data);
   }
   static fromHex(hex: string): SSKRShareCbor {
     return new SSKRShareCbor(hexToBytes(hex));
   }
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
-  hex(): string {
+  toHex(): string {
     return bytesToHex(this._data);
   }
-  identifier(): number {
+  get identifier(): number {
     return (this._data[0] << 8) | this._data[1];
   }
   identifierHex(): string {
     return bytesToHex(this._data.subarray(0, 2));
   }
-  groupThreshold(): number {
+  get groupThreshold(): number {
     return (this._data[2] >> 4) + 1;
   }
-  groupCount(): number {
+  get groupCount(): number {
     return (this._data[2] & 0x0f) + 1;
   }
-  groupIndex(): number {
+  get groupIndex(): number {
     return this._data[3] >> 4;
   }
-  memberThreshold(): number {
+  get memberThreshold(): number {
     return (this._data[3] & 0x0f) + 1;
   }
-  memberIndex(): number {
+  get memberIndex(): number {
     return this._data[4] & 0x0f;
   }
-  shareValue(): Uint8Array {
+  get shareValue(): Uint8Array {
     return this._data.subarray(METADATA_SIZE_BYTES);
   }
   equals(other: SSKRShareCbor): boolean {
@@ -87,13 +85,13 @@ export class SSKRShareCbor implements ToCbor {
     return true;
   }
   toString(): string {
-    return `SSKRShare(${this.identifierHex()}, group ${this.groupIndex() + 1}/${this.groupCount()}, member ${this.memberIndex() + 1}/${this.memberThreshold()})`;
+    return `SSKRShare(${this.identifierHex()}, group ${this.groupIndex + 1}/${this.groupCount}, member ${this.memberIndex + 1}/${this.memberThreshold})`;
   }
   /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
   static readonly codec: ComponentCodec<SSKRShareCbor> = defineCodec({
     tags: [TAG_SSKR_SHARE, TAG_SSKR_SHARE_V1],
     decodeUntagged: (cborValue) => {
-      return SSKRShareCbor.fromData(expectBytes(cborValue));
+      return SSKRShareCbor.from(expectBytes(cborValue));
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });
@@ -122,7 +120,7 @@ export class SSKRShareCbor implements ToCbor {
 }
 export type SSKRShare = SSKRShareCbor;
 export const SSKRShare = {
-  fromData: (data: Uint8Array): SSKRShareCbor => SSKRShareCbor.fromData(data),
+  fromData: (data: Uint8Array): SSKRShareCbor => SSKRShareCbor.from(data),
   fromHex: (hex: string): SSKRShareCbor => SSKRShareCbor.fromHex(hex),
   fromTaggedCbor: (cborValue: Cbor): SSKRShareCbor => SSKRShareCbor.fromCbor(cborValue),
   fromTaggedCborData: (data: Uint8Array): SSKRShareCbor => SSKRShareCbor.fromCbor(decodeCbor(data)),
@@ -145,9 +143,7 @@ export function sskrCombine(shares: Uint8Array[]): SSKRSecret {
   return combineShares(shares);
 }
 export function sskrGenerateShares(spec: SSKRSpec, masterSecret: SSKRSecret): SSKRShare[][] {
-  return sskrGenerate(spec, masterSecret).map((group) =>
-    group.map((d) => SSKRShareCbor.fromData(d)),
-  );
+  return sskrGenerate(spec, masterSecret).map((group) => group.map((d) => SSKRShareCbor.from(d)));
 }
 export interface SimpleRng {
   fillBytes(data: Uint8Array): void;
@@ -158,9 +154,9 @@ export function sskrGenerateSharesUsing(
   rng: SimpleRng,
 ): SSKRShare[][] {
   return sskrGenerateUsing(spec, masterSecret, rng as RandomNumberGenerator).map((group) =>
-    group.map((d) => SSKRShareCbor.fromData(d)),
+    group.map((d) => SSKRShareCbor.from(d)),
   );
 }
 export function sskrCombineShares(shares: SSKRShare[]): SSKRSecret {
-  return sskrCombine(shares.map((share) => share.data()));
+  return sskrCombine(shares.map((share) => share.bytes));
 }

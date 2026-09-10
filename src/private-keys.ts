@@ -39,6 +39,7 @@ import type { Decrypter } from "./encrypter.js";
 import { Reference, type ReferenceProvider } from "./reference.js";
 import { Digest } from "./digest.js";
 import { ComponentsError } from "./error.js";
+import { type RandomNumberGenerator, secureRng } from "@blockchaincommons/rand";
 
 /**
  * Trait for types that provide access to a PrivateKeys container.
@@ -75,23 +76,23 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Create a new PrivateKeys container with the given keys.
-   */
-  static withKeys(
-    signingPrivateKey: SigningPrivateKey,
-    encapsulationPrivateKey: EncapsulationPrivateKey,
-  ): PrivateKeys {
-    return new PrivateKeys(signingPrivateKey, encapsulationPrivateKey);
+  /** Bundle a signing key with an encapsulation key. */
+  static from({
+    signing,
+    encapsulation,
+  }: {
+    signing: SigningPrivateKey;
+    encapsulation: EncapsulationPrivateKey;
+  }): PrivateKeys {
+    return new PrivateKeys(signing, encapsulation);
   }
 
-  /**
-   * Create a new PrivateKeys container with random Ed25519/X25519 keys.
-   */
-  static new(): PrivateKeys {
-    const signingKey = SigningPrivateKey.random();
-    const encapsulationKey = EncapsulationPrivateKey.random();
-    return new PrivateKeys(signingKey, encapsulationKey);
+  /** Fresh Ed25519 signing and X25519 encapsulation keys. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): PrivateKeys {
+    return new PrivateKeys(
+      SigningPrivateKey.random({ rng }),
+      EncapsulationPrivateKey.random({ rng }),
+    );
   }
 
   /**
@@ -99,7 +100,7 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
    * This is an alias for new() for API compatibility.
    */
   static generate(): PrivateKeys {
-    return PrivateKeys.new();
+    return PrivateKeys.random();
   }
 
   // ============================================================================
@@ -109,7 +110,7 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
   /**
    * Returns the signing private key.
    */
-  signingPrivateKey(): SigningPrivateKey {
+  get signingPrivateKey(): SigningPrivateKey {
     return this._signingPrivateKey;
   }
 
@@ -128,7 +129,7 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
   publicKeys(): PublicKeys {
     const signingPublicKey = this._signingPrivateKey.publicKey();
     const encapsulationPublicKey = this._encapsulationPrivateKey.publicKey();
-    return PublicKeys.new(signingPublicKey, encapsulationPublicKey);
+    return PublicKeys.from({ signing: signingPublicKey, encapsulation: encapsulationPublicKey });
   }
 
   // ============================================================================
@@ -175,7 +176,7 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
    */
   reference(): Reference {
     const digest = Digest.fromImage(this.toCbor().toData());
-    return Reference.from(digest);
+    return Reference.fromDigest(digest);
   }
 
   // ============================================================================

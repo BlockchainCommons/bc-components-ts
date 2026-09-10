@@ -99,32 +99,32 @@ describe("MLDSAPrivateKey", () => {
       const [privateKey, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA44);
       expect(privateKey).toBeInstanceOf(MLDSAPrivateKey);
       expect(publicKey).toBeInstanceOf(MLDSAPublicKey);
-      expect(privateKey.level()).toBe(MLDSALevel.MLDSA44);
-      expect(publicKey.level()).toBe(MLDSALevel.MLDSA44);
-      expect(privateKey.size()).toBe(2560);
-      expect(publicKey.size()).toBe(1312);
+      expect(privateKey.level).toBe(MLDSALevel.MLDSA44);
+      expect(publicKey.level).toBe(MLDSALevel.MLDSA44);
+      expect(privateKey.byteLength).toBe(2560);
+      expect(publicKey.byteLength).toBe(1312);
     });
 
     it("should generate MLDSA65 keypair", () => {
       const [privateKey, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
-      expect(privateKey.level()).toBe(MLDSALevel.MLDSA65);
-      expect(publicKey.level()).toBe(MLDSALevel.MLDSA65);
-      expect(privateKey.size()).toBe(4032);
-      expect(publicKey.size()).toBe(1952);
+      expect(privateKey.level).toBe(MLDSALevel.MLDSA65);
+      expect(publicKey.level).toBe(MLDSALevel.MLDSA65);
+      expect(privateKey.byteLength).toBe(4032);
+      expect(publicKey.byteLength).toBe(1952);
     });
 
     it("should generate MLDSA87 keypair", () => {
       const [privateKey, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA87);
-      expect(privateKey.level()).toBe(MLDSALevel.MLDSA87);
-      expect(publicKey.level()).toBe(MLDSALevel.MLDSA87);
-      expect(privateKey.size()).toBe(4896);
-      expect(publicKey.size()).toBe(2592);
+      expect(privateKey.level).toBe(MLDSALevel.MLDSA87);
+      expect(publicKey.level).toBe(MLDSALevel.MLDSA87);
+      expect(privateKey.byteLength).toBe(4896);
+      expect(publicKey.byteLength).toBe(2592);
     });
 
     it("should default to MLDSA65", () => {
       const [privateKey, publicKey] = MLDSAPrivateKey.keypair();
-      expect(privateKey.level()).toBe(MLDSALevel.MLDSA65);
-      expect(publicKey.level()).toBe(MLDSALevel.MLDSA65);
+      expect(privateKey.level).toBe(MLDSALevel.MLDSA65);
+      expect(publicKey.level).toBe(MLDSALevel.MLDSA65);
     });
   });
 
@@ -139,8 +139,8 @@ describe("MLDSAPrivateKey", () => {
       const signature = privateKey.sign(testMessage);
 
       expect(signature).toBeInstanceOf(MLDSASignature);
-      expect(signature.level()).toBe(MLDSALevel.MLDSA44);
-      expect(signature.size()).toBe(2420);
+      expect(signature.level).toBe(MLDSALevel.MLDSA44);
+      expect(signature.byteLength).toBe(2420);
 
       expect(publicKey.verify(signature, testMessage)).toBe(true);
     });
@@ -149,8 +149,8 @@ describe("MLDSAPrivateKey", () => {
       const [privateKey, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
       const signature = privateKey.sign(testMessage);
 
-      expect(signature.level()).toBe(MLDSALevel.MLDSA65);
-      expect(signature.size()).toBe(3309);
+      expect(signature.level).toBe(MLDSALevel.MLDSA65);
+      expect(signature.byteLength).toBe(3309);
 
       expect(publicKey.verify(signature, testMessage)).toBe(true);
     });
@@ -159,8 +159,8 @@ describe("MLDSAPrivateKey", () => {
       const [privateKey, publicKey] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA87);
       const signature = privateKey.sign(testMessage);
 
-      expect(signature.level()).toBe(MLDSALevel.MLDSA87);
-      expect(signature.size()).toBe(4627);
+      expect(signature.level).toBe(MLDSALevel.MLDSA87);
+      expect(signature.byteLength).toBe(4627);
 
       expect(publicKey.verify(signature, testMessage)).toBe(true);
     });
@@ -219,7 +219,7 @@ describe("MLDSAPrivateKey", () => {
       const cborData = privateKey.toCbor().toData();
       const recovered = MLDSAPrivateKey.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(privateKey)).toBe(true);
-      expect(recovered.level()).toBe(privateKey.level());
+      expect(recovered.level).toBe(privateKey.level);
     });
 
     it("should preserve security level through CBOR", () => {
@@ -227,7 +227,7 @@ describe("MLDSAPrivateKey", () => {
         const [privateKey] = MLDSAPrivateKey.keypair(level);
         const cborData = privateKey.toCbor().toData();
         const recovered = MLDSAPrivateKey.fromCbor(decodeCbor(cborData));
-        expect(recovered.level()).toBe(level);
+        expect(recovered.level).toBe(level);
       }
     });
   });
@@ -386,32 +386,32 @@ describe("MLKEMPrivateKey", () => {
       const [privateKey, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM512);
       expect(privateKey).toBeInstanceOf(MLKEMPrivateKey);
       expect(publicKey).toBeInstanceOf(MLKEMPublicKey);
-      expect(privateKey.level()).toBe(MLKEMLevel.MLKEM512);
-      expect(publicKey.level()).toBe(MLKEMLevel.MLKEM512);
-      expect(privateKey.size()).toBe(1632);
-      expect(publicKey.size()).toBe(800);
+      expect(privateKey.level).toBe(MLKEMLevel.MLKEM512);
+      expect(publicKey.level).toBe(MLKEMLevel.MLKEM512);
+      expect(privateKey.byteLength).toBe(1632);
+      expect(publicKey.byteLength).toBe(800);
     });
 
     it("should generate MLKEM768 keypair", () => {
       const [privateKey, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
-      expect(privateKey.level()).toBe(MLKEMLevel.MLKEM768);
-      expect(publicKey.level()).toBe(MLKEMLevel.MLKEM768);
-      expect(privateKey.size()).toBe(2400);
-      expect(publicKey.size()).toBe(1184);
+      expect(privateKey.level).toBe(MLKEMLevel.MLKEM768);
+      expect(publicKey.level).toBe(MLKEMLevel.MLKEM768);
+      expect(privateKey.byteLength).toBe(2400);
+      expect(publicKey.byteLength).toBe(1184);
     });
 
     it("should generate MLKEM1024 keypair", () => {
       const [privateKey, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM1024);
-      expect(privateKey.level()).toBe(MLKEMLevel.MLKEM1024);
-      expect(publicKey.level()).toBe(MLKEMLevel.MLKEM1024);
-      expect(privateKey.size()).toBe(3168);
-      expect(publicKey.size()).toBe(1568);
+      expect(privateKey.level).toBe(MLKEMLevel.MLKEM1024);
+      expect(publicKey.level).toBe(MLKEMLevel.MLKEM1024);
+      expect(privateKey.byteLength).toBe(3168);
+      expect(publicKey.byteLength).toBe(1568);
     });
 
     it("should default to MLKEM768", () => {
       const [privateKey, publicKey] = MLKEMPrivateKey.keypair();
-      expect(privateKey.level()).toBe(MLKEMLevel.MLKEM768);
-      expect(publicKey.level()).toBe(MLKEMLevel.MLKEM768);
+      expect(privateKey.level).toBe(MLKEMLevel.MLKEM768);
+      expect(publicKey.level).toBe(MLKEMLevel.MLKEM768);
     });
   });
 
@@ -421,33 +421,33 @@ describe("MLKEMPrivateKey", () => {
       const { sharedSecret: encapsulatedSecret, ciphertext } = publicKey.encapsulate();
 
       expect(ciphertext).toBeInstanceOf(MLKEMCiphertext);
-      expect(ciphertext.level()).toBe(MLKEMLevel.MLKEM512);
-      expect(ciphertext.size()).toBe(768);
+      expect(ciphertext.level).toBe(MLKEMLevel.MLKEM512);
+      expect(ciphertext.byteLength).toBe(768);
 
       const decapsulatedSecret = privateKey.decapsulate(ciphertext);
-      expect(decapsulatedSecret.asBytes()).toEqual(encapsulatedSecret.asBytes());
+      expect(decapsulatedSecret.bytes).toEqual(encapsulatedSecret.bytes);
     });
 
     it("should encapsulate and decapsulate with MLKEM768", () => {
       const [privateKey, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM768);
       const { sharedSecret: encapsulatedSecret, ciphertext } = publicKey.encapsulate();
 
-      expect(ciphertext.level()).toBe(MLKEMLevel.MLKEM768);
-      expect(ciphertext.size()).toBe(1088);
+      expect(ciphertext.level).toBe(MLKEMLevel.MLKEM768);
+      expect(ciphertext.byteLength).toBe(1088);
 
       const decapsulatedSecret = privateKey.decapsulate(ciphertext);
-      expect(decapsulatedSecret.asBytes()).toEqual(encapsulatedSecret.asBytes());
+      expect(decapsulatedSecret.bytes).toEqual(encapsulatedSecret.bytes);
     });
 
     it("should encapsulate and decapsulate with MLKEM1024", () => {
       const [privateKey, publicKey] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM1024);
       const { sharedSecret: encapsulatedSecret, ciphertext } = publicKey.encapsulate();
 
-      expect(ciphertext.level()).toBe(MLKEMLevel.MLKEM1024);
-      expect(ciphertext.size()).toBe(1568);
+      expect(ciphertext.level).toBe(MLKEMLevel.MLKEM1024);
+      expect(ciphertext.byteLength).toBe(1568);
 
       const decapsulatedSecret = privateKey.decapsulate(ciphertext);
-      expect(decapsulatedSecret.asBytes()).toEqual(encapsulatedSecret.asBytes());
+      expect(decapsulatedSecret.bytes).toEqual(encapsulatedSecret.bytes);
     });
 
     it("should produce 32-byte shared secrets", () => {
@@ -456,8 +456,8 @@ describe("MLKEMPrivateKey", () => {
         const { sharedSecret, ciphertext } = publicKey.encapsulate();
         const decapsulated = privateKey.decapsulate(ciphertext);
 
-        expect(sharedSecret.asBytes().length).toBe(32);
-        expect(decapsulated.asBytes().length).toBe(32);
+        expect(sharedSecret.bytes.length).toBe(32);
+        expect(decapsulated.bytes.length).toBe(32);
       }
     });
 
@@ -469,7 +469,7 @@ describe("MLKEMPrivateKey", () => {
       const wrongDecapsulated = privateKey2.decapsulate(ciphertext);
 
       // Wrong key produces different shared secret
-      expect(wrongDecapsulated.asBytes()).not.toEqual(original.asBytes());
+      expect(wrongDecapsulated.bytes).not.toEqual(original.bytes);
     });
 
     it("should fail decapsulation with level mismatch", () => {
@@ -508,7 +508,7 @@ describe("MLKEMPrivateKey", () => {
       const cborData = privateKey.toCbor().toData();
       const recovered = MLKEMPrivateKey.fromCbor(decodeCbor(cborData));
       expect(recovered.equals(privateKey)).toBe(true);
-      expect(recovered.level()).toBe(privateKey.level());
+      expect(recovered.level).toBe(privateKey.level);
     });
 
     it("should preserve security level through CBOR", () => {
@@ -516,7 +516,7 @@ describe("MLKEMPrivateKey", () => {
         const [privateKey] = MLKEMPrivateKey.keypair(level);
         const cborData = privateKey.toCbor().toData();
         const recovered = MLKEMPrivateKey.fromCbor(decodeCbor(cborData));
-        expect(recovered.level()).toBe(level);
+        expect(recovered.level).toBe(level);
       }
     });
   });
@@ -624,16 +624,16 @@ describe("Post-Quantum Integration", () => {
 
     // Bob signs the ciphertext with his own DSA key
     const [bobDsaPrivate, bobDsaPublic] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
-    const signature = bobDsaPrivate.sign(ciphertext.asBytes());
+    const signature = bobDsaPrivate.sign(ciphertext.bytes);
 
     // Alice verifies Bob's signature
-    expect(bobDsaPublic.verify(signature, ciphertext.asBytes())).toBe(true);
+    expect(bobDsaPublic.verify(signature, ciphertext.bytes)).toBe(true);
 
     // Alice decapsulates the shared secret
     const aliceSecret = aliceKemPrivate.decapsulate(ciphertext);
 
     // Both have the same shared secret
-    expect(aliceSecret.asBytes()).toEqual(bobSecret.asBytes());
+    expect(aliceSecret.bytes).toEqual(bobSecret.bytes);
   });
 
   it("should serialize and deserialize a complete key exchange", () => {
@@ -660,6 +660,6 @@ describe("Post-Quantum Integration", () => {
 
     // Decapsulate with recovered private key
     const decapsulated = recoveredPrivate.decapsulate(recoveredCiphertext);
-    expect(decapsulated.asBytes()).toEqual(original.asBytes());
+    expect(decapsulated.bytes).toEqual(original.bytes);
   });
 });

@@ -41,17 +41,17 @@
  * import { ARID } from '@blockchaincommons/components';
  *
  * // Create a new random ARID
- * const arid = ARID.new();
+ * const arid = ARID.random();
  *
  * // Create an ARID from a hex string
  * const arid2 = ARID.fromHex("...");
  *
  * // Get the ARID as hex
- * console.log(arid.hex());
+ * console.log(arid.toHex());
  * ```
  */
 
-import { secureRng, randomBytes } from "@blockchaincommons/rand";
+import { secureRng, randomBytes, type RandomNumberGenerator } from "@blockchaincommons/rand";
 import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { ARID as TAG_ARID } from "@blockchaincommons/tags";
@@ -75,43 +75,16 @@ export class ARID implements ToCbor, ToUR {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Create a new random ARID.
-   */
-  static new(): ARID {
-    const rng = secureRng();
-    return new ARID(randomBytes(ARID.ARID_SIZE, { rng: rng }));
-  }
-
-  /**
-   * Create a new random ARID (alias for new()).
-   */
-  static random(): ARID {
-    return ARID.new();
+  /** A fresh random ARID; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): ARID {
+    return new ARID(randomBytes(ARID.ARID_SIZE, { rng }));
   }
 
   /**
    * Restore an ARID from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): ARID {
-    return new ARID(new Uint8Array(data));
-  }
-
-  /**
-   * Create a new ARID from a reference to an array of bytes.
-   */
-  static fromDataRef(data: Uint8Array): ARID {
-    if (data.length !== ARID.ARID_SIZE) {
-      throw ComponentsError.invalidSize(ARID.ARID_SIZE, data.length);
-    }
-    return ARID.fromData(data);
-  }
-
-  /**
-   * Create an ARID from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): ARID {
-    return ARID.fromData(data);
+    return new ARID(new Uint8Array(data));
   }
 
   /**
@@ -127,39 +100,16 @@ export class ARID implements ToCbor, ToUR {
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get the data of the ARID as an array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the data of the ARID as a byte slice.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Get the raw ARID bytes as a copy.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * The data as a hexadecimal string.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -204,7 +154,7 @@ export class ARID implements ToCbor, ToUR {
    * Get string representation.
    */
   toString(): string {
-    return `ARID(${this.hex()})`;
+    return `ARID(${this.toHex()})`;
   }
 
   // ============================================================================
@@ -216,7 +166,7 @@ export class ARID implements ToCbor, ToUR {
     tags: [TAG_ARID],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return ARID.fromDataRef(data);
+      return ARID.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

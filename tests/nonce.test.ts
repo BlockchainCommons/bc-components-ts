@@ -12,14 +12,14 @@ import { decodeCbor } from "@blockchaincommons/dcbor";
 describe("Nonce", () => {
   describe("creation", () => {
     it("should create a new random nonce", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
 
-      expect(nonce.data().length).toBe(Nonce.NONCE_SIZE);
+      expect(nonce.bytes.length).toBe(Nonce.NONCE_SIZE);
     });
 
     it("should create unique random nonces", () => {
-      const nonce1 = Nonce.new();
-      const nonce2 = Nonce.new();
+      const nonce1 = Nonce.random();
+      const nonce2 = Nonce.random();
 
       // While technically random, it's astronomically unlikely they'd be equal
       expect(nonce1.equals(nonce2)).toBe(false);
@@ -27,35 +27,35 @@ describe("Nonce", () => {
 
     it("should create a nonce from raw data", () => {
       const rawData = new Uint8Array(Nonce.NONCE_SIZE);
-      const nonce = Nonce.fromData(rawData);
+      const nonce = Nonce.from(rawData);
 
-      expect(nonce.data()).toEqual(rawData);
+      expect(nonce.bytes).toEqual(rawData);
     });
 
     it("should create a nonce using fromDataRef", () => {
       const rawData = new Uint8Array(Nonce.NONCE_SIZE);
-      const nonce = Nonce.fromDataRef(rawData);
+      const nonce = Nonce.from(rawData);
 
-      expect(nonce.data().length).toBe(Nonce.NONCE_SIZE);
+      expect(nonce.bytes.length).toBe(Nonce.NONCE_SIZE);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const wrongSizeData = new Uint8Array(Nonce.NONCE_SIZE + 1);
 
-      expect(() => Nonce.fromDataRef(wrongSizeData)).toThrow();
+      expect(() => Nonce.from(wrongSizeData)).toThrow();
     });
 
     it("should create a nonce using from (legacy alias)", () => {
       const rawData = new Uint8Array(Nonce.NONCE_SIZE);
       const nonce = Nonce.from(rawData);
 
-      expect(nonce.data().length).toBe(Nonce.NONCE_SIZE);
+      expect(nonce.bytes.length).toBe(Nonce.NONCE_SIZE);
     });
 
     it("should create a nonce using random (alias)", () => {
       const nonce = Nonce.random();
 
-      expect(nonce.data().length).toBe(Nonce.NONCE_SIZE);
+      expect(nonce.bytes.length).toBe(Nonce.NONCE_SIZE);
     });
 
     it("should create a nonce from hex string", () => {
@@ -63,42 +63,42 @@ describe("Nonce", () => {
       const hex = "0102030405060708090a0b0c";
       const nonce = Nonce.fromHex(hex);
 
-      expect(nonce.data().length).toBe(Nonce.NONCE_SIZE);
-      expect(nonce.hex()).toBe(hex);
+      expect(nonce.bytes.length).toBe(Nonce.NONCE_SIZE);
+      expect(nonce.toHex()).toBe(hex);
     });
   });
 
   describe("accessors", () => {
     it("should return data as bytes", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
 
-      expect(nonce.data()).toBeInstanceOf(Uint8Array);
-      expect(nonce.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(nonce.toData()).toBeInstanceOf(Uint8Array);
+      expect(nonce.bytes).toBeInstanceOf(Uint8Array);
+      expect(nonce.bytes).toBeInstanceOf(Uint8Array);
+      expect(nonce.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {
-      const nonce = Nonce.new();
-      const hex = nonce.hex();
+      const nonce = Nonce.random();
+      const hex = nonce.toHex();
 
       expect(typeof hex).toBe("string");
       expect(hex.length).toBe(Nonce.NONCE_SIZE * 2);
     });
 
     it("should return same hex from hex() and toHex()", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
 
-      expect(nonce.hex()).toBe(nonce.toHex());
+      expect(nonce.toHex()).toBe(nonce.toHex());
     });
 
     it("should return base64 representation", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
 
       expect(typeof nonce.toBase64()).toBe("string");
     });
 
     it("should return string representation", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const str = nonce.toString();
 
       expect(str).toContain("Nonce");
@@ -107,8 +107,8 @@ describe("Nonce", () => {
 
   describe("hex roundtrip", () => {
     it("should roundtrip through hex", () => {
-      const nonce = Nonce.new();
-      const hex = nonce.hex();
+      const nonce = Nonce.random();
+      const hex = nonce.toHex();
       const restored = Nonce.fromHex(hex);
 
       expect(restored.equals(nonce)).toBe(true);
@@ -117,7 +117,7 @@ describe("Nonce", () => {
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
 
       expect(nonce.equals(nonce)).toBe(true);
     });
@@ -140,28 +140,28 @@ describe("Nonce", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const tags = nonce.cborTags();
 
       expect(tags.length).toBeGreaterThan(0);
     });
 
     it("should serialize to untagged CBOR", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const untagged = nonce.untaggedCbor();
 
       expect(untagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const tagged = nonce.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const data = nonce.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
@@ -169,7 +169,7 @@ describe("Nonce", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const data = nonce.toCbor().toData();
       const restored = Nonce.fromCbor(decodeCbor(data));
 
@@ -177,7 +177,7 @@ describe("Nonce", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const data = nonce.untaggedCbor().toData();
       const restored = Nonce.fromCbor(decodeCbor(data));
 
@@ -187,21 +187,21 @@ describe("Nonce", () => {
 
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const ur = nonce.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const urString = nonce.toUR().toString();
 
       expect(urString.startsWith("ur:nonce/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
-      const nonce = Nonce.new();
+      const nonce = Nonce.random();
       const urString = nonce.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), Nonce.codec);
 

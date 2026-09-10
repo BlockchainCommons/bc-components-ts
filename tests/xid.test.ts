@@ -17,7 +17,7 @@ describe("XID", () => {
     it("should create a random XID", () => {
       const xid = XID.random();
 
-      expect(xid.data().length).toBe(XID.XID_SIZE);
+      expect(xid.bytes.length).toBe(XID.XID_SIZE);
     });
 
     it("should create unique random XIDs", () => {
@@ -29,35 +29,35 @@ describe("XID", () => {
 
     it("should create an XID from raw data", () => {
       const rawData = new Uint8Array(XID.XID_SIZE);
-      const xid = XID.fromData(rawData);
+      const xid = XID.from(rawData);
 
-      expect(xid.data()).toEqual(rawData);
+      expect(xid.bytes).toEqual(rawData);
     });
 
     it("should create an XID using fromDataRef", () => {
       const rawData = new Uint8Array(XID.XID_SIZE);
-      const xid = XID.fromDataRef(rawData);
+      const xid = XID.from(rawData);
 
-      expect(xid.data().length).toBe(XID.XID_SIZE);
+      expect(xid.bytes.length).toBe(XID.XID_SIZE);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const wrongSizeData = new Uint8Array(XID.XID_SIZE + 1);
 
-      expect(() => XID.fromDataRef(wrongSizeData)).toThrow();
+      expect(() => XID.from(wrongSizeData)).toThrow();
     });
 
     it("should create an XID using from (legacy alias)", () => {
       const rawData = new Uint8Array(XID.XID_SIZE);
       const xid = XID.from(rawData);
 
-      expect(xid.data().length).toBe(XID.XID_SIZE);
+      expect(xid.bytes.length).toBe(XID.XID_SIZE);
     });
 
     it("should create an XID from hex string", () => {
       const xid = XID.fromHex(TEST_HEX);
 
-      expect(xid.data().length).toBe(XID.XID_SIZE);
+      expect(xid.bytes.length).toBe(XID.XID_SIZE);
       expect(xid.toHex()).toBe(TEST_HEX);
     });
 
@@ -70,9 +70,9 @@ describe("XID", () => {
     it("should return data as bytes", () => {
       const xid = XID.random();
 
-      expect(xid.data()).toBeInstanceOf(Uint8Array);
-      expect(xid.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(xid.toData()).toBeInstanceOf(Uint8Array);
+      expect(xid.bytes).toBeInstanceOf(Uint8Array);
+      expect(xid.bytes).toBeInstanceOf(Uint8Array);
+      expect(xid.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {

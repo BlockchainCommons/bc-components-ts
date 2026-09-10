@@ -17,56 +17,59 @@ describe("Seed", () => {
     it("should create a random seed with default size", () => {
       const seed = Seed.random();
 
-      expect(seed.size()).toBeGreaterThanOrEqual(16);
+      expect(seed.byteLength).toBeGreaterThanOrEqual(16);
     });
 
     it("should create a random seed with specified size", () => {
-      const seed = Seed.random(32);
+      const seed = Seed.random({ length: 32 });
 
-      expect(seed.size()).toBe(32);
+      expect(seed.byteLength).toBe(32);
     });
 
     it("should throw on seed size less than minimum", () => {
-      expect(() => Seed.random(8)).toThrow();
+      expect(() => Seed.random({ length: 8 })).toThrow();
     });
 
     it("should create a seed from raw data", () => {
       const rawData = new Uint8Array(16).fill(0xab);
       const seed = Seed.from(rawData);
 
-      expect(seed.size()).toBe(16);
+      expect(seed.byteLength).toBe(16);
     });
 
     it("should create a seed from hex string", () => {
       const seed = Seed.fromHex(TEST_HEX);
 
-      expect(seed.size()).toBe(16);
+      expect(seed.byteLength).toBe(16);
       expect(seed.toHex()).toBe(TEST_HEX);
     });
 
     it("should create a seed with metadata", () => {
-      const seed = Seed.random(16, {
-        name: "Test Seed",
-        note: "A test note",
-        createdAt: new Date("2023-06-15T10:30:00Z"),
+      const seed = Seed.random({
+        length: 16,
+        ...{
+          name: "Test Seed",
+          note: "A test note",
+          creationDate: new Date("2023-06-15T10:30:00Z"),
+        },
       });
 
-      expect(seed.name()).toBe("Test Seed");
-      expect(seed.note()).toBe("A test note");
-      expect(seed.createdAt()?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
+      expect(seed.name).toBe("Test Seed");
+      expect(seed.note).toBe("A test note");
+      expect(seed.creationDate?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
     });
   });
 
   describe("accessors", () => {
     it("should return data as bytes", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
 
-      expect(seed.toData()).toBeInstanceOf(Uint8Array);
-      expect(seed.toData().length).toBe(16);
+      expect(seed.bytes).toBeInstanceOf(Uint8Array);
+      expect(seed.bytes.length).toBe(16);
     });
 
     it("should return hex representation", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const hex = seed.toHex();
 
       expect(typeof hex).toBe("string");
@@ -74,13 +77,13 @@ describe("Seed", () => {
     });
 
     it("should return base64 representation", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
 
       expect(typeof seed.toBase64()).toBe("string");
     });
 
     it("should return string representation", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const str = seed.toString();
 
       expect(str).toContain("Seed");
@@ -90,53 +93,56 @@ describe("Seed", () => {
 
   describe("metadata", () => {
     it("should get and set name", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
 
       // Rust API: name() returns empty string when not set
-      expect(seed.name()).toBe("");
+      expect(seed.name).toBe("");
 
-      seed.setName("My Seed");
-      expect(seed.name()).toBe("My Seed");
+      seed.name = "My Seed";
+      expect(seed.name).toBe("My Seed");
     });
 
     it("should get and set note", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
 
       // Rust API: note() returns empty string when not set
-      expect(seed.note()).toBe("");
+      expect(seed.note).toBe("");
 
-      seed.setNote("My Note");
-      expect(seed.note()).toBe("My Note");
+      seed.note = "My Note";
+      expect(seed.note).toBe("My Note");
     });
 
     it("should get and set creation date", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const date = new Date("2023-06-15T10:30:00Z");
 
-      expect(seed.createdAt()).toBeUndefined();
+      expect(seed.creationDate).toBeUndefined();
 
-      seed.setCreatedAt(date);
-      expect(seed.createdAt()?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
+      seed.creationDate = date;
+      expect(seed.creationDate?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
     });
 
     it("should return a copy of metadata", () => {
-      const seed = Seed.random(16, {
-        name: "Test",
-        note: "Note",
-        createdAt: new Date(),
+      const seed = Seed.random({
+        length: 16,
+        ...{
+          name: "Test",
+          note: "Note",
+          creationDate: new Date(),
+        },
       });
 
-      const metadata = seed.getMetadata();
+      const metadata = seed.metadata;
       expect(metadata).toBeDefined();
       expect(metadata?.name).toBe("Test");
       expect(metadata?.note).toBe("Note");
-      expect(metadata?.createdAt).toBeInstanceOf(Date);
+      expect(metadata?.creationDate).toBeInstanceOf(Date);
     });
   });
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
 
       expect(seed.equals(seed)).toBe(true);
     });
@@ -158,7 +164,7 @@ describe("Seed", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const tags = seed.cborTags();
 
       expect(tags.length).toBe(2); // TAG_SEED and TAG_SEED_V1
@@ -167,21 +173,21 @@ describe("Seed", () => {
     });
 
     it("should serialize to untagged CBOR", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const untagged = seed.untaggedCbor();
 
       expect(untagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const tagged = seed.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const data = seed.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
@@ -189,7 +195,7 @@ describe("Seed", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const data = seed.toCbor().toData();
       const restored = Seed.fromCbor(decodeCbor(data));
 
@@ -197,7 +203,7 @@ describe("Seed", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const data = seed.untaggedCbor().toData();
       const restored = Seed.fromCbor(decodeCbor(data));
 
@@ -206,54 +212,60 @@ describe("Seed", () => {
 
     it("should roundtrip with metadata through tagged CBOR", () => {
       const date = new Date("2023-06-15T10:30:00.000Z");
-      const seed = Seed.random(16, {
-        name: "Test Seed",
-        note: "A test note",
-        createdAt: date,
+      const seed = Seed.random({
+        length: 16,
+        ...{
+          name: "Test Seed",
+          note: "A test note",
+          creationDate: date,
+        },
       });
       const data = seed.toCbor().toData();
       const restored = Seed.fromCbor(decodeCbor(data));
 
       expect(restored.equals(seed)).toBe(true);
-      expect(restored.name()).toBe("Test Seed");
-      expect(restored.note()).toBe("A test note");
-      expect(restored.createdAt()?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
+      expect(restored.name).toBe("Test Seed");
+      expect(restored.note).toBe("A test note");
+      expect(restored.creationDate?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
     });
 
     it("should roundtrip with partial metadata", () => {
-      const seed = Seed.random(16, {
-        name: "Test Seed",
-        // note omitted
-        // createdAt omitted
+      const seed = Seed.random({
+        length: 16,
+        ...{
+          name: "Test Seed",
+          // note omitted
+          // creationDate omitted
+        },
       });
       const data = seed.toCbor().toData();
       const restored = Seed.fromCbor(decodeCbor(data));
 
       expect(restored.equals(seed)).toBe(true);
-      expect(restored.name()).toBe("Test Seed");
+      expect(restored.name).toBe("Test Seed");
       // Rust API: note() returns empty string when not set
-      expect(restored.note()).toBe("");
-      expect(restored.creationDate()).toBeUndefined();
+      expect(restored.note).toBe("");
+      expect(restored.creationDate).toBeUndefined();
     });
   });
 
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const ur = seed.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const urString = seed.toUR().toString();
 
       expect(urString.startsWith("ur:seed/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
-      const seed = Seed.random(16);
+      const seed = Seed.random({ length: 16 });
       const urString = seed.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), Seed.codec);
 
@@ -262,18 +274,21 @@ describe("Seed", () => {
 
     it("should roundtrip with metadata through UR string", () => {
       const date = new Date("2023-06-15T10:30:00.000Z");
-      const seed = Seed.random(16, {
-        name: "Test Seed",
-        note: "A test note",
-        createdAt: date,
+      const seed = Seed.random({
+        length: 16,
+        ...{
+          name: "Test Seed",
+          note: "A test note",
+          creationDate: date,
+        },
       });
       const urString = seed.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), Seed.codec);
 
       expect(restored.equals(seed)).toBe(true);
-      expect(restored.name()).toBe("Test Seed");
-      expect(restored.note()).toBe("A test note");
-      expect(restored.createdAt()?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
+      expect(restored.name).toBe("Test Seed");
+      expect(restored.note).toBe("A test note");
+      expect(restored.creationDate?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
     });
 
     it("should throw on invalid UR type", () => {
@@ -288,18 +303,18 @@ describe("Seed", () => {
       expect(Seed.MIN_SEED_LENGTH).toBe(16);
     });
 
-    it("should create seed with Seed.new()", () => {
-      const seed = Seed.new();
-      expect(seed.size()).toBe(16); // Default size
+    it("should create seed with Seed.random()", () => {
+      const seed = Seed.random();
+      expect(seed.byteLength).toBe(16); // Default size
     });
 
     it("should create seed with Seed.newWithLen()", () => {
-      const seed = Seed.newWithLen(32);
-      expect(seed.size()).toBe(32);
+      const seed = Seed.random({ length: 32 });
+      expect(seed.byteLength).toBe(32);
     });
 
     it("should throw on newWithLen with size < 16", () => {
-      expect(() => Seed.newWithLen(8)).toThrow();
+      expect(() => Seed.random({ length: 8 })).toThrow();
     });
 
     it("should create seed with Seed.newWithLenUsing()", () => {
@@ -312,58 +327,62 @@ describe("Seed", () => {
         },
       };
 
-      const seed = Seed.newWithLenUsing(16, rng);
-      expect(seed.size()).toBe(16);
-      expect(seed.asBytes()[0]).toBe(0);
-      expect(seed.asBytes()[15]).toBe(15);
+      const seed = Seed.random({ length: 16, rng: rng });
+      expect(seed.byteLength).toBe(16);
+      expect(seed.bytes[0]).toBe(0);
+      expect(seed.bytes[15]).toBe(15);
     });
 
     it("should create seed with Seed.newOpt()", () => {
       const data = new Uint8Array(16).fill(0xab);
       const date = new Date("2023-06-15T10:30:00Z");
 
-      const seed = Seed.newOpt(data, "Test Name", "Test Note", date);
+      const seed = Seed.from(data, { name: "Test Name", note: "Test Note", creationDate: date });
 
-      expect(seed.name()).toBe("Test Name");
-      expect(seed.note()).toBe("Test Note");
-      expect(seed.creationDate()?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
+      expect(seed.name).toBe("Test Name");
+      expect(seed.note).toBe("Test Note");
+      expect(seed.creationDate?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
     });
 
     it("should create seed with newOpt and undefined metadata", () => {
       const data = new Uint8Array(16).fill(0xab);
-      const seed = Seed.newOpt(data, undefined, undefined, undefined);
+      const seed = Seed.from(data, { name: undefined, note: undefined, creationDate: undefined });
 
-      expect(seed.name()).toBe("");
-      expect(seed.note()).toBe("");
-      expect(seed.creationDate()).toBeUndefined();
+      expect(seed.name).toBe("");
+      expect(seed.note).toBe("");
+      expect(seed.creationDate).toBeUndefined();
     });
 
     it("should return bytes with asBytes()", () => {
-      const seed = Seed.new();
-      const bytes = seed.asBytes();
+      const seed = Seed.random();
+      const bytes = seed.bytes;
 
       expect(bytes).toBeInstanceOf(Uint8Array);
       expect(bytes.length).toBe(16);
       // asBytes returns reference to internal data
-      expect(bytes).toBe(seed.asBytes());
+      expect(bytes).toBe(seed.bytes);
     });
 
-    it("should have creationDate() as alias for createdAt()", () => {
+    it("should have creationDate() as alias for creationDate()", () => {
       const date = new Date("2023-06-15T10:30:00Z");
-      const seed = Seed.newOpt(new Uint8Array(16).fill(0), undefined, undefined, date);
+      const seed = Seed.from(new Uint8Array(16).fill(0), {
+        name: undefined,
+        note: undefined,
+        creationDate: date,
+      });
 
-      expect(seed.creationDate()).toBe(seed.createdAt());
+      expect(seed.creationDate).toBe(seed.creationDate);
     });
 
     it("should have setCreationDate() as alias for setCreatedAt()", () => {
-      const seed = Seed.new();
+      const seed = Seed.random();
       const date = new Date("2023-06-15T10:30:00Z");
 
-      seed.setCreationDate(date);
-      expect(seed.creationDate()?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
+      seed.creationDate = date;
+      expect(seed.creationDate?.toISOString()).toBe("2023-06-15T10:30:00.000Z");
 
-      seed.setCreationDate(undefined);
-      expect(seed.creationDate()).toBeUndefined();
+      seed.creationDate = undefined;
+      expect(seed.creationDate).toBeUndefined();
     });
   });
 });

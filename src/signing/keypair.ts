@@ -62,39 +62,39 @@ export function createKeypair(
   switch (scheme) {
     case SignatureScheme.Schnorr: {
       const ecKey = ECPrivateKey.random();
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
     case SignatureScheme.Ecdsa: {
       const ecKey = ECPrivateKey.random();
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
     case SignatureScheme.Ed25519: {
       const ed25519Key = Ed25519PrivateKey.random();
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
     case SignatureScheme.Sr25519: {
       const sr25519Key = Sr25519PrivateKey.random();
-      const privateKey = SigningPrivateKey.newSr25519(sr25519Key);
+      const privateKey = SigningPrivateKey.fromSr25519(sr25519Key);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
     case SignatureScheme.MLDSA44: {
       const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA44);
-      return [SigningPrivateKey.newMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
+      return [SigningPrivateKey.fromMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
     }
     case SignatureScheme.MLDSA65: {
       const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65);
-      return [SigningPrivateKey.newMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
+      return [SigningPrivateKey.fromMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
     }
     case SignatureScheme.MLDSA87: {
       const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA87);
-      return [SigningPrivateKey.newMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
+      return [SigningPrivateKey.fromMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
     }
     case SignatureScheme.SshEd25519:
     case SignatureScheme.SshDsa:
@@ -102,7 +102,7 @@ export function createKeypair(
     case SignatureScheme.SshEcdsaP384: {
       // Mirror Rust `signature_scheme.rs:209-276`: build an empty
       // `PrivateKeyBase` and derive an SSH keypair from it.
-      const base = PrivateKeyBase.new();
+      const base = PrivateKeyBase.random();
       const privateKey = base.sshSigningPrivateKey(sshSchemeToAlgorithm(scheme), comment);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
@@ -128,26 +128,26 @@ export function createKeypairUsing(
 ): [SigningPrivateKey, SigningPublicKey] {
   switch (scheme) {
     case SignatureScheme.Schnorr: {
-      const ecKey = ECPrivateKey.newUsing(rng);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const ecKey = ECPrivateKey.random({ rng: rng });
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
     case SignatureScheme.Ecdsa: {
-      const ecKey = ECPrivateKey.newUsing(rng);
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const ecKey = ECPrivateKey.random({ rng: rng });
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
     case SignatureScheme.Ed25519: {
-      const ed25519Key = Ed25519PrivateKey.randomUsing(rng);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const ed25519Key = Ed25519PrivateKey.random({ rng: rng });
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
     case SignatureScheme.Sr25519: {
-      const sr25519Key = Sr25519PrivateKey.randomUsing(rng);
-      const privateKey = SigningPrivateKey.newSr25519(sr25519Key);
+      const sr25519Key = Sr25519PrivateKey.random({ rng: rng });
+      const privateKey = SigningPrivateKey.fromSr25519(sr25519Key);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];
     }
@@ -164,7 +164,7 @@ export function createKeypairUsing(
     case SignatureScheme.SshEcdsaP384: {
       // Mirror Rust `signature_scheme.rs:316-413`: build a
       // `PrivateKeyBase::new_using(rng)` and derive an SSH keypair.
-      const base = PrivateKeyBase.newUsing(rng);
+      const base = PrivateKeyBase.random({ rng: rng });
       const privateKey = base.sshSigningPrivateKey(sshSchemeToAlgorithm(scheme), comment);
       const publicKey = privateKey.publicKey();
       return [privateKey, publicKey];

@@ -34,23 +34,6 @@ export class Ed25519PublicKey {
   }
 
   /**
-   * Mirror of Rust `Ed25519PublicKey::from_data` — exact-length copy.
-   */
-  static fromData(data: Uint8Array): Ed25519PublicKey {
-    return new Ed25519PublicKey(data);
-  }
-
-  /**
-   * Mirror of Rust `Ed25519PublicKey::from_data_ref` — validates length.
-   */
-  static fromDataRef(data: Uint8Array): Ed25519PublicKey {
-    if (data.length !== ED25519_PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ED25519_PUBLIC_KEY_SIZE, data.length);
-    }
-    return new Ed25519PublicKey(data);
-  }
-
-  /**
    * Create an Ed25519PublicKey from hex string.
    */
   static fromHex(hex: string): Ed25519PublicKey {
@@ -58,20 +41,13 @@ export class Ed25519PublicKey {
   }
 
   /** Returns the 32 raw public key bytes (copy). */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
   /** Alias of {@link Ed25519PublicKey.data}. */
-  asBytes(): Uint8Array {
-    return this.data();
-  }
-
   /** Backwards-compatible alias of {@link Ed25519PublicKey.data}. */
-  toData(): Uint8Array {
-    return this.data();
-  }
-
   /**
    * Get hex string representation
    */

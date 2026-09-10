@@ -37,6 +37,7 @@ import { UUID as TAG_UUID } from "@blockchaincommons/tags";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
+import { type RandomNumberGenerator, randomBytes, secureRng } from "@blockchaincommons/rand";
 
 const UUID_SIZE = 16;
 
@@ -57,34 +58,10 @@ export class UUID implements ToCbor, ToUR {
   // ============================================================================
 
   /**
-   * Create a new random UUID (v4).
-   */
-  static new(): UUID {
-    return UUID.random();
-  }
-
-  /**
    * Create a UUID from raw bytes.
    */
-  static fromData(data: Uint8Array): UUID {
-    return new UUID(new Uint8Array(data));
-  }
-
-  /**
-   * Restores a UUID from data (validates length).
-   */
-  static fromDataRef(data: Uint8Array): UUID {
-    if (data.length !== UUID_SIZE) {
-      throw ComponentsError.invalidSize(UUID_SIZE, data.length);
-    }
-    return UUID.fromData(data);
-  }
-
-  /**
-   * Create a UUID from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): UUID {
-    return UUID.fromData(data);
+    return new UUID(new Uint8Array(data));
   }
 
   /**
@@ -117,9 +94,8 @@ export class UUID implements ToCbor, ToUR {
   /**
    * Generate a random UUID (v4)
    */
-  static random(): UUID {
-    const data = new Uint8Array(UUID_SIZE);
-    globalThis.crypto.getRandomValues(data);
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): UUID {
+    const data = randomBytes(UUID_SIZE, { rng });
 
     // Set version to 4 (random)
     data[6] = (data[6] & 0x0f) | 0x40;
@@ -133,39 +109,16 @@ export class UUID implements ToCbor, ToUR {
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get the data of the UUID.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the UUID as a byte slice.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Get the raw UUID bytes as a copy.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation (lowercase, matching Rust implementation).
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -204,7 +157,7 @@ export class UUID implements ToCbor, ToUR {
     tags: [TAG_UUID],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return UUID.fromDataRef(data);
+      return UUID.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

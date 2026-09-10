@@ -19,28 +19,28 @@ describe("Digest", () => {
       const data = new TextEncoder().encode("hello world");
       const digest = Digest.fromImage(data);
 
-      expect(digest.data().length).toBe(Digest.DIGEST_SIZE);
-      expect(digest.hex()).toBe(HELLO_WORLD_HASH);
+      expect(digest.bytes.length).toBe(Digest.DIGEST_SIZE);
+      expect(digest.toHex()).toBe(HELLO_WORLD_HASH);
     });
 
     it("should create a digest from hex string", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
 
-      expect(digest.data().length).toBe(Digest.DIGEST_SIZE);
-      expect(digest.hex()).toBe(HELLO_WORLD_HASH);
+      expect(digest.bytes.length).toBe(Digest.DIGEST_SIZE);
+      expect(digest.toHex()).toBe(HELLO_WORLD_HASH);
     });
 
     it("should create a digest from raw data", () => {
       const rawData = hexToBytes(HELLO_WORLD_HASH);
-      const digest = Digest.fromData(rawData);
+      const digest = Digest.from(rawData);
 
-      expect(digest.data().length).toBe(Digest.DIGEST_SIZE);
-      expect(digest.hex()).toBe(HELLO_WORLD_HASH);
+      expect(digest.bytes.length).toBe(Digest.DIGEST_SIZE);
+      expect(digest.toHex()).toBe(HELLO_WORLD_HASH);
     });
 
     it("should throw on invalid size", () => {
       const invalidData = new Uint8Array(16); // Wrong size
-      expect(() => Digest.fromData(invalidData)).toThrow();
+      expect(() => Digest.from(invalidData)).toThrow();
     });
 
     it("should throw on invalid hex string", () => {
@@ -52,15 +52,15 @@ describe("Digest", () => {
     it("should return data as bytes", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
 
-      expect(digest.data()).toBeInstanceOf(Uint8Array);
-      expect(digest.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(digest.toData()).toBeInstanceOf(Uint8Array);
+      expect(digest.bytes).toBeInstanceOf(Uint8Array);
+      expect(digest.bytes).toBeInstanceOf(Uint8Array);
+      expect(digest.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {
       const digest = Digest.fromHex(HELLO_WORLD_HASH);
 
-      expect(digest.hex()).toBe(HELLO_WORLD_HASH);
+      expect(digest.toHex()).toBe(HELLO_WORLD_HASH);
       expect(digest.toHex()).toBe(HELLO_WORLD_HASH);
     });
 

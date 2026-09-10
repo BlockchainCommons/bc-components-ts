@@ -73,23 +73,11 @@ export class MLKEMPrivateKey implements ToCbor, ToUR {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Generate a new random MLKEMPrivateKey with the specified security level.
-   *
-   * @param level - The ML-KEM security level (default: MLKEM768)
-   */
-  static new(level: MLKEMLevel = MLKEMLevel.MLKEM768): MLKEMPrivateKey {
-    const rng = secureRng();
-    return MLKEMPrivateKey.newUsing(level, rng);
-  }
-
-  /**
-   * Generate a new random MLKEMPrivateKey using the provided RNG.
-   *
-   * @param level - The ML-KEM security level
-   * @param rng - Random number generator
-   */
-  static newUsing(level: MLKEMLevel, rng: RandomNumberGenerator): MLKEMPrivateKey {
+  /** A fresh private key at `level`; pass `rng` to make it deterministic. */
+  static random(
+    level: MLKEMLevel = MLKEMLevel.MLKEM768,
+    { rng = secureRng() }: { rng?: RandomNumberGenerator } = {},
+  ): MLKEMPrivateKey {
     const keypair = mlkemGenerateKeypairUsing(level, rng);
     return new MLKEMPrivateKey(level, keypair.secretKey);
   }
@@ -104,27 +92,10 @@ export class MLKEMPrivateKey implements ToCbor, ToUR {
     return new MLKEMPrivateKey(level, data);
   }
 
-  /**
-   * Generate a keypair and return both private and public keys.
-   *
-   * @param level - The ML-KEM security level (default: MLKEM768)
-   * @returns Tuple of [privateKey, publicKey]
-   */
-  static keypair(level: MLKEMLevel = MLKEMLevel.MLKEM768): [MLKEMPrivateKey, MLKEMPublicKey] {
-    const rng = secureRng();
-    return MLKEMPrivateKey.keypairUsing(level, rng);
-  }
-
-  /**
-   * Generate a keypair using the provided RNG.
-   *
-   * @param level - The ML-KEM security level
-   * @param rng - Random number generator
-   * @returns Tuple of [privateKey, publicKey]
-   */
-  static keypairUsing(
-    level: MLKEMLevel,
-    rng: RandomNumberGenerator,
+  /** A fresh private key at `level` and its public key. */
+  static keypair(
+    level: MLKEMLevel = MLKEMLevel.MLKEM768,
+    { rng = secureRng() }: { rng?: RandomNumberGenerator } = {},
   ): [MLKEMPrivateKey, MLKEMPublicKey] {
     const keypairData = mlkemGenerateKeypairUsing(level, rng);
     const privateKey = new MLKEMPrivateKey(level, keypairData.secretKey);
@@ -139,28 +110,17 @@ export class MLKEMPrivateKey implements ToCbor, ToUR {
   /**
    * Returns the security level of this key.
    */
-  level(): MLKEMLevel {
+  get level(): MLKEMLevel {
     return this._level;
   }
 
-  /**
-   * Returns the raw key bytes.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Returns a copy of the raw key bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
-  /**
-   * Returns the size of the key in bytes.
-   */
-  size(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 
@@ -171,13 +131,13 @@ export class MLKEMPrivateKey implements ToCbor, ToUR {
    * @returns The decapsulated shared secret as a SymmetricKey
    */
   decapsulate(ciphertext: MLKEMCiphertext): SymmetricKey {
-    if (ciphertext.level() !== this._level) {
+    if (ciphertext.level !== this._level) {
       throw ComponentsError.postQuantum(
-        `Ciphertext level (${mlkemLevelToString(ciphertext.level())}) does not match key level (${mlkemLevelToString(this._level)})`,
+        `Ciphertext level (${mlkemLevelToString(ciphertext.level)}) does not match key level (${mlkemLevelToString(this._level)})`,
       );
     }
-    const sharedSecret = mlkemDecapsulate(this._level, this._data, ciphertext.asBytes());
-    return SymmetricKey.fromData(sharedSecret);
+    const sharedSecret = mlkemDecapsulate(this._level, this._data, ciphertext.bytes);
+    return SymmetricKey.from(sharedSecret);
   }
 
   /**

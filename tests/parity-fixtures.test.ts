@@ -51,7 +51,7 @@ beforeAll(() => {
 describe("Digest — Rust fixture", () => {
   it('matches the hex fixture for SHA-256("hello world")', () => {
     const digest = Digest.fromImage(new TextEncoder().encode("hello world"));
-    expect(bytesToHex(digest.toData())).toBe(
+    expect(bytesToHex(digest.bytes)).toBe(
       "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
     );
   });
@@ -121,10 +121,10 @@ describe("Compressed — raw DEFLATE (no zlib header)", () => {
 
   it("produces raw DEFLATE bytes (no zlib magic) that round-trip correctly", () => {
     const c = Compressed.fromDecompressedData(SAMPLE);
-    expect(c.decompressedSize()).toBe(SAMPLE.length);
+    expect(c.decompressedSize).toBe(SAMPLE.length);
     expect(c.decompress()).toEqual(SAMPLE);
     // The whole payload should be smaller than zlib (which adds 6 bytes).
-    expect(c.compressedSize()).toBeLessThan(SAMPLE.length);
+    expect(c.compressedSize).toBeLessThan(SAMPLE.length);
   });
 
   it("round-trips through tagged CBOR", () => {
@@ -146,7 +146,7 @@ describe("KDF params — salt is CBOR-tagged 40018 (matches Rust)", () => {
    */
 
   // Use a deterministic 16-byte salt to make the byte position explicit.
-  const SALT = Salt.fromData(new Uint8Array(16));
+  const SALT = Salt.from(new Uint8Array(16));
 
   function expectTaggedSaltAt(bytes: Uint8Array, indexOffset: number) {
     expect(bytes[indexOffset + 0]).toBe(0xd9);
@@ -155,7 +155,7 @@ describe("KDF params — salt is CBOR-tagged 40018 (matches Rust)", () => {
   }
 
   it("Argon2idParams: tag 40018 immediately after the index", () => {
-    const params = Argon2idParams.newOpt(SALT);
+    const params = Argon2idParams.from({ salt: SALT });
     const data = params.toCborData();
     // [3, #6.40018(...)]: array header (0x82), int 3 (0x03), then tagged salt
     expect(data[0]).toBe(0x82);
@@ -165,7 +165,7 @@ describe("KDF params — salt is CBOR-tagged 40018 (matches Rust)", () => {
   });
 
   it("HKDFParams: tag 40018 immediately after the index", () => {
-    const params = HKDFParams.newOpt(SALT, HashType.SHA256);
+    const params = HKDFParams.from({ salt: SALT, hashType: HashType.SHA256 });
     const data = params.toCborData();
     // [0, #6.40018(...), 0]: array of 3, int 0, tagged salt, hash type
     expect(data[0]).toBe(0x83);
@@ -175,7 +175,11 @@ describe("KDF params — salt is CBOR-tagged 40018 (matches Rust)", () => {
   });
 
   it("PBKDF2Params: tag 40018 immediately after the index", () => {
-    const params = PBKDF2Params.newOpt(SALT, 100_000, HashType.SHA256);
+    const params = PBKDF2Params.from({
+      salt: SALT,
+      iterations: 100_000,
+      hashType: HashType.SHA256,
+    });
     const data = params.toCborData();
     expect(data[0]).toBe(0x84);
     expect(data[1]).toBe(0x01);
@@ -184,7 +188,7 @@ describe("KDF params — salt is CBOR-tagged 40018 (matches Rust)", () => {
   });
 
   it("ScryptParams: tag 40018 immediately after the index", () => {
-    const params = ScryptParams.newOpt(SALT, 15, 8, 1);
+    const params = ScryptParams.from({ salt: SALT, logN: 15, r: 8, p: 1 });
     const data = params.toCborData();
     expect(data[0]).toBe(0x85);
     expect(data[1]).toBe(0x02);
@@ -193,7 +197,7 @@ describe("KDF params — salt is CBOR-tagged 40018 (matches Rust)", () => {
   });
 
   it("SSHAgentParams: tag 40018 immediately after the index", () => {
-    const params = SSHAgentParams.newOpt(SALT, "test-id");
+    const params = SSHAgentParams.from({ salt: SALT, id: "test-id" });
     const data = params.toCborData();
     expect(data[0]).toBe(0x83);
     expect(data[1]).toBe(0x04);
@@ -219,7 +223,7 @@ describe("UR conventions — payload is untagged CBOR (matches Rust)", () => {
 
   it("SymmetricKey.toUR() does NOT double-tag the payload", () => {
     const rng = new SecureRng();
-    const key = SymmetricKey.fromData(randomBytes(32, { rng }));
+    const key = SymmetricKey.from(randomBytes(32, { rng }));
     const ur = key.toUR();
     const cborBytes = ur.cbor.toData();
     // 32-byte byte string: 0x58 0x20 + bytes.

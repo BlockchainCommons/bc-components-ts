@@ -56,19 +56,19 @@ export declare const SSKRShare: {
 export declare class SSKRShareCbor implements ToCbor {
     private readonly _data;
     private constructor();
-    static fromData(data: Uint8Array): SSKRShareCbor;
+    static from(data: Uint8Array): SSKRShareCbor;
     static fromHex(hex: string): SSKRShareCbor;
-    asBytes(): Uint8Array;
-    data(): Uint8Array;
-    hex(): string;
-    identifier(): number;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
+    toHex(): string;
+    get identifier(): number;
     identifierHex(): string;
-    groupThreshold(): number;
-    groupCount(): number;
-    groupIndex(): number;
-    memberThreshold(): number;
-    memberIndex(): number;
-    shareValue(): Uint8Array;
+    get groupThreshold(): number;
+    get groupCount(): number;
+    get groupIndex(): number;
+    get memberThreshold(): number;
+    get memberIndex(): number;
+    get shareValue(): Uint8Array;
     equals(other: SSKRShareCbor): boolean;
     toString(): string;
     /** Tagged-CBOR codec; `decode` also accepts the untagged form. */

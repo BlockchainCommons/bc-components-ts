@@ -72,45 +72,18 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Generate a new random ECPrivateKey.
-   */
-  static new(): ECPrivateKey {
-    return ECPrivateKey.random();
-  }
-
-  /**
-   * Generate a new random ECPrivateKey.
-   */
-  static random(): ECPrivateKey {
-    const rng = secureRng();
-    return ECPrivateKey.newUsing(rng);
-  }
-
-  /**
-   * Generate a new random ECPrivateKey using provided RNG.
-   */
-  static newUsing(rng: RandomNumberGenerator): ECPrivateKey {
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): ECPrivateKey {
     return new ECPrivateKey(randomBytes(ECDSA_PRIVATE_KEY_SIZE, { rng: rng }));
   }
 
-  /**
-   * Generate a new random ECPrivateKey and corresponding ECPublicKey.
-   */
-  static keypair(): [ECPrivateKey, ECPublicKey] {
-    const privateKey = ECPrivateKey.new();
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
-  }
-
-  /**
-   * Generate a new random ECPrivateKey and corresponding ECPublicKey
-   * using the given random number generator.
-   */
-  static keypairUsing(rng: RandomNumberGenerator): [ECPrivateKey, ECPublicKey] {
-    const privateKey = ECPrivateKey.newUsing(rng);
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
+  /** A fresh private key and its public key. */
+  static keypair({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): [
+    ECPrivateKey,
+    ECPublicKey,
+  ] {
+    const privateKey = ECPrivateKey.random({ rng });
+    return [privateKey, privateKey.publicKey()];
   }
 
   /**
@@ -126,65 +99,31 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   /**
    * Restore an ECPrivateKey from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): ECPrivateKey {
-    return new ECPrivateKey(new Uint8Array(data));
-  }
-
-  /**
-   * Restore an ECPrivateKey from a reference to an array of bytes.
-   * Validates the length.
-   */
-  static fromDataRef(data: Uint8Array): ECPrivateKey {
-    if (data.length !== ECDSA_PRIVATE_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ECDSA_PRIVATE_KEY_SIZE, data.length);
-    }
-    return ECPrivateKey.fromData(data);
-  }
-
-  /**
-   * Create an ECPrivateKey from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): ECPrivateKey {
-    return ECPrivateKey.fromData(data);
+    return new ECPrivateKey(new Uint8Array(data));
   }
 
   /**
    * Restore an ECPrivateKey from a hex string.
    */
   static fromHex(hex: string): ECPrivateKey {
-    return ECPrivateKey.fromData(hexToBytes(hex));
+    return ECPrivateKey.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get a reference to the fixed-size array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the raw private key bytes (copy).
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -200,7 +139,7 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   publicKey(): ECPublicKey {
     if (this._publicKey === undefined) {
       const publicKeyBytes = ecdsa.publicKey(this._data);
-      this._publicKey = ECPublicKey.fromData(publicKeyBytes);
+      this._publicKey = ECPublicKey.from(publicKeyBytes);
     }
     return this._publicKey;
   }
@@ -211,7 +150,7 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   schnorrPublicKey(): SchnorrPublicKey {
     if (this._schnorrPublicKey === undefined) {
       const publicKeyBytes = schnorr.publicKey(this._data);
-      this._schnorrPublicKey = SchnorrPublicKey.fromData(publicKeyBytes);
+      this._schnorrPublicKey = SchnorrPublicKey.from(publicKeyBytes);
     }
     return this._schnorrPublicKey;
   }
@@ -300,7 +239,7 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
         throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 3 (data)");
       }
 
-      return ECPrivateKey.fromDataRef(keyData);
+      return ECPrivateKey.from(keyData);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

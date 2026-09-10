@@ -14,27 +14,27 @@ describe("Salt", () => {
 
   describe("creation", () => {
     it("should create a salt with specific length", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
 
-      expect(salt.len()).toBe(16);
+      expect(salt.byteLength).toBe(16);
     });
 
     it("should throw when length is less than minimum", () => {
-      expect(() => Salt.newWithLen(4)).toThrow();
+      expect(() => Salt.random({ length: 4 })).toThrow();
     });
 
     it("should create a salt from raw data", () => {
       const rawData = new Uint8Array(16);
-      const salt = Salt.fromData(rawData);
+      const salt = Salt.from(rawData);
 
-      expect(salt.len()).toBe(16);
+      expect(salt.byteLength).toBe(16);
     });
 
     it("should create a salt using from (legacy alias)", () => {
       const rawData = new Uint8Array(16);
       const salt = Salt.from(rawData);
 
-      expect(salt.len()).toBe(16);
+      expect(salt.byteLength).toBe(16);
     });
 
     it("should create a salt from hex string", () => {
@@ -42,53 +42,53 @@ describe("Salt", () => {
       const hex = "0102030405060708090a0b0c0d0e0f10";
       const salt = Salt.fromHex(hex);
 
-      expect(salt.len()).toBe(16);
-      expect(salt.hex()).toBe(hex);
+      expect(salt.byteLength).toBe(16);
+      expect(salt.toHex()).toBe(hex);
     });
 
     it("should create a salt using random (legacy alias)", () => {
       const salt = Salt.random();
 
-      expect(salt.len()).toBe(16); // Default size
+      expect(salt.byteLength).toBe(16); // Default size
     });
 
     it("should create a salt using random with custom size", () => {
-      const salt = Salt.random(32);
+      const salt = Salt.random({ length: 32 });
 
-      expect(salt.len()).toBe(32);
+      expect(salt.byteLength).toBe(32);
     });
 
     it("should create a salt using proportional (legacy alias)", () => {
-      const salt = Salt.proportional(100);
+      const salt = Salt.forSize(100);
 
-      expect(salt.len()).toBeGreaterThanOrEqual(MIN_SALT_SIZE);
+      expect(salt.byteLength).toBeGreaterThanOrEqual(MIN_SALT_SIZE);
     });
   });
 
   describe("newInRange", () => {
     it("should create a salt within specified range", () => {
-      const salt = Salt.newInRange(16, 32);
+      const salt = Salt.randomInRange(16, 32);
 
-      expect(salt.len()).toBeGreaterThanOrEqual(16);
-      expect(salt.len()).toBeLessThanOrEqual(32);
+      expect(salt.byteLength).toBeGreaterThanOrEqual(16);
+      expect(salt.byteLength).toBeLessThanOrEqual(32);
     });
 
     it("should throw when minimum is less than 8", () => {
-      expect(() => Salt.newInRange(4, 32)).toThrow();
+      expect(() => Salt.randomInRange(4, 32)).toThrow();
     });
   });
 
   describe("newForSize", () => {
     it("should create proportional salt for small size", () => {
-      const salt = Salt.newForSize(100);
+      const salt = Salt.forSize(100);
 
-      expect(salt.len()).toBeGreaterThanOrEqual(MIN_SALT_SIZE);
+      expect(salt.byteLength).toBeGreaterThanOrEqual(MIN_SALT_SIZE);
     });
 
     it("should create proportional salt for large size", () => {
-      const salt = Salt.newForSize(1000);
+      const salt = Salt.forSize(1000);
 
-      expect(salt.len()).toBeGreaterThanOrEqual(MIN_SALT_SIZE);
+      expect(salt.byteLength).toBeGreaterThanOrEqual(MIN_SALT_SIZE);
     });
 
     it("should create larger salt for larger data", () => {
@@ -98,8 +98,8 @@ describe("Salt", () => {
       const samples = 10;
 
       for (let i = 0; i < samples; i++) {
-        smallTotal += Salt.newForSize(100).len();
-        largeTotal += Salt.newForSize(1000).len();
+        smallTotal += Salt.forSize(100).byteLength;
+        largeTotal += Salt.forSize(1000).byteLength;
       }
 
       // Large should generally be bigger on average
@@ -109,52 +109,52 @@ describe("Salt", () => {
 
   describe("accessors", () => {
     it("should return correct length via len()", () => {
-      const salt = Salt.newWithLen(20);
+      const salt = Salt.random({ length: 20 });
 
-      expect(salt.len()).toBe(20);
+      expect(salt.byteLength).toBe(20);
     });
 
     it("should return correct length via size()", () => {
-      const salt = Salt.newWithLen(20);
+      const salt = Salt.random({ length: 20 });
 
-      expect(salt.size()).toBe(20);
+      expect(salt.byteLength).toBe(20);
     });
 
     it("should return isEmpty correctly", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
 
       expect(salt.isEmpty()).toBe(false);
     });
 
     it("should return data as bytes", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
 
-      expect(salt.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(salt.toData()).toBeInstanceOf(Uint8Array);
+      expect(salt.bytes).toBeInstanceOf(Uint8Array);
+      expect(salt.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {
-      const salt = Salt.newWithLen(16);
-      const hex = salt.hex();
+      const salt = Salt.random({ length: 16 });
+      const hex = salt.toHex();
 
       expect(typeof hex).toBe("string");
       expect(hex.length).toBe(32); // 16 bytes * 2
     });
 
     it("should return same hex from hex() and toHex()", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
 
-      expect(salt.hex()).toBe(salt.toHex());
+      expect(salt.toHex()).toBe(salt.toHex());
     });
 
     it("should return base64 representation", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
 
       expect(typeof salt.toBase64()).toBe("string");
     });
 
     it("should return string representation", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const str = salt.toString();
 
       expect(str).toContain("Salt");
@@ -164,7 +164,7 @@ describe("Salt", () => {
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
 
       expect(salt.equals(salt)).toBe(true);
     });
@@ -185,8 +185,8 @@ describe("Salt", () => {
     });
 
     it("should not be equal to salts of different length", () => {
-      const salt1 = Salt.newWithLen(16);
-      const salt2 = Salt.newWithLen(32);
+      const salt1 = Salt.random({ length: 16 });
+      const salt2 = Salt.random({ length: 32 });
 
       expect(salt1.equals(salt2)).toBe(false);
     });
@@ -194,28 +194,28 @@ describe("Salt", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const tags = salt.cborTags();
 
       expect(tags.length).toBeGreaterThan(0);
     });
 
     it("should serialize to untagged CBOR", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const untagged = salt.untaggedCbor();
 
       expect(untagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const tagged = salt.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const data = salt.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
@@ -223,7 +223,7 @@ describe("Salt", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const data = salt.toCbor().toData();
       const restored = Salt.fromCbor(decodeCbor(data));
 
@@ -231,7 +231,7 @@ describe("Salt", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const data = salt.untaggedCbor().toData();
       const restored = Salt.fromCbor(decodeCbor(data));
 
@@ -241,21 +241,21 @@ describe("Salt", () => {
 
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const ur = salt.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const urString = salt.toUR().toString();
 
       expect(urString.startsWith("ur:salt/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
-      const salt = Salt.newWithLen(16);
+      const salt = Salt.random({ length: 16 });
       const urString = salt.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), Salt.codec);
 

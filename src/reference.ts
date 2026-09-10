@@ -79,7 +79,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   // ============================================================================
 
   /** Create a Reference from exactly 32 bytes. Mirrors Rust `Reference::from_data`. */
-  static fromData(data: Uint8Array): Reference {
+  static from(data: Uint8Array): Reference {
     if (data.length !== Reference.REFERENCE_SIZE) {
       throw ComponentsError.invalidSize(Reference.REFERENCE_SIZE, data.length);
     }
@@ -87,30 +87,22 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   }
 
   /** Alias of `fromData` for parity with Rust `from_data_ref`. */
-  static fromDataRef(data: Uint8Array): Reference {
-    return Reference.fromData(data);
-  }
-
   /** Create a Reference from a Digest's underlying bytes. */
   static fromDigest(digest: Digest): Reference {
-    return new Reference(new Uint8Array(digest.toData()));
+    return new Reference(new Uint8Array(digest.bytes));
   }
 
   /** Backwards-compatible alias of `fromDigest`. */
-  static from(digest: Digest): Reference {
-    return Reference.fromDigest(digest);
-  }
-
   /** Create a Reference from a 64-character hex string. */
   static fromHex(hex: string): Reference {
-    return Reference.fromData(hexToBytes(hex));
+    return Reference.from(hexToBytes(hex));
   }
 
   /**
    * Create a Reference whose bytes are the SHA-256 digest of the input.
    *
    * @deprecated Prefer `Reference.fromDigest(Digest.fromImage(data))` for
-   *   clarity, or `Reference.fromData(data)` if `data` is already 32 bytes
+   *   clarity, or `Reference.from(data)` if `data` is already 32 bytes
    *   that should be wrapped without hashing (matches Rust `from_data`).
    */
   static hash(data: Uint8Array): Reference {
@@ -122,20 +114,13 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   // ============================================================================
 
   /** Returns the 32 reference bytes (copy). */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
   /** Alias of `data()`. */
-  asBytes(): Uint8Array {
-    return this.data();
-  }
-
   /** Returns a `Digest` constructed from these 32 bytes (no hashing). */
-  getDigest(): Digest {
-    return Digest.fromData(this._data);
-  }
-
   /** The full 64-character lowercase hex of the reference. */
   refHex(): string {
     return bytesToHex(this._data);
@@ -238,7 +223,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   static readonly codec: ComponentCodec<Reference> = defineCodec({
     tags: [TAG_REFERENCE],
     decodeUntagged: (cbor) => {
-      return Reference.fromData(expectBytes(cbor));
+      return Reference.from(expectBytes(cbor));
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

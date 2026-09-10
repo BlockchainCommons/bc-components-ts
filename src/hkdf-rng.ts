@@ -32,14 +32,14 @@
  * import { HKDFRng } from '@blockchaincommons/components';
  *
  * // Create an HKDF-based RNG
- * const rng = HKDFRng.new(new TextEncoder().encode("my secure seed"), "wallet-derivation");
+ * const rng = new HKDFRng(new TextEncoder().encode("my secure seed"), "wallet-derivation");
  *
  * // Generate two u32 values
  * const random1 = rng.nextU32();
  * const random2 = rng.nextU32();
  *
  * // The same seed and salt will always produce the same sequence
- * const rng2 = HKDFRng.new(new TextEncoder().encode("my secure seed"), "wallet-derivation");
+ * const rng2 = new HKDFRng(new TextEncoder().encode("my secure seed"), "wallet-derivation");
  * console.log(random1 === rng2.nextU32()); // true
  * console.log(random2 === rng2.nextU32()); // true
  * ```
@@ -69,7 +69,16 @@ export class HKDFRng implements RandomNumberGenerator {
   /** Current page index */
   private _pageIndex: number;
 
-  private constructor(keyMaterial: Uint8Array, salt: string, pageLength: number) {
+  /**
+   * @param keyMaterial - The input key material for HKDF
+   * @param salt - The salt string; page `i` uses `"<salt>-<i>"`
+   * @param pageLength - Bytes of output derived per page (32 by default)
+   */
+  constructor(
+    keyMaterial: Uint8Array,
+    salt: string,
+    { pageLength = DEFAULT_PAGE_LENGTH }: { pageLength?: number } = {},
+  ) {
     this._buffer = new Uint8Array(0);
     this._position = 0;
     this._keyMaterial = new Uint8Array(keyMaterial);
@@ -81,29 +90,6 @@ export class HKDFRng implements RandomNumberGenerator {
   // ============================================================================
   // Static Factory Methods
   // ============================================================================
-
-  /**
-   * Creates a new `HKDFRng` with a custom page length.
-   *
-   * @param keyMaterial - The seed material to derive random numbers from
-   * @param salt - A salt value to mix with the key material
-   * @param pageLength - The number of bytes to generate in each HKDF call
-   * @returns A new `HKDFRng` instance configured with the specified parameters
-   */
-  static newWithPageLength(keyMaterial: Uint8Array, salt: string, pageLength: number): HKDFRng {
-    return new HKDFRng(keyMaterial, salt, pageLength);
-  }
-
-  /**
-   * Creates a new `HKDFRng` with the default page length of 32 bytes.
-   *
-   * @param keyMaterial - The seed material to derive random numbers from
-   * @param salt - A salt value to mix with the key material
-   * @returns A new `HKDFRng` instance configured with the specified key material and salt
-   */
-  static new(keyMaterial: Uint8Array, salt: string): HKDFRng {
-    return HKDFRng.newWithPageLength(keyMaterial, salt, DEFAULT_PAGE_LENGTH);
-  }
 
   // ============================================================================
   // Private Methods
@@ -229,31 +215,19 @@ export class HKDFRng implements RandomNumberGenerator {
   // Accessors (for testing)
   // ============================================================================
 
-  /**
-   * Returns the key material (for testing purposes).
-   */
-  getKeyMaterial(): Uint8Array {
+  get keyMaterial(): Uint8Array {
     return new Uint8Array(this._keyMaterial);
   }
 
-  /**
-   * Returns the salt (for testing purposes).
-   */
-  getSalt(): string {
+  get salt(): string {
     return this._salt;
   }
 
-  /**
-   * Returns the page length (for testing purposes).
-   */
-  getPageLength(): number {
+  get pageLength(): number {
     return this._pageLength;
   }
 
-  /**
-   * Returns the current page index (for testing purposes).
-   */
-  getPageIndex(): number {
+  get pageIndex(): number {
     return this._pageIndex;
   }
 }

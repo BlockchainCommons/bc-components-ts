@@ -15,33 +15,33 @@ const SEED = hexToBytes("59f2293a5bce7d4de59e71b4207ac5d2");
 
 describe("PrivateKeyBase — Rust SEED parity vector", () => {
   it("ECDSA signing private key matches Rust", () => {
-    const pkb = PrivateKeyBase.fromData(SEED);
-    const ecKey = pkb.ecdsaSigningPrivateKey().toEcdsa();
+    const pkb = PrivateKeyBase.from(SEED);
+    const ecKey = pkb.ecdsaSigningPrivateKey().asEcdsa();
     if (ecKey === null) throw new Error("expected ECDSA private key");
-    expect(bytesToHex(ecKey.data())).toBe(
+    expect(bytesToHex(ecKey!.bytes)).toBe(
       "9505a44aaf385ce633cf0e2bc49e65cc88794213bdfbf8caf04150b9c4905f5a",
     );
   });
 
   it("Schnorr signing public key matches Rust", () => {
-    const pkb = PrivateKeyBase.fromData(SEED);
-    const pub = pkb.schnorrSigningPrivateKey().publicKey().toSchnorr();
+    const pkb = PrivateKeyBase.from(SEED);
+    const pub = pkb.schnorrSigningPrivateKey().publicKey().asSchnorr();
     if (pub === null) throw new Error("expected Schnorr public key");
-    expect(bytesToHex(pub.data())).toBe(
+    expect(bytesToHex(pub!.bytes)).toBe(
       "fd4d22f9e8493da52d730aa402ac9e661deca099ef4db5503f519a73c3493e18",
     );
   });
 
   it("X25519 private key matches Rust", () => {
-    const pkb = PrivateKeyBase.fromData(SEED);
-    expect(bytesToHex(pkb.x25519PrivateKey().data())).toBe(
+    const pkb = PrivateKeyBase.from(SEED);
+    expect(bytesToHex(pkb.x25519PrivateKey().bytes)).toBe(
       "77ff838285a0403d3618aa8c30491f99f55221be0b944f50bfb371f43b897485",
     );
   });
 
   it("X25519 public key matches Rust", () => {
-    const pkb = PrivateKeyBase.fromData(SEED);
-    expect(bytesToHex(pkb.x25519PrivateKey().publicKey().data())).toBe(
+    const pkb = PrivateKeyBase.from(SEED);
+    expect(bytesToHex(pkb.x25519PrivateKey().publicKey().bytes)).toBe(
       "863cf3facee3ba45dc54e5eedecb21d791d64adfb0a1c63bfb6fea366c1ee62b",
     );
   });

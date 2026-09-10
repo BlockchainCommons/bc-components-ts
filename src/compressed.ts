@@ -33,7 +33,7 @@
  * const compressed = Compressed.fromDecompressedData(data);
  *
  * // The compressed size should be smaller than the original
- * console.log(compressed.compressionRatio()); // < 1.0
+ * console.log(compressed.compressionRatio); // < 1.0
  *
  * // We can recover the original data
  * const decompressed = compressed.decompress();
@@ -109,12 +109,17 @@ export class Compressed implements ToCbor, DigestProvider {
    * @returns A new `Compressed` object
    * @throws ComponentsError if the compressed data is larger than the decompressed size
    */
-  static new(
-    checksum: number,
-    decompressedSize: number,
-    compressedData: Uint8Array,
-    digest?: Digest,
-  ): Compressed {
+  static fromParts({
+    checksum,
+    decompressedSize,
+    compressedData,
+    digest,
+  }: {
+    checksum: number;
+    decompressedSize: number;
+    compressedData: Uint8Array;
+    digest?: Digest | undefined;
+  }): Compressed {
     return new Compressed(checksum, decompressedSize, compressedData, digest);
   }
 
@@ -188,21 +193,21 @@ export class Compressed implements ToCbor, DigestProvider {
   /**
    * Returns the size of the compressed data in bytes.
    */
-  compressedSize(): number {
+  get compressedSize(): number {
     return this._compressedData.length;
   }
 
   /**
    * Returns the size of the decompressed data in bytes.
    */
-  decompressedSize(): number {
+  get decompressedSize(): number {
     return this._decompressedSize;
   }
 
   /**
    * Returns the CRC32 checksum of the decompressed data.
    */
-  checksum(): number {
+  get checksum(): number {
     return this._checksum;
   }
 
@@ -217,7 +222,7 @@ export class Compressed implements ToCbor, DigestProvider {
    * - Values equal to 1.0 indicate no compression was applied
    * - Values of NaN can occur if the decompressed size is zero
    */
-  compressionRatio(): number {
+  get compressionRatio(): number {
     return this._compressedData.length / this._decompressedSize;
   }
 
@@ -285,7 +290,7 @@ export class Compressed implements ToCbor, DigestProvider {
       ]),
     );
     const digestStr = this._digest?.shortDescription() ?? "None";
-    return `Compressed(checksum: ${checksumHex}, size: ${this.compressedSize()}/${this._decompressedSize}, ratio: ${this.compressionRatio().toFixed(2)}, digest: ${digestStr})`;
+    return `Compressed(checksum: ${checksumHex}, size: ${this.compressedSize}/${this._decompressedSize}, ratio: ${this.compressionRatio.toFixed(2)}, digest: ${digestStr})`;
   }
 
   // ============================================================================
@@ -310,7 +315,12 @@ export class Compressed implements ToCbor, DigestProvider {
         digest = Digest.fromCbor(elements[3]);
       }
 
-      return Compressed.new(Number(checksum), Number(decompressedSize), compressedData, digest);
+      return Compressed.fromParts({
+        checksum: Number(checksum),
+        decompressedSize: Number(decompressedSize),
+        compressedData,
+        digest,
+      });
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

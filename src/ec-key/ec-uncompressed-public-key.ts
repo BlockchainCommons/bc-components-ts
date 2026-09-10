@@ -68,65 +68,31 @@ export class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR {
   /**
    * Restore an ECUncompressedPublicKey from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): ECUncompressedPublicKey {
-    return new ECUncompressedPublicKey(new Uint8Array(data));
-  }
-
-  /**
-   * Restore an ECUncompressedPublicKey from a reference to an array of bytes.
-   * Validates the length.
-   */
-  static fromDataRef(data: Uint8Array): ECUncompressedPublicKey {
-    if (data.length !== ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ECDSA_UNCOMPRESSED_PUBLIC_KEY_SIZE, data.length);
-    }
-    return ECUncompressedPublicKey.fromData(data);
-  }
-
-  /**
-   * Create an ECUncompressedPublicKey from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): ECUncompressedPublicKey {
-    return ECUncompressedPublicKey.fromData(data);
+    return new ECUncompressedPublicKey(new Uint8Array(data));
   }
 
   /**
    * Restore an ECUncompressedPublicKey from a hex string.
    */
   static fromHex(hex: string): ECUncompressedPublicKey {
-    return ECUncompressedPublicKey.fromData(hexToBytes(hex));
+    return ECUncompressedPublicKey.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get a reference to the fixed-size array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the raw public key bytes (copy).
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -185,7 +151,7 @@ export class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR {
         throw ComponentsError.invalidData("ECUncompressedPublicKey CBOR must have key 3 (data)");
       }
 
-      return ECUncompressedPublicKey.fromDataRef(keyData);
+      return ECUncompressedPublicKey.from(keyData);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

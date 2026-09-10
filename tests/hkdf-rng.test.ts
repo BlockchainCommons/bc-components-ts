@@ -12,22 +12,22 @@ describe("HKDFRng", () => {
 
   describe("creation", () => {
     it("should create with default page length", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
-      expect(rng.getKeyMaterial()).toEqual(KEY_MATERIAL);
-      expect(rng.getSalt()).toBe(SALT);
-      expect(rng.getPageLength()).toBe(32);
-      expect(rng.getPageIndex()).toBe(0);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
+      expect(rng.keyMaterial).toEqual(KEY_MATERIAL);
+      expect(rng.salt).toBe(SALT);
+      expect(rng.pageLength).toBe(32);
+      expect(rng.pageIndex).toBe(0);
     });
 
     it("should create with custom page length", () => {
-      const rng = HKDFRng.newWithPageLength(KEY_MATERIAL, SALT, 64);
-      expect(rng.getPageLength()).toBe(64);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT, { pageLength: 64 });
+      expect(rng.pageLength).toBe(64);
     });
   });
 
   describe("deterministic output", () => {
     it("should produce deterministic next_bytes", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
 
       expect(bytesToHex(rng.randomData(16))).toBe("1032ac8ffea232a27c79fe381d7eb7e4");
       expect(bytesToHex(rng.randomData(16))).toBe("aeaaf727d35b6f338218391f9f8fa1f3");
@@ -36,18 +36,18 @@ describe("HKDFRng", () => {
     });
 
     it("should produce deterministic nextU32 (unsigned, matches Rust)", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
       expect(rng.nextU32()).toBe(2410426896);
     });
 
     it("should produce deterministic nextU64", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
       const num = rng.nextU64();
       expect(num).toBe(BigInt("11687583197195678224"));
     });
 
     it("should produce deterministic fillBytes", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
       const dest = new Uint8Array(16);
       rng.fillBytes(dest);
       expect(bytesToHex(dest)).toBe("1032ac8ffea232a27c79fe381d7eb7e4");
@@ -56,8 +56,8 @@ describe("HKDFRng", () => {
 
   describe("reproducibility", () => {
     it("should produce same sequence with same seed and salt", () => {
-      const rng1 = HKDFRng.new(KEY_MATERIAL, SALT);
-      const rng2 = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng1 = new HKDFRng(KEY_MATERIAL, SALT);
+      const rng2 = new HKDFRng(KEY_MATERIAL, SALT);
 
       const random1_1 = rng1.nextU32();
       const random1_2 = rng1.nextU32();
@@ -70,8 +70,8 @@ describe("HKDFRng", () => {
     });
 
     it("should produce different sequence with different salt", () => {
-      const rng1 = HKDFRng.new(KEY_MATERIAL, "salt1");
-      const rng2 = HKDFRng.new(KEY_MATERIAL, "salt2");
+      const rng1 = new HKDFRng(KEY_MATERIAL, "salt1");
+      const rng2 = new HKDFRng(KEY_MATERIAL, "salt2");
 
       const random1 = rng1.nextU32();
       const random2 = rng2.nextU32();
@@ -83,8 +83,8 @@ describe("HKDFRng", () => {
       const keyMaterial1 = new TextEncoder().encode("key1");
       const keyMaterial2 = new TextEncoder().encode("key2");
 
-      const rng1 = HKDFRng.new(keyMaterial1, SALT);
-      const rng2 = HKDFRng.new(keyMaterial2, SALT);
+      const rng1 = new HKDFRng(keyMaterial1, SALT);
+      const rng2 = new HKDFRng(keyMaterial2, SALT);
 
       const random1 = rng1.nextU32();
       const random2 = rng2.nextU32();
@@ -95,18 +95,18 @@ describe("HKDFRng", () => {
 
   describe("buffer management", () => {
     it("should handle requests larger than page length", () => {
-      const rng = HKDFRng.newWithPageLength(KEY_MATERIAL, SALT, 16);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT, { pageLength: 16 });
 
       // Request more bytes than page length
       const data = rng.randomData(64);
       expect(data.length).toBe(64);
 
       // Should have fetched multiple pages
-      expect(rng.getPageIndex()).toBeGreaterThan(1);
+      expect(rng.pageIndex).toBeGreaterThan(1);
     });
 
     it("should handle multiple small requests across page boundaries", () => {
-      const rng = HKDFRng.newWithPageLength(KEY_MATERIAL, SALT, 16);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT, { pageLength: 16 });
 
       // Make multiple small requests
       const chunks: Uint8Array[] = [];
@@ -123,13 +123,13 @@ describe("HKDFRng", () => {
 
   describe("RandomNumberGenerator interface", () => {
     it("should implement randomData", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
       const data = rng.randomData(32);
       expect(data.length).toBe(32);
     });
 
     it("should implement fillBytes", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
       const dest = new Uint8Array(32);
       rng.fillBytes(dest);
 
@@ -139,7 +139,7 @@ describe("HKDFRng", () => {
     });
 
     it("should implement tryFillBytes", () => {
-      const rng = HKDFRng.new(KEY_MATERIAL, SALT);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT);
       const dest = new Uint8Array(32);
       rng.tryFillBytes(dest);
 
@@ -151,17 +151,17 @@ describe("HKDFRng", () => {
 
   describe("page index progression", () => {
     it("should increment page index as buffer is consumed", () => {
-      const rng = HKDFRng.newWithPageLength(KEY_MATERIAL, SALT, 16);
+      const rng = new HKDFRng(KEY_MATERIAL, SALT, { pageLength: 16 });
 
-      expect(rng.getPageIndex()).toBe(0);
+      expect(rng.pageIndex).toBe(0);
 
       // Consume first page
       rng.randomData(16);
-      expect(rng.getPageIndex()).toBe(1);
+      expect(rng.pageIndex).toBe(1);
 
       // Consume second page
       rng.randomData(16);
-      expect(rng.getPageIndex()).toBe(2);
+      expect(rng.pageIndex).toBe(2);
     });
   });
 });

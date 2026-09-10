@@ -63,43 +63,33 @@ export class ScryptParams implements KeyDerivation {
     this._p = p;
   }
 
-  /**
-   * Create new Scrypt parameters with default settings.
-   * Uses a random 16-byte salt, log_n=15, r=8, p=1.
-   */
-  static new(): ScryptParams {
-    return ScryptParams.newOpt(
-      Salt.newWithLen(SALT_LEN),
-      DEFAULT_SCRYPT_LOG_N,
-      DEFAULT_SCRYPT_R,
-      DEFAULT_SCRYPT_P,
-    );
-  }
-
-  /**
-   * Create Scrypt parameters with custom settings.
-   */
-  static newOpt(salt: Salt, logN: number, r: number, p: number): ScryptParams {
+  /** Parameters with a fresh random salt unless one is given. */
+  static from({
+    salt = Salt.random({ length: SALT_LEN }),
+    logN = DEFAULT_SCRYPT_LOG_N,
+    r = DEFAULT_SCRYPT_R,
+    p = DEFAULT_SCRYPT_P,
+  }: { salt?: Salt; logN?: number; r?: number; p?: number } = {}): ScryptParams {
     return new ScryptParams(salt, logN, r, p);
   }
 
   /** Returns the salt. */
-  salt(): Salt {
+  get salt(): Salt {
     return this._salt;
   }
 
   /** Returns the log_n parameter. */
-  logN(): number {
+  get logN(): number {
     return this._logN;
   }
 
   /** Returns the r parameter (block size). */
-  r(): number {
+  get r(): number {
     return this._r;
   }
 
   /** Returns the p parameter (parallelism). */
-  p(): number {
+  get p(): number {
     return this._p;
   }
 
@@ -113,13 +103,13 @@ export class ScryptParams implements KeyDerivation {
    */
   lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Encode the method parameters as AAD
     const encodedMethod = this.toCbor().toData();
 
     // Encrypt the content key using the derived key
-    return derivedKey.encrypt(contentKey.data(), encodedMethod, Nonce.new());
+    return derivedKey.encrypt(contentKey.bytes, encodedMethod, Nonce.random());
   }
 
   /**
@@ -127,15 +117,15 @@ export class ScryptParams implements KeyDerivation {
    */
   unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Decrypt to get the content key
     const contentKeyData = derivedKey.decrypt(encryptedMessage);
-    return SymmetricKey.fromData(contentKeyData);
+    return SymmetricKey.from(contentKeyData);
   }
 
   private _deriveKey(secret: Uint8Array): Uint8Array {
-    return scrypt(secret, this._salt.asBytes(), {
+    return scrypt(secret, this._salt.bytes, {
       dkLen: 32,
       logN: this._logN,
       r: this._r,

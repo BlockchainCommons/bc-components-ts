@@ -49,23 +49,13 @@ export class Argon2idParams implements KeyDerivation {
     this._salt = salt;
   }
 
-  /**
-   * Create new Argon2id parameters with default settings.
-   * Uses a random 16-byte salt.
-   */
-  static new(): Argon2idParams {
-    return Argon2idParams.newOpt(Salt.newWithLen(SALT_LEN));
-  }
-
-  /**
-   * Create Argon2id parameters with a custom salt.
-   */
-  static newOpt(salt: Salt): Argon2idParams {
+  /** Parameters with a fresh random salt unless one is given. */
+  static from({ salt = Salt.random({ length: SALT_LEN }) }: { salt?: Salt } = {}): Argon2idParams {
     return new Argon2idParams(salt);
   }
 
   /** Returns the salt. */
-  salt(): Salt {
+  get salt(): Salt {
     return this._salt;
   }
 
@@ -79,13 +69,13 @@ export class Argon2idParams implements KeyDerivation {
    */
   lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Encode the method parameters as AAD
     const encodedMethod = this.toCbor().toData();
 
     // Encrypt the content key using the derived key
-    return derivedKey.encrypt(contentKey.data(), encodedMethod, Nonce.new());
+    return derivedKey.encrypt(contentKey.bytes, encodedMethod, Nonce.random());
   }
 
   /**
@@ -93,15 +83,15 @@ export class Argon2idParams implements KeyDerivation {
    */
   unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Decrypt to get the content key
     const contentKeyData = derivedKey.decrypt(encryptedMessage);
-    return SymmetricKey.fromData(contentKeyData);
+    return SymmetricKey.from(contentKeyData);
   }
 
   private _deriveKey(secret: Uint8Array): Uint8Array {
-    return argon2id(secret, this._salt.asBytes(), { dkLen: 32 });
+    return argon2id(secret, this._salt.bytes, { dkLen: 32 });
   }
 
   /**

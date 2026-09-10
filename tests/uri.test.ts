@@ -15,13 +15,13 @@ describe("URI", () => {
 
   describe("creation", () => {
     it("should create a URI from valid URL string", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(uri.toString()).toBe(TEST_URI);
     });
 
     it("should throw on invalid URI", () => {
-      expect(() => URI.new("not a valid uri")).toThrow();
+      expect(() => URI.from("not a valid uri")).toThrow();
     });
 
     it("should create a URI using from (legacy alias)", () => {
@@ -31,7 +31,7 @@ describe("URI", () => {
     });
 
     it("should create a URI using parse", () => {
-      const uri = URI.parse(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(uri.toString()).toBe(TEST_URI);
     });
@@ -39,34 +39,34 @@ describe("URI", () => {
 
   describe("accessors", () => {
     it("should return string representation", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(uri.toString()).toBe(TEST_URI);
       expect(uri.toURI()).toBe(TEST_URI);
-      expect(uri.getRaw()).toBe(TEST_URI);
+      expect(uri.raw).toBe(TEST_URI);
       expect(uri.asRef()).toBe(TEST_URI);
     });
 
     it("should return scheme", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
-      expect(uri.scheme()).toBe("https");
+      expect(uri.scheme).toBe("https");
     });
 
     it("should return path", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(uri.path()).toBe("/path/to/resource");
     });
 
     it("should return length", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
-      expect(uri.length()).toBe(TEST_URI.length);
+      expect(uri.length).toBe(TEST_URI.length);
     });
 
     it("should return base64 representation", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(typeof uri.toBase64()).toBe("string");
     });
@@ -74,14 +74,14 @@ describe("URI", () => {
 
   describe("URI type checks", () => {
     it("should detect absolute URI", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(uri.isAbsolute()).toBe(true);
       expect(uri.isRelative()).toBe(false);
     });
 
     it("should check prefix", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(uri.startsWith("https://")).toBe(true);
       expect(uri.startsWith("http://")).toBe(false);
@@ -90,21 +90,21 @@ describe("URI", () => {
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
 
       expect(uri.equals(uri)).toBe(true);
     });
 
     it("should be equal to another URI with the same string", () => {
-      const uri1 = URI.new(TEST_URI);
-      const uri2 = URI.new(TEST_URI);
+      const uri1 = URI.from(TEST_URI);
+      const uri2 = URI.from(TEST_URI);
 
       expect(uri1.equals(uri2)).toBe(true);
     });
 
     it("should not be equal to a URI with different string", () => {
-      const uri1 = URI.new(TEST_URI);
-      const uri2 = URI.new("https://example.com/different");
+      const uri1 = URI.from(TEST_URI);
+      const uri2 = URI.from("https://example.com/different");
 
       expect(uri1.equals(uri2)).toBe(false);
     });
@@ -112,7 +112,7 @@ describe("URI", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const tags = uri.cborTags();
 
       expect(tags.length).toBe(1);
@@ -120,21 +120,21 @@ describe("URI", () => {
     });
 
     it("should serialize to untagged CBOR", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const untagged = uri.untaggedCbor();
 
       expect(untagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const tagged = uri.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const data = uri.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
@@ -142,7 +142,7 @@ describe("URI", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const data = uri.toCbor().toData();
       const restored = URI.fromCbor(decodeCbor(data));
 
@@ -150,7 +150,7 @@ describe("URI", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const data = uri.untaggedCbor().toData();
       const restored = URI.fromCbor(decodeCbor(data));
 
@@ -160,21 +160,21 @@ describe("URI", () => {
 
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const ur = uri.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const urString = uri.toUR().toString();
 
       expect(urString.startsWith("ur:url/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
-      const uri = URI.new(TEST_URI);
+      const uri = URI.from(TEST_URI);
       const urString = uri.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), URI.codec);
 
@@ -182,7 +182,7 @@ describe("URI", () => {
     });
 
     it("should roundtrip URI with query parameters", () => {
-      const uri = URI.new(TEST_URI_WITH_QUERY);
+      const uri = URI.from(TEST_URI_WITH_QUERY);
       const urString = uri.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), URI.codec);
 

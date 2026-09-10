@@ -71,23 +71,11 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Generate a new random MLDSAPrivateKey with the specified security level.
-   *
-   * @param level - The ML-DSA security level (default: MLDSA65)
-   */
-  static new(level: MLDSALevel = MLDSALevel.MLDSA65): MLDSAPrivateKey {
-    const rng = secureRng();
-    return MLDSAPrivateKey.newUsing(level, rng);
-  }
-
-  /**
-   * Generate a new random MLDSAPrivateKey using the provided RNG.
-   *
-   * @param level - The ML-DSA security level
-   * @param rng - Random number generator
-   */
-  static newUsing(level: MLDSALevel, rng: RandomNumberGenerator): MLDSAPrivateKey {
+  /** A fresh private key at `level`; pass `rng` to make it deterministic. */
+  static random(
+    level: MLDSALevel = MLDSALevel.MLDSA65,
+    { rng = secureRng() }: { rng?: RandomNumberGenerator } = {},
+  ): MLDSAPrivateKey {
     const keypair = mldsaGenerateKeypairUsing(level, rng);
     return new MLDSAPrivateKey(level, keypair.secretKey);
   }
@@ -102,27 +90,10 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
     return new MLDSAPrivateKey(level, data);
   }
 
-  /**
-   * Generate a keypair and return both private and public keys.
-   *
-   * @param level - The ML-DSA security level (default: MLDSA65)
-   * @returns Tuple of [privateKey, publicKey]
-   */
-  static keypair(level: MLDSALevel = MLDSALevel.MLDSA65): [MLDSAPrivateKey, MLDSAPublicKey] {
-    const rng = secureRng();
-    return MLDSAPrivateKey.keypairUsing(level, rng);
-  }
-
-  /**
-   * Generate a keypair using the provided RNG.
-   *
-   * @param level - The ML-DSA security level
-   * @param rng - Random number generator
-   * @returns Tuple of [privateKey, publicKey]
-   */
-  static keypairUsing(
-    level: MLDSALevel,
-    rng: RandomNumberGenerator,
+  /** A fresh private key at `level` and its public key. */
+  static keypair(
+    level: MLDSALevel = MLDSALevel.MLDSA65,
+    { rng = secureRng() }: { rng?: RandomNumberGenerator } = {},
   ): [MLDSAPrivateKey, MLDSAPublicKey] {
     const keypairData = mldsaGenerateKeypairUsing(level, rng);
     const privateKey = new MLDSAPrivateKey(level, keypairData.secretKey);
@@ -137,28 +108,17 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
   /**
    * Returns the security level of this key.
    */
-  level(): MLDSALevel {
+  get level(): MLDSALevel {
     return this._level;
   }
 
-  /**
-   * Returns the raw key bytes.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Returns a copy of the raw key bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
-  /**
-   * Returns the size of the key in bytes.
-   */
-  size(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 

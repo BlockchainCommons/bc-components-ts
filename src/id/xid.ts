@@ -47,6 +47,7 @@ import type { SigningPublicKey } from "../signing/signing-public-key.js";
 import type { SigningPrivateKey } from "../signing/signing-private-key.js";
 import type { PublicKeys } from "../public-keys.js";
 import type { PrivateKeyBase } from "../private-key-base.js";
+import { type RandomNumberGenerator, randomBytes, secureRng } from "@blockchaincommons/rand";
 
 /**
  * XID prefix glyph for the upper-case bytewords/bytemoji identifier.
@@ -101,27 +102,8 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   /**
    * Create a new XID from data.
    */
-  static fromData(data: Uint8Array): XID {
-    return new XID(new Uint8Array(data));
-  }
-
-  /**
-   * Create a new XID from data (validates length).
-   *
-   * Returns error if the data is not the correct length.
-   */
-  static fromDataRef(data: Uint8Array): XID {
-    if (data.length !== XID_SIZE) {
-      throw ComponentsError.invalidSize(XID_SIZE, data.length);
-    }
-    return XID.fromData(data);
-  }
-
-  /**
-   * Create an XID from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): XID {
-    return XID.fromData(data);
+    return new XID(new Uint8Array(data));
   }
 
   /**
@@ -144,38 +126,16 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
    * Note: In practice, XIDs should be created from the SHA-256 hash of a
    * public signing key's CBOR encoding.
    */
-  static random(): XID {
-    const data = new Uint8Array(XID_SIZE);
-    const crypto = globalThis.crypto as Crypto | undefined;
-    if (crypto !== undefined && typeof crypto.getRandomValues === "function") {
-      crypto.getRandomValues(data);
-    } else {
-      // Fallback: fill with available random data
-      for (let i = 0; i < XID_SIZE; i++) {
-        data[i] = Math.floor(Math.random() * 256);
-      }
-    }
-    return new XID(data);
-  }
-
-  /**
-   * Create a new XID from the given public key (the "genesis key").
-   *
-   * The XID is the SHA-256 digest of the CBOR encoding of the public key.
-   * This matches Rust's `XID::new(genesis_key: impl AsRef<SigningPublicKey>)`.
-   */
-  static newFromSigningKey(signingPublicKey: SigningPublicKey): XID {
-    const keyCborData = signingPublicKey.toCbor().toData();
-    const digest = Digest.fromImage(keyCborData);
-    return XID.fromData(digest.toData());
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): XID {
+    return new XID(randomBytes(XID_SIZE, { rng }));
   }
 
   /**
    * Mirror of Rust's `From<&SigningPublicKey> for XID`.
-   * Equivalent to {@link XID.newFromSigningKey}; provided for API parity.
+   * Derived from the SHA-256 digest of the key's tagged CBOR.
    */
   static fromSigningPublicKey(signingPublicKey: SigningPublicKey): XID {
-    return XID.newFromSigningKey(signingPublicKey);
+    return XID.from(Digest.fromImage(signingPublicKey.toCbor().toData()).bytes);
   }
 
   /**
@@ -183,7 +143,7 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
    * The XID is derived from the bundle's signing public key.
    */
   static fromPublicKeys(publicKeys: PublicKeys): XID {
-    return XID.newFromSigningKey(publicKeys.signingPublicKey());
+    return XID.fromSigningPublicKey(publicKeys.signingPublicKey);
   }
 
   /**
@@ -191,7 +151,7 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
    * The XID is derived from the schnorr signing public key.
    */
   static fromPrivateKeyBase(base: PrivateKeyBase): XID {
-    return XID.newFromSigningKey(base.schnorrSigningPrivateKey().publicKey());
+    return XID.fromSigningPublicKey(base.schnorrSigningPrivateKey().publicKey());
   }
 
   /**
@@ -199,7 +159,7 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
    * The XID is derived from the corresponding public key.
    */
   static tryFromSigningPrivateKey(signingPrivateKey: SigningPrivateKey): XID {
-    return XID.newFromSigningKey(signingPrivateKey.publicKey());
+    return XID.fromSigningPublicKey(signingPrivateKey.publicKey());
   }
 
   // ============================================================================
@@ -215,28 +175,12 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
   validate(signingPublicKey: SigningPublicKey): boolean {
     const keyData = signingPublicKey.toCbor().toData();
     const digest = Digest.fromImage(keyData);
-    return this.equals(XID.fromData(digest.toData()));
+    return this.equals(XID.from(digest.bytes));
   }
 
-  /**
-   * Return the data of the XID.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the data of the XID as a byte slice.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Get a copy of the raw XID bytes.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
@@ -303,11 +247,11 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
    * raw XID data.
    *
    * Mirrors Rust's `impl ReferenceProvider for XID { fn reference(&self) ->
-   * Reference { Reference::from_data(*self.data()) } }` — note this is a
+   * Reference { Reference::from_data(*self.bytes) } }` — note this is a
    * direct wrap, not a SHA-256 hash of the XID.
    */
   reference(): Reference {
-    return Reference.fromData(this._data);
+    return Reference.from(this._data);
   }
 
   /**
@@ -338,7 +282,7 @@ export class XID implements ToCbor, ToUR, XIDProvider, ReferenceProvider {
     tags: [TAG_XID],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return XID.fromDataRef(data);
+      return XID.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

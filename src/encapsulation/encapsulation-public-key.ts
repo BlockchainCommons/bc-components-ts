@@ -103,7 +103,7 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
    * Create an EncapsulationPublicKey from raw X25519 public key bytes.
    */
   static fromX25519Data(data: Uint8Array): EncapsulationPublicKey {
-    const publicKey = X25519PublicKey.fromDataRef(data);
+    const publicKey = X25519PublicKey.from(data);
     return EncapsulationPublicKey.fromX25519PublicKey(publicKey);
   }
 
@@ -111,7 +111,7 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
    * Create an EncapsulationPublicKey from an MLKEMPublicKey.
    */
   static fromMlkem(publicKey: MLKEMPublicKey): EncapsulationPublicKey {
-    const scheme = mlkemLevelToScheme(publicKey.level());
+    const scheme = mlkemLevelToScheme(publicKey.level);
     return new EncapsulationPublicKey(scheme, undefined, publicKey);
   }
 
@@ -130,7 +130,7 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
   /**
    * Returns the encapsulation scheme.
    */
-  encapsulationScheme(): EncapsulationScheme {
+  get encapsulationScheme(): EncapsulationScheme {
     return this._scheme;
   }
 
@@ -173,29 +173,27 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
   /**
    * Returns the X25519 public key if available, or null.
    */
-  toX25519(): X25519PublicKey | null {
-    return this._x25519PublicKey ?? null;
+  asX25519(): X25519PublicKey | undefined {
+    return this._x25519PublicKey ?? undefined;
   }
 
   /**
    * Returns the MLKEM public key if available, or null.
    */
-  toMlkem(): MLKEMPublicKey | null {
-    return this._mlkemPublicKey ?? null;
+  asMlkem(): MLKEMPublicKey | undefined {
+    return this._mlkemPublicKey ?? undefined;
   }
 
-  /**
-   * Returns the raw public key data.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
       if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
-      return pk.data();
+      return pk.bytes;
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
       if (pk === undefined) throw ComponentsError.invalidData("MLKEM public key not set");
-      return pk.data();
+      return pk.bytes;
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -301,7 +299,7 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
    */
   reference(): Reference {
     const digest = Digest.fromImage(this.toCbor().toData());
-    return Reference.from(digest);
+    return Reference.fromDigest(digest);
   }
 
   // ============================================================================
@@ -312,9 +310,7 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
   static readonly codec: ComponentCodec<EncapsulationPublicKey> = defineCodec({
     tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_PUBLIC_KEY],
     decodeUntagged: (cborValue) =>
-      EncapsulationPublicKey.fromX25519PublicKey(
-        X25519PublicKey.fromDataRef(expectBytes(cborValue)),
-      ),
+      EncapsulationPublicKey.fromX25519PublicKey(X25519PublicKey.from(expectBytes(cborValue))),
     decodeTagged: (tag, content, whole) =>
       tag.value === TAG_MLKEM_PUBLIC_KEY.value
         ? EncapsulationPublicKey.fromMlkem(MLKEMPublicKey.fromCbor(whole))
@@ -342,7 +338,7 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
       if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
-      return cbor(pk.data());
+      return cbor(pk.bytes);
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPublicKey;
       if (pk === undefined) throw ComponentsError.invalidData("MLKEM public key not set");

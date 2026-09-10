@@ -60,7 +60,7 @@ describe("CBOR Interoperability", () => {
     it("should encode Schnorr private key as bare byte string (matching Rust)", () => {
       // In Rust: SigningPrivateKey::Schnorr encodes as just a byte string (not array)
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
 
       const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
@@ -78,7 +78,7 @@ describe("CBOR Interoperability", () => {
     it("should encode ECDSA private key as [1, byte_string] (matching Rust)", () => {
       // In Rust: SigningPrivateKey::ECDSA encodes as [1, private_key_bytes]
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
 
       const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
@@ -98,7 +98,7 @@ describe("CBOR Interoperability", () => {
     it("should encode Ed25519 private key as [2, byte_string] (matching Rust)", () => {
       // In Rust: SigningPrivateKey::Ed25519 encodes as [2, private_key_bytes]
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
@@ -117,8 +117,8 @@ describe("CBOR Interoperability", () => {
 
     it("should encode Sr25519 private key as [3, byte_string] (matching Rust)", () => {
       // In Rust: SigningPrivateKey::Sr25519 encodes as [3, seed_bytes]
-      const sr25519Key = Sr25519PrivateKey.fromSeed(hexToBytes(TEST_PRIVATE_KEY_HEX));
-      const privateKey = SigningPrivateKey.newSr25519(sr25519Key);
+      const sr25519Key = Sr25519PrivateKey.from(hexToBytes(TEST_PRIVATE_KEY_HEX));
+      const privateKey = SigningPrivateKey.fromSr25519(sr25519Key);
 
       const taggedCbor = privateKey.toCbor().toData();
       const decoded = decodeCbor(taggedCbor);
@@ -140,7 +140,7 @@ describe("CBOR Interoperability", () => {
     it("should encode Schnorr public key as bare byte string (matching Rust)", () => {
       // Derive public key from private key
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
       const publicKey = privateKey.publicKey();
 
       const taggedCbor = publicKey.toCbor().toData();
@@ -159,7 +159,7 @@ describe("CBOR Interoperability", () => {
 
     it("should encode ECDSA public key as [1, byte_string] (matching Rust)", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
       const publicKey = privateKey.publicKey();
 
       const taggedCbor = publicKey.toCbor().toData();
@@ -180,7 +180,7 @@ describe("CBOR Interoperability", () => {
 
     it("should encode Ed25519 public key as [2, byte_string] (matching Rust)", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
       const taggedCbor = publicKey.toCbor().toData();
@@ -207,7 +207,7 @@ describe("CBOR Interoperability", () => {
        * 40020([1, h'1458d0f3d97e25109b38fd965782b43213134d02b01388a14e74ebf21e5dea4866f25a23866de9ecf0f9b72404d8192ed71fba4dc355cd89b47213e855cf6d23'])
        */
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
       const signature = privateKey.sign(TEST_MESSAGE);
 
       // Verify the CBOR structure
@@ -233,7 +233,7 @@ describe("CBOR Interoperability", () => {
 
     it("should encode Schnorr signature as bare byte_string (matching Rust)", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
       const signature = privateKey.sign(TEST_MESSAGE);
 
       const taggedCbor = signature.toCbor().toData();
@@ -254,7 +254,7 @@ describe("CBOR Interoperability", () => {
        * 40020(h'9d113392074dd52dfb7f309afb3698a1993cd14d32bc27c00070407092c9ec8c096643b5b1b535bb5277c44f256441ac660cd600739aa910b150d4f94757cf95')
        */
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
 
       // Use fake RNG for deterministic signature
       const fakeRng = SeededRng.forTesting();
@@ -274,7 +274,7 @@ describe("CBOR Interoperability", () => {
 
     it("should encode Ed25519 signature as [2, byte_string] (matching Rust)", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
       const taggedCbor = signature.toCbor().toData();
@@ -293,8 +293,8 @@ describe("CBOR Interoperability", () => {
     });
 
     it("should encode Sr25519 signature as [3, byte_string] (matching Rust)", () => {
-      const sr25519Key = Sr25519PrivateKey.fromSeed(hexToBytes(TEST_PRIVATE_KEY_HEX));
-      const privateKey = SigningPrivateKey.newSr25519(sr25519Key);
+      const sr25519Key = Sr25519PrivateKey.from(hexToBytes(TEST_PRIVATE_KEY_HEX));
+      const privateKey = SigningPrivateKey.fromSr25519(sr25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
       const taggedCbor = signature.toCbor().toData();
@@ -316,57 +316,57 @@ describe("CBOR Interoperability", () => {
   describe("CBOR roundtrip", () => {
     it("should roundtrip Schnorr private key through CBOR", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const original = SigningPrivateKey.newSchnorr(ecKey);
+      const original = SigningPrivateKey.fromSchnorr(ecKey);
 
       const cborData = original.toCbor().toData();
       const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
-      expect(restored.scheme()).toBe(original.scheme());
+      expect(restored.scheme).toBe(original.scheme);
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should roundtrip ECDSA private key through CBOR", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const original = SigningPrivateKey.newEcdsa(ecKey);
+      const original = SigningPrivateKey.fromEcdsa(ecKey);
 
       const cborData = original.toCbor().toData();
       const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
-      expect(restored.scheme()).toBe(original.scheme());
+      expect(restored.scheme).toBe(original.scheme);
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should roundtrip Ed25519 private key through CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const original = SigningPrivateKey.newEd25519(ed25519Key);
+      const original = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const cborData = original.toCbor().toData();
       const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
-      expect(restored.scheme()).toBe(original.scheme());
+      expect(restored.scheme).toBe(original.scheme);
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should roundtrip Sr25519 private key through CBOR", () => {
-      const sr25519Key = Sr25519PrivateKey.fromSeed(hexToBytes(TEST_PRIVATE_KEY_HEX));
-      const original = SigningPrivateKey.newSr25519(sr25519Key);
+      const sr25519Key = Sr25519PrivateKey.from(hexToBytes(TEST_PRIVATE_KEY_HEX));
+      const original = SigningPrivateKey.fromSr25519(sr25519Key);
 
       const cborData = original.toCbor().toData();
       const restored = SigningPrivateKey.fromCbor(decodeCbor(cborData));
 
-      expect(restored.scheme()).toBe(original.scheme());
+      expect(restored.scheme).toBe(original.scheme);
       expect(restored.equals(original)).toBe(true);
     });
 
     it("should roundtrip Schnorr signature through CBOR", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
       const original = privateKey.sign(TEST_MESSAGE);
 
       const cborData = original.toCbor().toData();
       const restored = Signature.fromCbor(decodeCbor(cborData));
 
-      expect(restored.scheme()).toBe(original.scheme());
+      expect(restored.scheme).toBe(original.scheme);
       expect(restored.equals(original)).toBe(true);
 
       // Verify the restored signature still works
@@ -376,13 +376,13 @@ describe("CBOR Interoperability", () => {
 
     it("should roundtrip ECDSA signature through CBOR", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
       const original = privateKey.sign(TEST_MESSAGE);
 
       const cborData = original.toCbor().toData();
       const restored = Signature.fromCbor(decodeCbor(cborData));
 
-      expect(restored.scheme()).toBe(original.scheme());
+      expect(restored.scheme).toBe(original.scheme);
       expect(restored.equals(original)).toBe(true);
 
       // Verify the restored signature still works
@@ -394,7 +394,7 @@ describe("CBOR Interoperability", () => {
   describe("ReferenceProvider", () => {
     it("SigningPrivateKey should provide reference", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
 
       const ref = privateKey.reference();
       expect(ref.refHexShort()).toBeTruthy();
@@ -403,7 +403,7 @@ describe("CBOR Interoperability", () => {
 
     it("SigningPublicKey should provide reference", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
       const publicKey = privateKey.publicKey();
 
       const ref = publicKey.reference();
@@ -429,7 +429,7 @@ describe("CBOR Interoperability", () => {
     });
 
     it("PrivateKeys should provide reference", () => {
-      const privateKeys = PrivateKeys.new();
+      const privateKeys = PrivateKeys.random();
 
       const ref = privateKeys.reference();
       expect(ref.refHexShort()).toBeTruthy();
@@ -437,7 +437,7 @@ describe("CBOR Interoperability", () => {
     });
 
     it("PublicKeys should provide reference", () => {
-      const privateKeys = PrivateKeys.new();
+      const privateKeys = PrivateKeys.random();
       const publicKeys = privateKeys.publicKeys();
 
       const ref = publicKeys.reference();
@@ -447,8 +447,8 @@ describe("CBOR Interoperability", () => {
 
     it("reference should be deterministic from CBOR", () => {
       const ecKey = ECPrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey1 = SigningPrivateKey.newSchnorr(ecKey);
-      const privateKey2 = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey1 = SigningPrivateKey.fromSchnorr(ecKey);
+      const privateKey2 = SigningPrivateKey.fromSchnorr(ecKey);
 
       const ref1 = privateKey1.reference();
       const ref2 = privateKey2.reference();
@@ -462,7 +462,7 @@ describe("CBOR Interoperability", () => {
     it("default signature scheme should be Schnorr (matching Rust)", () => {
       // Rust: impl Default for SignatureScheme { fn default() -> Self { Self::Schnorr } }
       const [privateKey] = createKeypair(SignatureScheme.Schnorr);
-      expect(privateKey.scheme()).toBe(SignatureScheme.Schnorr);
+      expect(privateKey.scheme).toBe(SignatureScheme.Schnorr);
     });
   });
 });

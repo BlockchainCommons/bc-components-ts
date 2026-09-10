@@ -46,7 +46,7 @@ export class URI implements ToCbor, ToUR {
   /**
    * Creates a new `URI` from a string with validation.
    */
-  static new(uri: string): URI {
+  static from(uri: string): URI {
     // Validate using URL API
     try {
       new URL(uri);
@@ -54,20 +54,6 @@ export class URI implements ToCbor, ToUR {
     } catch {
       throw ComponentsError.invalidData("URI: invalid URI format");
     }
-  }
-
-  /**
-   * Create a URI from string (legacy alias).
-   */
-  static from(uri: string): URI {
-    return URI.new(uri);
-  }
-
-  /**
-   * Parse a URI string (alias for new()).
-   */
-  static parse(uriString: string): URI {
-    return URI.new(uriString);
   }
 
   // ============================================================================
@@ -98,14 +84,14 @@ export class URI implements ToCbor, ToUR {
   /**
    * Get the raw URI string.
    */
-  getRaw(): string {
+  get raw(): string {
     return this._uri;
   }
 
   /**
    * Get scheme (e.g., "http", "https", "urn").
    */
-  scheme(): string | null {
+  get scheme(): string | null {
     const match = /^([a-z][a-z0-9+.-]*):\/?\/?/i.exec(this._uri);
     return match !== null ? match[1] : null;
   }
@@ -162,7 +148,7 @@ export class URI implements ToCbor, ToUR {
   /**
    * Get the length of the URI string.
    */
-  length(): number {
+  get length(): number {
     return this._uri.length;
   }
 
@@ -175,7 +161,7 @@ export class URI implements ToCbor, ToUR {
     tags: [TAG_URI],
     decodeUntagged: (cborValue) => {
       const text = expectText(cborValue);
-      return URI.new(text);
+      return URI.from(text);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

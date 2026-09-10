@@ -91,22 +91,22 @@ const RUST_DSA_PUBLIC_OPENSSH =
 describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
   describe("Ed25519 — byte-identical keygen + sign/verify round-trip", () => {
     it("derives the Rust Ed25519 fixture byte-for-byte from SEED", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const privateKey = base.sshSigningPrivateKey({ kind: "ed25519" }, RUST_COMMENT);
 
       expect(privateKey).toBeInstanceOf(SigningPrivateKey);
-      expect(privateKey.scheme()).toBe(SignatureScheme.SshEd25519);
+      expect(privateKey.scheme).toBe(SignatureScheme.SshEd25519);
 
       // Byte-identical with Rust's `to_openssh(LineEnding::LF)`.
       expect(privateKey.toSshOpenssh()).toBe(RUST_ED25519_PRIVATE_PEM);
 
       const publicKey = privateKey.publicKey();
-      expect(publicKey.scheme()).toBe(SignatureScheme.SshEd25519);
+      expect(publicKey.scheme).toBe(SignatureScheme.SshEd25519);
       expect(publicKey.toSshOpenssh()).toBe(RUST_ED25519_PUBLIC_OPENSSH);
     });
 
     it("signs and verifies via SignatureScheme dispatch", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const privateKey = base.sshSigningPrivateKey({ kind: "ed25519" }, RUST_COMMENT);
       const publicKey = privateKey.publicKey();
       const sig = privateKey.signWithOptions(RUST_MESSAGE, {
@@ -127,7 +127,7 @@ describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
       const sshKey = SSHPrivateKey.fromOpenssh(RUST_DSA_PRIVATE_PEM);
       expect(sshKey.toOpenssh()).toBe(RUST_DSA_PRIVATE_PEM);
       const privateKey = SigningPrivateKey.fromSsh(sshKey);
-      expect(privateKey.scheme()).toBe(SignatureScheme.SshDsa);
+      expect(privateKey.scheme).toBe(SignatureScheme.SshDsa);
       expect(privateKey.toSshOpenssh()).toBe(RUST_DSA_PRIVATE_PEM);
     });
 
@@ -135,7 +135,7 @@ describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
       const sshKey = SSHPrivateKey.fromOpenssh(RUST_DSA_PRIVATE_PEM);
       const privateKey = SigningPrivateKey.fromSsh(sshKey);
       const publicKey = privateKey.publicKey();
-      expect(publicKey.scheme()).toBe(SignatureScheme.SshDsa);
+      expect(publicKey.scheme).toBe(SignatureScheme.SshDsa);
       expect(publicKey.toSshOpenssh()).toBe(RUST_DSA_PUBLIC_OPENSSH);
     });
 
@@ -154,19 +154,19 @@ describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
 
   describe("ECDSA P-256 — keygen + sign/verify (no Rust fixture: Rust test is `#[ignore]`'d)", () => {
     it("derives a P-256 SSH key from SEED and round-trips through OpenSSH", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const privateKey = base.sshSigningPrivateKey(
         { kind: "ecdsa", curve: "nistp256" },
         RUST_COMMENT,
       );
-      expect(privateKey.scheme()).toBe(SignatureScheme.SshEcdsaP256);
+      expect(privateKey.scheme).toBe(SignatureScheme.SshEcdsaP256);
       const pem = privateKey.toSshOpenssh();
       const reloaded = SigningPrivateKey.fromSsh(SSHPrivateKey.fromOpenssh(pem));
       expect(reloaded.toSshOpenssh()).toBe(pem);
     });
 
     it("signs and verifies via SignatureScheme dispatch", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const privateKey = base.sshSigningPrivateKey(
         { kind: "ecdsa", curve: "nistp256" },
         RUST_COMMENT,
@@ -183,19 +183,19 @@ describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
 
   describe("ECDSA P-384 — keygen + sign/verify (no Rust fixture: Rust test is `#[ignore]`'d)", () => {
     it("derives a P-384 SSH key from SEED and round-trips through OpenSSH", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const privateKey = base.sshSigningPrivateKey(
         { kind: "ecdsa", curve: "nistp384" },
         RUST_COMMENT,
       );
-      expect(privateKey.scheme()).toBe(SignatureScheme.SshEcdsaP384);
+      expect(privateKey.scheme).toBe(SignatureScheme.SshEcdsaP384);
       const pem = privateKey.toSshOpenssh();
       const reloaded = SigningPrivateKey.fromSsh(SSHPrivateKey.fromOpenssh(pem));
       expect(reloaded.toSshOpenssh()).toBe(pem);
     });
 
     it("signs and verifies via SignatureScheme dispatch", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const privateKey = base.sshSigningPrivateKey(
         { kind: "ecdsa", curve: "nistp384" },
         RUST_COMMENT,
@@ -212,21 +212,21 @@ describe("SSH fixture parity with Rust `bc-components-rust v0.31.1`", () => {
 
   describe("CBOR round-trip for SSH SigningPrivateKey / SigningPublicKey / Signature", () => {
     it("Ed25519: SigningPrivateKey CBOR round-trip", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const sk = base.sshSigningPrivateKey({ kind: "ed25519" }, RUST_COMMENT);
       const data = sk.toCbor().toData();
       const decoded = SigningPrivateKey.fromCbor(decodeCbor(data));
-      expect(decoded.scheme()).toBe(SignatureScheme.SshEd25519);
+      expect(decoded.scheme).toBe(SignatureScheme.SshEd25519);
       expect(decoded.toSshOpenssh()).toBe(sk.toSshOpenssh());
     });
 
     it("Ed25519: SigningPublicKey CBOR round-trip", () => {
-      const base = PrivateKeyBase.fromData(RUST_SEED);
+      const base = PrivateKeyBase.from(RUST_SEED);
       const sk = base.sshSigningPrivateKey({ kind: "ed25519" }, RUST_COMMENT);
       const pk = sk.publicKey();
       const data = pk.toCbor().toData();
       const decoded = SigningPublicKey.fromCbor(decodeCbor(data));
-      expect(decoded.scheme()).toBe(SignatureScheme.SshEd25519);
+      expect(decoded.scheme).toBe(SignatureScheme.SshEd25519);
       expect(decoded.toSshOpenssh()).toBe(pk.toSshOpenssh());
     });
   });

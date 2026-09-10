@@ -17,17 +17,12 @@ export declare class Argon2idParams implements KeyDerivation {
     static readonly INDEX: KeyDerivationMethod;
     private readonly _salt;
     private constructor();
-    /**
-     * Create new Argon2id parameters with default settings.
-     * Uses a random 16-byte salt.
-     */
-    static new(): Argon2idParams;
-    /**
-     * Create Argon2id parameters with a custom salt.
-     */
-    static newOpt(salt: Salt): Argon2idParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt }?: {
+        salt?: Salt;
+    }): Argon2idParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -74,31 +69,13 @@ declare class AuthenticationTag {
     /**
      * Restore an AuthenticationTag from a fixed-size array of bytes.
      */
-    static fromData(data: Uint8Array): AuthenticationTag;
-    /**
-     * Restore an AuthenticationTag from a reference to an array of bytes.
-     */
-    static fromDataRef(data: Uint8Array): AuthenticationTag;
-    /**
-     * Create an AuthenticationTag from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): AuthenticationTag;
     /**
      * Create an AuthenticationTag from hex string.
      */
     static fromHex(hex: string): AuthenticationTag;
-    /**
-     * Get a reference to the fixed-size array of bytes.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the reference as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw tag bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
      */
@@ -174,19 +151,12 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
     static readonly DIGEST_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Get the digest data.
-     */
-    data(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Create a Digest from a 32-byte array.
      */
-    static fromData(data: Uint8Array): Digest;
-    /**
-     * Create a Digest from data, validating the length.
-     * Alias for fromData for compatibility with Rust API.
-     */
-    static fromDataRef(data: Uint8Array): Digest;
+    static from(data: Uint8Array): Digest;
     /**
      * Create a Digest from hex string.
      *
@@ -221,19 +191,7 @@ declare class Digest implements DigestProvider, ToCbor, ToUR {
      */
     static hash(data: Uint8Array): Digest;
     /**
-     * Get the raw digest bytes as a copy.
-     */
-    toData(): Uint8Array;
-    /**
-     * Get a reference to the raw digest bytes.
-     */
-    asBytes(): Uint8Array;
-    /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -338,15 +296,15 @@ export declare class EncryptedKey implements ToCbor, ToUR {
     /**
      * Returns the encrypted message.
      */
-    encryptedMessage(): EncryptedMessage;
+    get encryptedMessage(): EncryptedMessage;
     /**
      * Returns the key derivation parameters.
      */
-    params(): KeyDerivationParams;
+    get params(): KeyDerivationParams;
     /**
      * Returns the key derivation method.
      */
-    method(): KeyDerivationMethod;
+    get method(): KeyDerivationMethod;
     /**
      * Check if this uses a password-based key derivation method.
      */
@@ -397,30 +355,29 @@ declare class EncryptedMessage implements ToCbor, ToUR {
     private readonly _nonce;
     private readonly _auth;
     private constructor();
-    /**
-     * Restores an EncryptedMessage from its components.
-     */
-    static new(ciphertext: Uint8Array, aad: Uint8Array, nonce: Nonce, auth: Uint8Array | AuthenticationTag): EncryptedMessage;
-    /**
-     * Create an EncryptedMessage from components (legacy alias).
-     */
-    static from(nonce: Nonce, ciphertext: Uint8Array, tag: AuthenticationTag, aad?: Uint8Array): EncryptedMessage;
+    /** Assemble a message from its parts (no encryption happens here). */
+    static from({ ciphertext, nonce, authTag, aad }: {
+        ciphertext: Uint8Array;
+        nonce: Nonce;
+        authTag: AuthenticationTag | Uint8Array;
+        aad?: Uint8Array;
+    }): EncryptedMessage;
     /**
      * Returns a reference to the ciphertext data.
      */
-    ciphertext(): Uint8Array;
+    get ciphertext(): Uint8Array;
     /**
      * Returns a reference to the additional authenticated data (AAD).
      */
-    aad(): Uint8Array;
+    get aad(): Uint8Array;
     /**
      * Returns a reference to the nonce value used for encryption.
      */
-    nonce(): Nonce;
+    get nonce(): Nonce;
     /**
      * Returns a reference to the authentication tag value used for encryption.
      */
-    authenticationTag(): AuthenticationTag;
+    get authenticationTag(): AuthenticationTag;
     /**
      * Returns a CBOR representation in the AAD field, if it exists.
      */
@@ -493,19 +450,15 @@ export declare class HKDFParams implements KeyDerivation {
     private readonly _salt;
     private readonly _hashType;
     private constructor();
-    /**
-     * Create new HKDF parameters with default settings.
-     * Uses a random 16-byte salt and SHA-256.
-     */
-    static new(): HKDFParams;
-    /**
-     * Create HKDF parameters with custom settings.
-     */
-    static newOpt(salt: Salt, hashType: HashType): HKDFParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt, hashType }?: {
+        salt?: Salt;
+        hashType?: HashType;
+    }): HKDFParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the hash type. */
-    hashType(): HashType;
+    get hashType(): HashType;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -563,24 +516,14 @@ export declare class HKDFRng implements RandomNumberGenerator {
     private readonly _pageLength;
     /** Current page index */
     private _pageIndex;
-    private constructor();
     /**
-     * Creates a new `HKDFRng` with a custom page length.
-     *
-     * @param keyMaterial - The seed material to derive random numbers from
-     * @param salt - A salt value to mix with the key material
-     * @param pageLength - The number of bytes to generate in each HKDF call
-     * @returns A new `HKDFRng` instance configured with the specified parameters
+     * @param keyMaterial - The input key material for HKDF
+     * @param salt - The salt string; page `i` uses `"<salt>-<i>"`
+     * @param pageLength - Bytes of output derived per page (32 by default)
      */
-    static newWithPageLength(keyMaterial: Uint8Array, salt: string, pageLength: number): HKDFRng;
-    /**
-     * Creates a new `HKDFRng` with the default page length of 32 bytes.
-     *
-     * @param keyMaterial - The seed material to derive random numbers from
-     * @param salt - A salt value to mix with the key material
-     * @returns A new `HKDFRng` instance configured with the specified key material and salt
-     */
-    static new(keyMaterial: Uint8Array, salt: string): HKDFRng;
+    constructor(keyMaterial: Uint8Array, salt: string, { pageLength }?: {
+        pageLength?: number;
+    });
     /**
      * Refills the internal buffer with new deterministic random bytes.
      *
@@ -638,22 +581,10 @@ export declare class HKDFRng implements RandomNumberGenerator {
      * @param data - The buffer to fill with random bytes
      */
     fillRandomData(data: Uint8Array): void;
-    /**
-     * Returns the key material (for testing purposes).
-     */
-    getKeyMaterial(): Uint8Array;
-    /**
-     * Returns the salt (for testing purposes).
-     */
-    getSalt(): string;
-    /**
-     * Returns the page length (for testing purposes).
-     */
-    getPageLength(): number;
-    /**
-     * Returns the current page index (for testing purposes).
-     */
-    getPageIndex(): number;
+    get keyMaterial(): Uint8Array;
+    get salt(): string;
+    get pageLength(): number;
+    get pageIndex(): number;
 }
 
 /**
@@ -806,24 +737,12 @@ declare class Nonce implements ToCbor, ToUR {
     static readonly NONCE_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random nonce.
-     */
-    static new(): Nonce;
-    /**
-     * Create a new random nonce (alias for compatibility).
-     */
-    static random(): Nonce;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Nonce;
     /**
      * Restores a nonce from data.
-     */
-    static fromData(data: Uint8Array): Nonce;
-    /**
-     * Restores a nonce from data (validates length).
-     */
-    static fromDataRef(data: Uint8Array): Nonce;
-    /**
-     * Create a Nonce from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): Nonce;
     /**
@@ -832,28 +751,10 @@ declare class Nonce implements ToCbor, ToUR {
      * @throws Error if the string is not exactly 24 hexadecimal digits.
      */
     static fromHex(hex: string): Nonce;
-    /**
-     * Generate a random nonce using provided RNG.
-     */
-    static randomUsing(rng: RandomNumberGenerator): Nonce;
-    /**
-     * Get the data of the nonce.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the nonce as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw nonce bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * The data as a hexadecimal string.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -892,21 +793,18 @@ export declare class PBKDF2Params implements KeyDerivation {
     private readonly _iterations;
     private readonly _hashType;
     private constructor();
-    /**
-     * Create new PBKDF2 parameters with default settings.
-     * Uses a random 16-byte salt, 100,000 iterations, and SHA-256.
-     */
-    static new(): PBKDF2Params;
-    /**
-     * Create PBKDF2 parameters with custom settings.
-     */
-    static newOpt(salt: Salt, iterations: number, hashType: HashType): PBKDF2Params;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt, iterations, hashType }?: {
+        salt?: Salt;
+        iterations?: number;
+        hashType?: HashType;
+    }): PBKDF2Params;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the number of iterations. */
-    iterations(): number;
+    get iterations(): number;
     /** Returns the hash type. */
-    hashType(): HashType;
+    get hashType(): HashType;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -953,87 +851,34 @@ declare class Salt implements ToCbor, ToUR {
      * Create a new salt from data.
      * Note: Does not validate minimum size to allow for CBOR deserialization.
      */
-    static fromData(data: Uint8Array): Salt;
-    /**
-     * Create a Salt from raw bytes (legacy alias).
-     */
     static from(data: Uint8Array): Salt;
     /**
      * Create a new salt from the given hexadecimal string.
      */
     static fromHex(hex: string): Salt;
-    /**
-     * Create a specific number of bytes of salt.
-     *
-     * @throws Error if the number of bytes is less than 8.
-     */
-    static newWithLen(count: number): Salt;
-    /**
-     * Create a specific number of bytes of salt using provided RNG.
-     *
-     * @throws Error if the number of bytes is less than 8.
-     */
-    static newWithLenUsing(count: number, rng: RandomNumberGenerator): Salt;
-    /**
-     * Create a number of bytes of salt chosen randomly from the given range.
-     *
-     * @throws Error if the minimum number of bytes is less than 8.
-     */
-    static newInRange(minSize: number, maxSize: number): Salt;
-    /**
-     * Create a number of bytes of salt chosen randomly from the given range using provided RNG.
-     *
-     * @throws Error if the minimum number of bytes is less than 8.
-     */
-    static newInRangeUsing(minSize: number, maxSize: number, rng: RandomNumberGenerator): Salt;
-    /**
-     * Create a number of bytes of salt generally proportionate to the size of
-     * the object being salted.
-     */
-    static newForSize(size: number): Salt;
-    /**
-     * Create a number of bytes of salt generally proportionate to the size of
-     * the object being salted using provided RNG.
-     */
-    static newForSizeUsing(size: number, rng: RandomNumberGenerator): Salt;
-    /**
-     * Generate a random salt with specified size (legacy alias for newWithLen).
-     */
-    static random(size?: number): Salt;
-    /**
-     * Generate a random salt with specified size using provided RNG (legacy alias).
-     */
-    static randomUsing(rng: RandomNumberGenerator, size?: number): Salt;
-    /**
-     * Generate a proportionally-sized salt (legacy alias for newForSize).
-     */
-    static proportional(dataSize: number): Salt;
-    /**
-     * Return the length of the salt.
-     */
-    len(): number;
-    /**
-     * Return the length of the salt (alias for len).
-     */
-    size(): number;
+    /** A random salt of `length` bytes (16 by default); pass `rng` to make it deterministic. */
+    static random({ length, rng }?: {
+        length?: number;
+        rng?: RandomNumberGenerator;
+    }): Salt;
+    /** A random salt of a random length in `[minSize, maxSize]`. */
+    static randomInRange(minSize: number, maxSize: number, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Salt;
+    /** A random salt sized for a payload of `size` bytes (5–25% of it, at least the minimum). */
+    static forSize(size: number, { rng }?: {
+        rng?: RandomNumberGenerator;
+    }): Salt;
+    /** Number of bytes. */
+    get byteLength(): number;
     /**
      * Return true if the salt is empty (this is not recommended).
      */
     isEmpty(): boolean;
-    /**
-     * Return the data of the salt.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get the raw salt bytes as a copy.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * The data as a hexadecimal string.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**
@@ -1081,23 +926,21 @@ export declare class ScryptParams implements KeyDerivation {
     private readonly _r;
     private readonly _p;
     private constructor();
-    /**
-     * Create new Scrypt parameters with default settings.
-     * Uses a random 16-byte salt, log_n=15, r=8, p=1.
-     */
-    static new(): ScryptParams;
-    /**
-     * Create Scrypt parameters with custom settings.
-     */
-    static newOpt(salt: Salt, logN: number, r: number, p: number): ScryptParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ salt, logN, r, p }?: {
+        salt?: Salt;
+        logN?: number;
+        r?: number;
+        p?: number;
+    }): ScryptParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the log_n parameter. */
-    logN(): number;
+    get logN(): number;
     /** Returns the r parameter (block size). */
-    r(): number;
+    get r(): number;
     /** Returns the p parameter (parallelism). */
-    p(): number;
+    get p(): number;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -1164,23 +1007,15 @@ export declare class SSHAgentParams implements KeyDerivation {
     private readonly _salt;
     private readonly _id;
     private constructor();
-    /**
-     * Create new SSH agent parameters with default salt and specified key ID.
-     *
-     * @param id - The SSH key identity (usually the key comment or public key fingerprint)
-     */
-    static new(id: string): SSHAgentParams;
-    /**
-     * Create SSH agent parameters with custom salt and key ID.
-     *
-     * @param salt - The salt for key derivation
-     * @param id - The SSH key identity
-     */
-    static newOpt(salt: Salt, id: string): SSHAgentParams;
+    /** Parameters with a fresh random salt unless one is given. */
+    static from({ id, salt }: {
+        id: string;
+        salt?: Salt;
+    }): SSHAgentParams;
     /** Returns the salt. */
-    salt(): Salt;
+    get salt(): Salt;
     /** Returns the SSH key identity. */
-    id(): string;
+    get id(): string;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
@@ -1237,52 +1072,22 @@ declare class SymmetricKey implements ToCbor {
     static readonly SYMMETRIC_KEY_SIZE: number;
     private readonly _data;
     private constructor();
-    /**
-     * Create a new random symmetric key.
-     */
-    static new(): SymmetricKey;
+    /** A fresh random value; pass `rng` to make it deterministic. */
+    static random({ rng }?: {
+        rng?: RandomNumberGenerator;
+    }): SymmetricKey;
     /**
      * Create a new symmetric key from data.
-     */
-    static fromData(data: Uint8Array): SymmetricKey;
-    /**
-     * Create a new symmetric key from data (validates length).
-     */
-    static fromDataRef(data: Uint8Array): SymmetricKey;
-    /**
-     * Create a SymmetricKey from raw bytes (legacy alias).
      */
     static from(data: Uint8Array): SymmetricKey;
     /**
      * Create a SymmetricKey from hex string.
      */
     static fromHex(hex: string): SymmetricKey;
-    /**
-     * Generate a random symmetric key.
-     */
-    static random(): SymmetricKey;
-    /**
-     * Generate a random symmetric key using provided RNG.
-     */
-    static randomUsing(rng: RandomNumberGenerator): SymmetricKey;
-    /**
-     * Get the data of the symmetric key.
-     */
-    data(): Uint8Array;
-    /**
-     * Get the data of the symmetric key as a byte slice.
-     */
-    asBytes(): Uint8Array;
-    /**
-     * Get a copy of the raw key bytes.
-     */
-    toData(): Uint8Array;
+    /** The bytes (a view; do not mutate). */
+    get bytes(): Uint8Array;
     /**
      * Get hex string representation.
-     */
-    hex(): string;
-    /**
-     * Get hex string representation (alias for hex()).
      */
     toHex(): string;
     /**

@@ -42,18 +42,8 @@ export class Ed25519PrivateKey {
     return new Ed25519PrivateKey(hexToBytes(hex));
   }
 
-  /**
-   * Generate a random Ed25519PrivateKey
-   */
-  static random(): Ed25519PrivateKey {
-    const rng = secureRng();
-    return new Ed25519PrivateKey(randomBytes(ED25519_PRIVATE_KEY_SIZE, { rng: rng }));
-  }
-
-  /**
-   * Generate a random Ed25519PrivateKey using provided RNG
-   */
-  static randomUsing(rng: RandomNumberGenerator): Ed25519PrivateKey {
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): Ed25519PrivateKey {
     return new Ed25519PrivateKey(randomBytes(ED25519_PRIVATE_KEY_SIZE, { rng: rng }));
   }
 
@@ -66,23 +56,13 @@ export class Ed25519PrivateKey {
     return new Ed25519PrivateKey(deriveSigningPrivateKey(keyMaterial));
   }
 
-  /**
-   * Get the raw seed bytes (32 bytes).
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this.seed);
   }
 
   /** Alias of {@link Ed25519PrivateKey.data}. */
-  asBytes(): Uint8Array {
-    return this.data();
-  }
-
   /** Backwards-compatible alias of {@link Ed25519PrivateKey.data}. */
-  toData(): Uint8Array {
-    return this.data();
-  }
-
   /**
    * Get hex string representation of the seed
    */

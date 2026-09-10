@@ -55,18 +55,8 @@ export class Sr25519PrivateKey {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Create a new random Sr25519 private key.
-   */
-  static random(): Sr25519PrivateKey {
-    const rng = secureRng();
-    return Sr25519PrivateKey.randomUsing(rng);
-  }
-
-  /**
-   * Create a new random Sr25519 private key using the provided RNG.
-   */
-  static randomUsing(rng: RandomNumberGenerator): Sr25519PrivateKey {
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): Sr25519PrivateKey {
     const seed = randomBytes(SR25519_PRIVATE_KEY_SIZE, { rng: rng });
     return new Sr25519PrivateKey(seed);
   }
@@ -74,16 +64,8 @@ export class Sr25519PrivateKey {
   /**
    * Create an Sr25519 private key from a 32-byte seed.
    */
-  static fromSeed(seed: Uint8Array): Sr25519PrivateKey {
+  static from(seed: Uint8Array): Sr25519PrivateKey {
     return new Sr25519PrivateKey(seed);
-  }
-
-  /**
-   * Create an Sr25519 private key from raw data.
-   * Alias for fromSeed.
-   */
-  static from(data: Uint8Array): Sr25519PrivateKey {
-    return Sr25519PrivateKey.fromSeed(data);
   }
 
   /**
@@ -95,7 +77,7 @@ export class Sr25519PrivateKey {
       throw ComponentsError.invalidData("Invalid hex string");
     }
     const data = new Uint8Array(matches.map((byte) => parseInt(byte, 16)));
-    return Sr25519PrivateKey.fromSeed(data);
+    return Sr25519PrivateKey.from(data);
   }
 
   /**
@@ -110,44 +92,21 @@ export class Sr25519PrivateKey {
     return new Sr25519PrivateKey(seed);
   }
 
-  /**
-   * Generate a keypair and return both private and public keys.
-   *
-   * @returns Tuple of [privateKey, publicKey]
-   */
-  static keypair(): [Sr25519PrivateKey, Sr25519PublicKey] {
-    const privateKey = Sr25519PrivateKey.random();
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
-  }
-
-  /**
-   * Generate a keypair using the provided RNG.
-   *
-   * @param rng - Random number generator
-   * @returns Tuple of [privateKey, publicKey]
-   */
-  static keypairUsing(rng: RandomNumberGenerator): [Sr25519PrivateKey, Sr25519PublicKey] {
-    const privateKey = Sr25519PrivateKey.randomUsing(rng);
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
+  /** A fresh private key and its public key. */
+  static keypair({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): [
+    Sr25519PrivateKey,
+    Sr25519PublicKey,
+  ] {
+    const privateKey = Sr25519PrivateKey.random({ rng });
+    return [privateKey, privateKey.publicKey()];
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Returns the raw seed bytes.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._seed);
-  }
-
-  /**
-   * Returns the raw seed bytes (alias for toData).
-   */
-  asBytes(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._seed;
   }
 

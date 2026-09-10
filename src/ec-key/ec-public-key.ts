@@ -71,65 +71,31 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
   /**
    * Restore an ECPublicKey from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): ECPublicKey {
-    return new ECPublicKey(new Uint8Array(data));
-  }
-
-  /**
-   * Restore an ECPublicKey from a reference to an array of bytes.
-   * Validates the length.
-   */
-  static fromDataRef(data: Uint8Array): ECPublicKey {
-    if (data.length !== ECDSA_PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ECDSA_PUBLIC_KEY_SIZE, data.length);
-    }
-    return ECPublicKey.fromData(data);
-  }
-
-  /**
-   * Create an ECPublicKey from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): ECPublicKey {
-    return ECPublicKey.fromData(data);
+    return new ECPublicKey(new Uint8Array(data));
   }
 
   /**
    * Restore an ECPublicKey from a hex string.
    */
   static fromHex(hex: string): ECPublicKey {
-    return ECPublicKey.fromData(hexToBytes(hex));
+    return ECPublicKey.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get a reference to the fixed-size array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the raw public key bytes (copy).
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -154,7 +120,7 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
    */
   uncompressedPublicKey(): ECUncompressedPublicKey {
     const uncompressed = ecdsa.decompressPublicKey(this._data);
-    return ECUncompressedPublicKey.fromData(uncompressed);
+    return ECUncompressedPublicKey.from(uncompressed);
   }
 
   /**
@@ -215,7 +181,7 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
         throw ComponentsError.invalidData("ECPublicKey CBOR must have key 3 (data)");
       }
 
-      return ECPublicKey.fromDataRef(keyData);
+      return ECPublicKey.from(keyData);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

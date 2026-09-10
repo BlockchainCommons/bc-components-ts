@@ -54,45 +54,18 @@ export class X25519PrivateKey implements ToCbor, ToUR {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Generate a new random X25519PrivateKey.
-   */
-  static new(): X25519PrivateKey {
-    return X25519PrivateKey.random();
-  }
-
-  /**
-   * Generate a new random X25519PrivateKey.
-   */
-  static random(): X25519PrivateKey {
-    const rng = secureRng();
-    return X25519PrivateKey.newUsing(rng);
-  }
-
-  /**
-   * Generate a new random X25519PrivateKey using provided RNG.
-   */
-  static newUsing(rng: RandomNumberGenerator): X25519PrivateKey {
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): X25519PrivateKey {
     return new X25519PrivateKey(randomBytes(X25519_PRIVATE_KEY_SIZE, { rng: rng }));
   }
 
-  /**
-   * Generate a new random X25519PrivateKey and corresponding X25519PublicKey.
-   */
-  static keypair(): [X25519PrivateKey, X25519PublicKey] {
-    const privateKey = X25519PrivateKey.new();
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
-  }
-
-  /**
-   * Generate a new random X25519PrivateKey and corresponding X25519PublicKey
-   * using the given random number generator.
-   */
-  static keypairUsing(rng: RandomNumberGenerator): [X25519PrivateKey, X25519PublicKey] {
-    const privateKey = X25519PrivateKey.newUsing(rng);
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
+  /** A fresh private key and its public key. */
+  static keypair({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): [
+    X25519PrivateKey,
+    X25519PublicKey,
+  ] {
+    const privateKey = X25519PrivateKey.random({ rng });
+    return [privateKey, privateKey.publicKey()];
   }
 
   /**
@@ -108,65 +81,31 @@ export class X25519PrivateKey implements ToCbor, ToUR {
   /**
    * Restore an X25519PrivateKey from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): X25519PrivateKey {
-    return new X25519PrivateKey(new Uint8Array(data));
-  }
-
-  /**
-   * Restore an X25519PrivateKey from a reference to an array of bytes.
-   * Validates the length.
-   */
-  static fromDataRef(data: Uint8Array): X25519PrivateKey {
-    if (data.length !== X25519_PRIVATE_KEY_SIZE) {
-      throw ComponentsError.invalidSize(X25519_PRIVATE_KEY_SIZE, data.length);
-    }
-    return X25519PrivateKey.fromData(data);
-  }
-
-  /**
-   * Create an X25519PrivateKey from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): X25519PrivateKey {
-    return X25519PrivateKey.fromData(data);
+    return new X25519PrivateKey(new Uint8Array(data));
   }
 
   /**
    * Restore an X25519PrivateKey from a hex string.
    */
   static fromHex(hex: string): X25519PrivateKey {
-    return X25519PrivateKey.fromData(hexToBytes(hex));
+    return X25519PrivateKey.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get a reference to the fixed-size array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the raw private key bytes (copy).
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -182,7 +121,7 @@ export class X25519PrivateKey implements ToCbor, ToUR {
   publicKey(): X25519PublicKey {
     if (this._publicKey === undefined) {
       const publicKeyBytes = x25519.publicKey(this._data);
-      this._publicKey = X25519PublicKey.fromData(publicKeyBytes);
+      this._publicKey = X25519PublicKey.from(publicKeyBytes);
     }
     return this._publicKey;
   }
@@ -195,8 +134,8 @@ export class X25519PrivateKey implements ToCbor, ToUR {
    * @returns A SymmetricKey derived from the shared secret
    */
   sharedKeyWith(publicKey: X25519PublicKey): SymmetricKey {
-    const shared = x25519.sharedKey(this._data, publicKey.data());
-    return SymmetricKey.fromData(shared);
+    const shared = x25519.sharedKey(this._data, publicKey.bytes);
+    return SymmetricKey.from(shared);
   }
 
   /**
@@ -206,7 +145,7 @@ export class X25519PrivateKey implements ToCbor, ToUR {
    */
   sharedSecret(publicKey: X25519PublicKey): Uint8Array {
     try {
-      const shared = x25519.sharedKey(this._data, publicKey.data());
+      const shared = x25519.sharedKey(this._data, publicKey.bytes);
       return new Uint8Array(shared);
     } catch (e: unknown) {
       throw ComponentsError.crypto(`ECDH key agreement failed: ${String(e)}`);
@@ -240,7 +179,7 @@ export class X25519PrivateKey implements ToCbor, ToUR {
     tags: [TAG_X25519_PRIVATE_KEY],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return X25519PrivateKey.fromDataRef(data);
+      return X25519PrivateKey.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

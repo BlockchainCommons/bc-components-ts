@@ -75,16 +75,6 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Create a new PublicKeys container with the given keys.
-   */
-  static new(
-    signingPublicKey: SigningPublicKey,
-    encapsulationPublicKey: EncapsulationPublicKey,
-  ): PublicKeys {
-    return new PublicKeys(signingPublicKey, encapsulationPublicKey);
-  }
-
   // ============================================================================
   // Instance Methods
   // ============================================================================
@@ -92,7 +82,7 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
   /**
    * Returns the signing public key.
    */
-  signingPublicKey(): SigningPublicKey {
+  get signingPublicKey(): SigningPublicKey {
     return this._signingPublicKey;
   }
 
@@ -144,7 +134,7 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
    */
   reference(): Reference {
     const digest = Digest.fromImage(this.toCbor().toData());
-    return Reference.from(digest);
+    return Reference.fromDigest(digest);
   }
 
   // ============================================================================
@@ -227,6 +217,17 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
   }
 
   /** Decode tagged or untagged CBOR. */
+  /** Bundle a signing key with an encapsulation key. */
+  static from({
+    signing,
+    encapsulation,
+  }: {
+    signing: SigningPublicKey;
+    encapsulation: EncapsulationPublicKey;
+  }): PublicKeys {
+    return new PublicKeys(signing, encapsulation);
+  }
+
   static fromCbor(cborValue: Cbor): PublicKeys {
     return PublicKeys.codec.decode(cborValue);
   }

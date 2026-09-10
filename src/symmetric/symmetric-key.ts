@@ -52,96 +52,39 @@ export class SymmetricKey implements ToCbor {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Create a new random symmetric key.
-   */
-  static new(): SymmetricKey {
-    return SymmetricKey.random();
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): SymmetricKey {
+    return new SymmetricKey(randomBytes(SYMMETRIC_KEY_SIZE, { rng: rng }));
   }
 
   /**
    * Create a new symmetric key from data.
    */
-  static fromData(data: Uint8Array): SymmetricKey {
-    return new SymmetricKey(new Uint8Array(data));
-  }
-
-  /**
-   * Create a new symmetric key from data (validates length).
-   */
-  static fromDataRef(data: Uint8Array): SymmetricKey {
-    if (data.length !== SYMMETRIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(SYMMETRIC_KEY_SIZE, data.length);
-    }
-    return SymmetricKey.fromData(data);
-  }
-
-  /**
-   * Create a SymmetricKey from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): SymmetricKey {
-    return SymmetricKey.fromData(data);
+    return new SymmetricKey(new Uint8Array(data));
   }
 
   /**
    * Create a SymmetricKey from hex string.
    */
   static fromHex(hex: string): SymmetricKey {
-    return SymmetricKey.fromData(hexToBytes(hex));
-  }
-
-  /**
-   * Generate a random symmetric key.
-   */
-  static random(): SymmetricKey {
-    const rng = secureRng();
-    return SymmetricKey.randomUsing(rng);
-  }
-
-  /**
-   * Generate a random symmetric key using provided RNG.
-   */
-  static randomUsing(rng: RandomNumberGenerator): SymmetricKey {
-    return new SymmetricKey(randomBytes(SYMMETRIC_KEY_SIZE, { rng: rng }));
+    return SymmetricKey.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get the data of the symmetric key.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the data of the symmetric key as a byte slice.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Get a copy of the raw key bytes.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -166,7 +109,7 @@ export class SymmetricKey implements ToCbor {
    * Get string representation.
    */
   toString(): string {
-    return `SymmetricKey(${this.hex().substring(0, 8)}...)`;
+    return `SymmetricKey(${this.toHex().substring(0, 8)}...)`;
   }
 
   // ============================================================================
@@ -178,29 +121,34 @@ export class SymmetricKey implements ToCbor {
    * authenticated data and nonce.
    */
   encrypt(plaintext: Uint8Array, aad?: Uint8Array, nonce?: Nonce): EncryptedMessage {
-    const effectiveNonce = nonce ?? Nonce.new();
+    const effectiveNonce = nonce ?? Nonce.random();
     const effectiveAad = aad ?? new Uint8Array(0);
 
-    const sealed = chacha20Poly1305.encrypt(this._data, effectiveNonce.data(), plaintext, {
+    const sealed = chacha20Poly1305.encrypt(this._data, effectiveNonce.bytes, plaintext, {
       aad: effectiveAad,
     });
     const ciphertext = sealed.subarray(0, sealed.length - chacha20Poly1305.TAG_SIZE);
     const authTag = sealed.subarray(sealed.length - chacha20Poly1305.TAG_SIZE);
 
-    return EncryptedMessage.new(ciphertext, effectiveAad, effectiveNonce, authTag);
+    return EncryptedMessage.from({
+      ciphertext: ciphertext,
+      aad: effectiveAad,
+      nonce: effectiveNonce,
+      authTag: authTag,
+    });
   }
 
   /**
    * Decrypt the given encrypted message with this key.
    */
   decrypt(message: EncryptedMessage): Uint8Array {
-    const ct = message.ciphertext();
-    const tag = message.authenticationTag().data();
+    const ct = message.ciphertext;
+    const tag = message.authenticationTag.bytes;
     const sealed = new Uint8Array(ct.length + tag.length);
     sealed.set(ct);
     sealed.set(tag, ct.length);
-    return chacha20Poly1305.decrypt(this._data, message.nonce().data(), sealed, {
-      aad: message.aad(),
+    return chacha20Poly1305.decrypt(this._data, message.nonce.bytes, sealed, {
+      aad: message.aad,
     });
   }
 
@@ -213,7 +161,7 @@ export class SymmetricKey implements ToCbor {
     tags: [TAG_SYMMETRIC_KEY],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return SymmetricKey.fromDataRef(data);
+      return SymmetricKey.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

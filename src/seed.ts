@@ -65,9 +65,9 @@ import { bytesToHex, hexToBytes, toBase64 } from "./utils.js";
 import type { PrivateKeyDataProvider } from "./private-key-data-provider.js";
 
 export interface SeedMetadata {
-  name?: string;
-  note?: string;
-  createdAt?: Date;
+  name?: string | undefined;
+  note?: string | undefined;
+  creationDate?: Date | undefined;
 }
 
 export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
@@ -98,59 +98,15 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   // ============================================================================
 
   /**
-   * Create a new random seed with default length (16 bytes).
-   *
-   * Rust equivalent: `Seed::new()`
+   * A random seed of `length` bytes (16 by default), with optional metadata;
+   * pass `rng` to make it deterministic.
    */
-  static new(): Seed {
-    return Seed.newWithLen(Seed.MIN_SEED_LENGTH);
-  }
-
-  /**
-   * Create a new random seed with a specified length.
-   *
-   * Rust equivalent: `Seed::new_with_len(count)`
-   *
-   * @param count - Number of bytes (must be >= 16)
-   * @throws ComponentsError if count < 16
-   */
-  static newWithLen(count: number): Seed {
-    const rng = secureRng();
-    return Seed.newWithLenUsing(count, rng);
-  }
-
-  /**
-   * Create a new random seed with a specified length using provided RNG.
-   *
-   * Rust equivalent: `Seed::new_with_len_using(count, rng)`
-   *
-   * @param count - Number of bytes (must be >= 16)
-   * @param rng - Random number generator
-   * @throws ComponentsError if count < 16
-   */
-  static newWithLenUsing(count: number, rng: RandomNumberGenerator): Seed {
-    const data = randomBytes(count, { rng: rng });
-    return Seed.newOpt(data, undefined, undefined, undefined);
-  }
-
-  /**
-   * Create a new seed from data and optional metadata.
-   *
-   * Rust equivalent: `Seed::new_opt(data, name, note, creation_date)`
-   *
-   * @param data - Seed bytes (must be >= 16 bytes)
-   * @param name - Optional name for the seed
-   * @param note - Optional note for the seed
-   * @param creationDate - Optional creation date
-   * @throws ComponentsError if data < 16 bytes
-   */
-  static newOpt(
-    data: Uint8Array,
-    name: string | undefined,
-    note: string | undefined,
-    creationDate: Date | undefined,
-  ): Seed {
-    return new Seed(data, name, note, creationDate);
+  static random({
+    length = Seed.MIN_SEED_LENGTH,
+    rng = secureRng(),
+    ...metadata
+  }: { length?: number; rng?: RandomNumberGenerator } & SeedMetadata = {}): Seed {
+    return Seed.from(randomBytes(length, { rng }), metadata);
   }
 
   // ============================================================================
@@ -166,7 +122,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
    * @param metadata - Optional metadata object
    */
   static from(data: Uint8Array, metadata?: SeedMetadata): Seed {
-    return new Seed(new Uint8Array(data), metadata?.name, metadata?.note, metadata?.createdAt);
+    return new Seed(new Uint8Array(data), metadata?.name, metadata?.note, metadata?.creationDate);
   }
 
   /**
@@ -179,61 +135,13 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     return Seed.from(hexToBytes(hex), metadata);
   }
 
-  /**
-   * Generate a random seed with specified size (default 32 bytes).
-   *
-   * Convenience method that wraps `newWithLen()`.
-   *
-   * @param size - Number of bytes (must be >= 16, default 32)
-   * @param metadata - Optional metadata object
-   */
-  static random(size = 32, metadata?: SeedMetadata): Seed {
-    const seed = Seed.newWithLen(size);
-    if (metadata?.name !== undefined) seed.setName(metadata.name);
-    if (metadata?.note !== undefined) seed.setNote(metadata.note);
-    if (metadata?.createdAt !== undefined) seed.setCreationDate(metadata.createdAt);
-    return seed;
-  }
-
-  /**
-   * Generate a random seed using provided RNG.
-   *
-   * Convenience method that wraps `newWithLenUsing()`.
-   *
-   * @param rng - Random number generator
-   * @param size - Number of bytes (must be >= 16, default 32)
-   * @param metadata - Optional metadata object
-   */
-  static randomUsing(rng: RandomNumberGenerator, size = 32, metadata?: SeedMetadata): Seed {
-    const seed = Seed.newWithLenUsing(size, rng);
-    if (metadata?.name !== undefined) seed.setName(metadata.name);
-    if (metadata?.note !== undefined) seed.setNote(metadata.note);
-    if (metadata?.createdAt !== undefined) seed.setCreationDate(metadata.createdAt);
-    return seed;
-  }
-
   // ============================================================================
   // Instance Methods - Data Access (Rust API Parity)
   // ============================================================================
 
-  /**
-   * Return the data of the seed as a reference to the internal bytes.
-   *
-   * Rust equivalent: `seed.as_bytes()`
-   *
-   * Note: Returns a reference to internal data. For a copy, use `toData()`.
-   */
-  asBytes(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the raw seed bytes (copy).
-   *
-   * Note: Returns a copy to prevent external mutation of the seed's internal state.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
@@ -250,10 +158,8 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     return toBase64(this._data);
   }
 
-  /**
-   * Get seed size in bytes.
-   */
-  size(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 
@@ -264,18 +170,18 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   /**
    * Return the name of the seed.
    *
-   * Rust equivalent: `seed.name()` - returns empty string if not set.
+   * Rust equivalent: `seed.name` - returns empty string if not set.
    */
-  name(): string {
+  /** The optional metadata as one object. */
+  get metadata(): SeedMetadata {
+    return { name: this._name, note: this._note, creationDate: this._creationDate };
+  }
+
+  get name(): string {
     return this._name;
   }
 
-  /**
-   * Set the name of the seed.
-   *
-   * Rust equivalent: `seed.set_name(name)`
-   */
-  setName(name: string): void {
+  set name(name: string) {
     this._name = name;
     forgetTaggedCbor(this);
   }
@@ -283,18 +189,13 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   /**
    * Return the note of the seed.
    *
-   * Rust equivalent: `seed.note()` - returns empty string if not set.
+   * Rust equivalent: `seed.note` - returns empty string if not set.
    */
-  note(): string {
+  get note(): string {
     return this._note;
   }
 
-  /**
-   * Set the note of the seed.
-   *
-   * Rust equivalent: `seed.set_note(note)`
-   */
-  setNote(note: string): void {
+  set note(note: string) {
     this._note = note;
     forgetTaggedCbor(this);
   }
@@ -304,55 +205,13 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
    *
    * Rust equivalent: `seed.creation_date()`
    */
-  creationDate(): Date | undefined {
+  get creationDate(): Date | undefined {
     return this._creationDate;
   }
 
-  /**
-   * Set the creation date of the seed.
-   *
-   * Rust equivalent: `seed.set_creation_date(date)`
-   */
-  setCreationDate(creationDate: Date | undefined): void {
+  set creationDate(creationDate: Date | undefined) {
     this._creationDate = creationDate;
     forgetTaggedCbor(this);
-  }
-
-  /**
-   * Return the creation date of the seed (alias for creationDate).
-   *
-   * @deprecated Use `creationDate()` for Rust API parity.
-   */
-  createdAt(): Date | undefined {
-    return this.creationDate();
-  }
-
-  /**
-   * Set the creation date of the seed (alias for setCreationDate).
-   *
-   * @deprecated Use `setCreationDate()` for Rust API parity.
-   */
-  setCreatedAt(date: Date): void {
-    this.setCreationDate(date);
-  }
-
-  /**
-   * Get metadata as an object.
-   *
-   * TypeScript convenience method - returns a snapshot of current metadata.
-   */
-  getMetadata(): SeedMetadata {
-    const metadata: SeedMetadata = {};
-    if (this._name.length > 0) {
-      metadata.name = this._name;
-    }
-    if (this._note.length > 0) {
-      metadata.note = this._note;
-    }
-    if (this._creationDate !== undefined) {
-      metadata.createdAt = this._creationDate;
-    }
-    return metadata;
   }
 
   // ============================================================================
@@ -374,7 +233,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
    * Get string representation.
    */
   toString(): string {
-    return `Seed(${this.toHex().substring(0, 16)}..., ${this.size()} bytes)`;
+    return `Seed(${this.toHex().substring(0, 16)}..., ${this.byteLength} bytes)`;
   }
 
   // ============================================================================
@@ -390,7 +249,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
    * @returns A Uint8Array containing the seed data
    */
   privateKeyData(): Uint8Array {
-    return this.toData();
+    return this.bytes;
   }
 
   // ============================================================================
@@ -426,7 +285,11 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
       // Key 4: note (optional)
       const note = mapGetText(map, 4);
 
-      return Seed.newOpt(new Uint8Array(data), name, note, creationDate);
+      return Seed.from(new Uint8Array(data), {
+        name: name,
+        note: note,
+        creationDate: creationDate,
+      });
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

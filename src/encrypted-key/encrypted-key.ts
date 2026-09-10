@@ -128,21 +128,21 @@ export class EncryptedKey implements ToCbor, ToUR {
   /**
    * Returns the encrypted message.
    */
-  encryptedMessage(): EncryptedMessage {
+  get encryptedMessage(): EncryptedMessage {
     return this._encryptedMessage;
   }
 
   /**
    * Returns the key derivation parameters.
    */
-  params(): KeyDerivationParams {
+  get params(): KeyDerivationParams {
     return this._params;
   }
 
   /**
    * Returns the key derivation method.
    */
-  method(): KeyDerivationMethod {
+  get method(): KeyDerivationMethod {
     return keyDerivationParamsMethod(this._params);
   }
 
@@ -173,7 +173,7 @@ export class EncryptedKey implements ToCbor, ToUR {
    */
   unlock(secret: Uint8Array): SymmetricKey {
     // Get the AAD from the encrypted message, which contains the derivation params
-    const aad = this._encryptedMessage.aad();
+    const aad = this._encryptedMessage.aad;
     if (aad.length === 0) {
       throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
     }
@@ -223,7 +223,7 @@ export class EncryptedKey implements ToCbor, ToUR {
       const encryptedMessage = EncryptedMessage.fromCbor(cborValue);
 
       // Parse the derivation parameters from AAD
-      const aad = encryptedMessage.aad();
+      const aad = encryptedMessage.aad;
       if (aad.length === 0) {
         throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
       }

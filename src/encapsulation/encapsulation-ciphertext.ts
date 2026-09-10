@@ -92,7 +92,7 @@ export class EncapsulationCiphertext implements ToCbor {
    * Create an EncapsulationCiphertext from raw X25519 data.
    */
   static fromX25519Data(data: Uint8Array): EncapsulationCiphertext {
-    const publicKey = X25519PublicKey.fromDataRef(data);
+    const publicKey = X25519PublicKey.from(data);
     return EncapsulationCiphertext.fromX25519PublicKey(publicKey);
   }
 
@@ -100,7 +100,7 @@ export class EncapsulationCiphertext implements ToCbor {
    * Create an EncapsulationCiphertext from an MLKEMCiphertext.
    */
   static fromMlkem(ciphertext: MLKEMCiphertext): EncapsulationCiphertext {
-    const scheme = mlkemLevelToScheme(ciphertext.level());
+    const scheme = mlkemLevelToScheme(ciphertext.level);
     return new EncapsulationCiphertext(scheme, undefined, ciphertext);
   }
 
@@ -119,7 +119,7 @@ export class EncapsulationCiphertext implements ToCbor {
   /**
    * Returns the encapsulation scheme.
    */
-  encapsulationScheme(): EncapsulationScheme {
+  get encapsulationScheme(): EncapsulationScheme {
     return this._scheme;
   }
 
@@ -162,29 +162,27 @@ export class EncapsulationCiphertext implements ToCbor {
   /**
    * Returns the X25519 public key if available, or null.
    */
-  toX25519(): X25519PublicKey | null {
-    return this._x25519PublicKey ?? null;
+  asX25519(): X25519PublicKey | undefined {
+    return this._x25519PublicKey ?? undefined;
   }
 
   /**
    * Returns the MLKEM ciphertext if available, or null.
    */
-  toMlkem(): MLKEMCiphertext | null {
-    return this._mlkemCiphertext ?? null;
+  asMlkem(): MLKEMCiphertext | undefined {
+    return this._mlkemCiphertext ?? undefined;
   }
 
-  /**
-   * Returns the raw ciphertext data.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
       if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
-      return pk.data();
+      return pk.bytes;
     } else if (isMlkemScheme(this._scheme)) {
       const ct = this._mlkemCiphertext;
       if (ct === undefined) throw ComponentsError.invalidData("MLKEM ciphertext not set");
-      return ct.data();
+      return ct.bytes;
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -213,9 +211,9 @@ export class EncapsulationCiphertext implements ToCbor {
    */
   toString(): string {
     if (this._scheme === EncapsulationScheme.X25519) {
-      return `EncapsulationCiphertext(X25519, ${bytesToHex(this.data()).substring(0, 16)}...)`;
+      return `EncapsulationCiphertext(X25519, ${bytesToHex(this.bytes).substring(0, 16)}...)`;
     } else if (isMlkemScheme(this._scheme)) {
-      return `EncapsulationCiphertext(${String(this._scheme)}, ${bytesToHex(this.data()).substring(0, 16)}...)`;
+      return `EncapsulationCiphertext(${String(this._scheme)}, ${bytesToHex(this.bytes).substring(0, 16)}...)`;
     }
     return `EncapsulationCiphertext(${String(this._scheme)})`;
   }
@@ -228,9 +226,7 @@ export class EncapsulationCiphertext implements ToCbor {
   static readonly codec: ComponentCodec<EncapsulationCiphertext> = defineCodec({
     tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_CIPHERTEXT],
     decodeUntagged: (cborValue) =>
-      EncapsulationCiphertext.fromX25519PublicKey(
-        X25519PublicKey.fromDataRef(expectBytes(cborValue)),
-      ),
+      EncapsulationCiphertext.fromX25519PublicKey(X25519PublicKey.from(expectBytes(cborValue))),
     decodeTagged: (tag, content, whole) =>
       tag.value === TAG_MLKEM_CIPHERTEXT.value
         ? EncapsulationCiphertext.fromMlkem(MLKEMCiphertext.fromCbor(whole))
@@ -258,7 +254,7 @@ export class EncapsulationCiphertext implements ToCbor {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PublicKey;
       if (pk === undefined) throw ComponentsError.invalidData("X25519 public key not set");
-      return cbor(pk.data());
+      return cbor(pk.bytes);
     } else if (isMlkemScheme(this._scheme)) {
       const ct = this._mlkemCiphertext;
       if (ct === undefined) throw ComponentsError.invalidData("MLKEM ciphertext not set");

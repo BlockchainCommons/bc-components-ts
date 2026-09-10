@@ -14,12 +14,12 @@ describe("hex through dcbor", () => {
 
   it("round-trips and lowercases", () => {
     expect(bytesToHex(hexToBytes(HEX.toUpperCase()))).toBe(HEX);
-    expect(Digest.fromHex(HEX.toUpperCase()).hex()).toBe(HEX);
+    expect(Digest.fromHex(HEX.toUpperCase()).toHex()).toBe(HEX);
   });
 
   it("tolerates ASCII whitespace (new)", () => {
     const spaced = HEX.replace(/(.{8})/g, "$1 ").trim();
-    expect(ARID.fromHex(spaced).hex()).toBe(HEX);
+    expect(ARID.fromHex(spaced).toHex()).toBe(HEX);
   });
 
   it("rejects odd length and non-hex characters with CborError", () => {

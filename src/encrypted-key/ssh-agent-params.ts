@@ -58,32 +58,24 @@ export class SSHAgentParams implements KeyDerivation {
     this._id = id;
   }
 
-  /**
-   * Create new SSH agent parameters with default salt and specified key ID.
-   *
-   * @param id - The SSH key identity (usually the key comment or public key fingerprint)
-   */
-  static new(id: string): SSHAgentParams {
-    return SSHAgentParams.newOpt(Salt.newWithLen(SALT_LEN), id);
-  }
-
-  /**
-   * Create SSH agent parameters with custom salt and key ID.
-   *
-   * @param salt - The salt for key derivation
-   * @param id - The SSH key identity
-   */
-  static newOpt(salt: Salt, id: string): SSHAgentParams {
+  /** Parameters with a fresh random salt unless one is given. */
+  static from({
+    id,
+    salt = Salt.random({ length: SALT_LEN }),
+  }: {
+    id: string;
+    salt?: Salt;
+  }): SSHAgentParams {
     return new SSHAgentParams(salt, id);
   }
 
   /** Returns the salt. */
-  salt(): Salt {
+  get salt(): Salt {
     return this._salt;
   }
 
   /** Returns the SSH key identity. */
-  id(): string {
+  get id(): string {
     return this._id;
   }
 

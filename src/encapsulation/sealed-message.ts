@@ -80,56 +80,16 @@ export class SealedMessage implements ToCbor, ToUR {
   }
 
   /**
-   * Seal a message for a recipient (no additional authenticated data).
-   *
-   * @param plaintext - The message to encrypt
-   * @param recipient - The recipient's public key
-   * @returns A sealed message that only the recipient can decrypt
+   * Encrypt `plaintext` to `recipient`: a fresh shared secret is
+   * encapsulated to the recipient's key and encrypts the plaintext.
    */
-  static new(plaintext: Uint8Array, recipient: EncapsulationPublicKey): SealedMessage {
-    return SealedMessage.newWithAad(plaintext, recipient, new Uint8Array(0));
-  }
-
-  /**
-   * Seal a message for a recipient with additional authenticated data.
-   *
-   * @param plaintext - The message to encrypt
-   * @param recipient - The recipient's public key
-   * @param aad - Additional authenticated data (not encrypted but authenticated)
-   * @returns A sealed message that only the recipient can decrypt
-   */
-  static newWithAad(
+  static seal(
     plaintext: Uint8Array,
     recipient: EncapsulationPublicKey,
-    aad: Uint8Array,
+    { aad = new Uint8Array(0), nonce = Nonce.random() }: { aad?: Uint8Array; nonce?: Nonce } = {},
   ): SealedMessage {
-    return SealedMessage.newOpt(plaintext, recipient, aad, undefined);
-  }
-
-  /**
-   * Seal a message with optional test nonce (for deterministic testing).
-   *
-   * @param plaintext - The message to encrypt
-   * @param recipient - The recipient's public key
-   * @param aad - Additional authenticated data
-   * @param testNonce - Optional fixed nonce for testing (DO NOT use in production)
-   * @returns A sealed message
-   */
-  static newOpt(
-    plaintext: Uint8Array,
-    recipient: EncapsulationPublicKey,
-    aad: Uint8Array,
-    testNonce?: Nonce,
-  ): SealedMessage {
-    // Encapsulate a new shared secret
     const [sharedSecret, ciphertext] = recipient.encapsulateNewSharedSecret();
-
-    // Use the nonce or generate a random one
-    const nonce = testNonce ?? Nonce.new();
-
-    // Encrypt the plaintext using the shared secret
     const encryptedMessage = sharedSecret.encrypt(plaintext, aad, nonce);
-
     return new SealedMessage(encryptedMessage, ciphertext);
   }
 
@@ -140,22 +100,22 @@ export class SealedMessage implements ToCbor, ToUR {
   /**
    * Returns the encrypted message.
    */
-  message(): EncryptedMessage {
+  get message(): EncryptedMessage {
     return this._message;
   }
 
   /**
    * Returns the encapsulation ciphertext (ephemeral public key for X25519).
    */
-  encapsulatedKey(): EncapsulationCiphertext {
+  get encapsulatedKey(): EncapsulationCiphertext {
     return this._encapsulatedKey;
   }
 
   /**
    * Returns the encapsulation scheme used.
    */
-  encapsulationScheme(): EncapsulationScheme {
-    return this._encapsulatedKey.encapsulationScheme();
+  get encapsulationScheme(): EncapsulationScheme {
+    return this._encapsulatedKey.encapsulationScheme;
   }
 
   /**
@@ -186,7 +146,7 @@ export class SealedMessage implements ToCbor, ToUR {
    * Get string representation.
    */
   toString(): string {
-    return `SealedMessage(${this._encapsulatedKey.encapsulationScheme()}, ciphertext: ${bytesToHex(this._message.ciphertext()).substring(0, 16)}...)`;
+    return `SealedMessage(${this._encapsulatedKey.encapsulationScheme}, ciphertext: ${bytesToHex(this._message.ciphertext).substring(0, 16)}...)`;
   }
 
   // ============================================================================

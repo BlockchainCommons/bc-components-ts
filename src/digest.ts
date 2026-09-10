@@ -38,7 +38,7 @@
  * const digest2 = Digest.fromHex(hexString);
  *
  * // Retrieve the digest as hex
- * console.log(digest2.hex()); // b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
+ * console.log(digest2.toHex()); // b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
  * ```
  */
 
@@ -63,10 +63,8 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
     this._data = new Uint8Array(data);
   }
 
-  /**
-   * Get the digest data.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
   }
 
@@ -77,16 +75,8 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
   /**
    * Create a Digest from a 32-byte array.
    */
-  static fromData(data: Uint8Array): Digest {
+  static from(data: Uint8Array): Digest {
     return new Digest(new Uint8Array(data));
-  }
-
-  /**
-   * Create a Digest from data, validating the length.
-   * Alias for fromData for compatibility with Rust API.
-   */
-  static fromDataRef(data: Uint8Array): Digest {
-    return Digest.fromData(data);
   }
 
   /**
@@ -156,31 +146,10 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
   // ============================================================================
 
   /**
-   * Get the raw digest bytes as a copy.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
-  }
-
-  /**
-   * Get a reference to the raw digest bytes.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -236,7 +205,7 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
    * Get string representation.
    */
   toString(): string {
-    return `Digest(${this.hex()})`;
+    return `Digest(${this.toHex()})`;
   }
 
   // ============================================================================
@@ -259,7 +228,7 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
     tags: [TAG_DIGEST],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return Digest.fromData(data);
+      return Digest.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

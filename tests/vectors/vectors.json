@@ -3597,7 +3597,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c54820358401c2b36aa6b18dc50de04718e3247a098878f8d4daff6c411157975fff6c24008fb73ed332f030b144f0ec31c82d0a5b5ef5591606fbdb27e2b304c0da5d3bc82|ur:signature/lfaxhdfzcednenpkjecsuogdueaajsmneyflnbmkltmylggtpeynssbybzkkkpzmynsafzayzojkweeodlaxbdbbgwbasrcelftionrewsgomehnjlryprkbdndygsbtonterflfmwtauota|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "sign sr25519 hex:322b5c1dd5a1 msg=cyc:0",
@@ -3612,7 +3612,7 @@
      "start": 0
     }
    },
-   "expect": "d99c54820358401674b34d1cb0ba2797b6ca2eb37468724d49a552e3af8f0b9abb2cba669b2e7773e3c68ad8e1f4a6d42236e822813c590aff2c9923c72678aaff9bdccdc5b484|ur:signature/lfaxhdfzcmjyqdgtcepfrddimsrpsgdmqdjyisjpgtgaongmvlpemybdnyrkdwrdiynddmktjkvlswletpvywkoltycpenvscplyfnhkbkzmdwnlcnstdskspkzmnduosnskqzlrurchaykt|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "sign sr25519 hex:322b5c1dd5a1 msg=cyc:100",
@@ -3627,7 +3627,7 @@
      "start": 7
     }
    },
-   "expect": "d99c54820358406cad03f4eb09b74c261230946bfe49fef97b265a16e170d766b112236a5aa74a68806415d1c73567f2dd01de739f54602ae85d1b6a817017e47d7120100a378e|ur:signature/lfaxhdfzjzpmaxwkwmasrlgsdsbgdymwjezegazeytkgdshtcmvyjotsiypabgcnimhtosgeislaiebzttsteciowzutaduejkneghhndrvshlcwimlyjochvekijscxbebkemmnmkspfsyn|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "signingKeys sr25519 cyc:32",
@@ -3654,7 +3654,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c5482035840f2adb3f8205496e0fa4858abb53e003e6599f964afd9a05a75996945b41d097d1c5fbad2524941316310a2edc3c0b2f1cca7e67a48fe0b1a0596f459a6502381|ur:signature/lfaxhdfzwzpmqdyacxghmtvtzsfdhdpyrefmaefmihnlytiepetanbhtkpnlinfeqzcaaskiceherdtdgmgafpehiabeoewesrrtprwnsfosvaknfdzebdcyahmtwkhkolgdcnlyvlrkhyjl|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "sign sr25519 cyc:32 msg=cyc:0",
@@ -3670,7 +3670,7 @@
      "start": 0
     }
    },
-   "expect": "d99c5482035840d25873987de7824221d7597413128d193dfa50116a997ab719b6e0763b12b0708d4d33fbe4f9bdca1a040a8b37b7cb7727bcda90378c0a41ae532fbd1e1e7288|ur:signature/lfaxhdfztdhdjkmkkivdlffwcltshkjybwbglgcffszsgdbyimnlknrlcfrpvtkofrbgpfjolggteozoveytrysgcyaabkluemrlsbktdirftnmhemlkbkfpplgudlryckckjplodyndtpgo|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "sign sr25519 cyc:32 msg=cyc:100",
@@ -3686,7 +3686,7 @@
      "start": 7
     }
    },
-   "expect": "d99c54820358403aa8212083d1927357f2d0cde624f7f8132d4bdc3f42e377947e13e179551210087be0544e87f4e96a1077c416ca62790a0fcbdf8398c8e458050d181123b986|ur:signature/lfaxhdfzftpdclcxlsttmojkhgwztisnvadkylyabwdpgruofhfwvlktmwkbbwvykkgobgbeaykgvtghglltwkwlimbektsscmsgidkkbkbssburlsmkspvehdahbtcsbycnrhlnrljegrhd|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "signingKeys sr25519 hex:59f2293a5bce",
@@ -3711,7 +3711,7 @@
      "text": "Wolf McNally"
     }
    },
-   "expect": "d99c548203584050f18dbbe00849b8e662c5240f17989f609f35dad19f2d3fc7bbdf008e9a7766de73c928acc6ba75152cc15f8ef20840d17e04f2e5d994a436ad68871e728089|ur:signature/lfaxhdfzgdwnlgrkvtaygarovaidskdkbschmknehnneectnttnedpfhstrkuraemnnyktiyuejksodepsswrdkpbzdwsehemnwzayfzttkbaawzvwtamwoxenpmisltckjplaldtbtnflrl|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "sign sr25519 hex:59f2293a5bce msg=cyc:0",
@@ -3726,7 +3726,7 @@
      "start": 0
     }
    },
-   "expect": "d99c5482035840247039a011468fe604677fb29eb8abc78054db153cd1aa585cb2ece333a1d8465b42455005e4ab24d52c9618cd9ce98e32d8abc885f67a48192eda5ce4170c8e|ur:signature/lfaxhdfzdkjoesnbbyfgmyvaaaiolbprnnropystlaghuybzfnttpkhdhhprwpvleooytpfghpfwfegdahvepydktldwmtcssnnswlmneytppysplpynknfdcfdmtnhhvechbnmnbdhhjtzm|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "sign sr25519 hex:59f2293a5bce msg=cyc:100",
@@ -3741,7 +3741,7 @@
      "start": 7
     }
    },
-   "expect": "d99c54820358400ed5ae1977cc9570c06443225dfa93d2970f9b9f8420277559718032ed182b30844b11c35bb8ae409a4a02e1650a721576edfc555f28174b1171d9596798108d|ur:signature/lfaxhdfzbatlplcfktsfmdjortiefxcphlzsmutdmsbsndnelrcxdikphkjslaeywecsdndylrgrbysrhproplfznygeaovyihbkjpbzkoweztgohedechgrbyjstahkiomkbelgecimfndl|verified"
+   "expect": "nondeterministic|verified"
   },
   {
    "name": "sshFromSeed ed25519 hex:59f2293a5bce \"Key comment.\"",

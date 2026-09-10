@@ -16,29 +16,29 @@ describe("AuthenticationTag", () => {
   describe("creation", () => {
     it("should create from data", () => {
       const data = new Uint8Array(16);
-      const tag = AuthenticationTag.fromData(data);
+      const tag = AuthenticationTag.from(data);
 
-      expect(tag.data().length).toBe(AuthenticationTag.AUTHENTICATION_TAG_SIZE);
+      expect(tag.bytes.length).toBe(AuthenticationTag.AUTHENTICATION_TAG_SIZE);
     });
 
     it("should create using fromDataRef", () => {
       const data = new Uint8Array(16);
-      const tag = AuthenticationTag.fromDataRef(data);
+      const tag = AuthenticationTag.from(data);
 
-      expect(tag.data().length).toBe(AuthenticationTag.AUTHENTICATION_TAG_SIZE);
+      expect(tag.bytes.length).toBe(AuthenticationTag.AUTHENTICATION_TAG_SIZE);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const wrongSizeData = new Uint8Array(15);
 
-      expect(() => AuthenticationTag.fromDataRef(wrongSizeData)).toThrow();
+      expect(() => AuthenticationTag.from(wrongSizeData)).toThrow();
     });
 
     it("should create using from (legacy alias)", () => {
       const data = new Uint8Array(16);
       const tag = AuthenticationTag.from(data);
 
-      expect(tag.data().length).toBe(AuthenticationTag.AUTHENTICATION_TAG_SIZE);
+      expect(tag.bytes.length).toBe(AuthenticationTag.AUTHENTICATION_TAG_SIZE);
     });
 
     it("should create from hex string", () => {
@@ -52,9 +52,9 @@ describe("AuthenticationTag", () => {
     it("should return data as bytes", () => {
       const tag = AuthenticationTag.fromHex(TEST_HEX);
 
-      expect(tag.data()).toBeInstanceOf(Uint8Array);
-      expect(tag.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(tag.toData()).toBeInstanceOf(Uint8Array);
+      expect(tag.bytes).toBeInstanceOf(Uint8Array);
+      expect(tag.bytes).toBeInstanceOf(Uint8Array);
+      expect(tag.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {
@@ -129,14 +129,14 @@ describe("SymmetricKey", () => {
 
   describe("creation", () => {
     it("should create a new random key", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
 
-      expect(key.data().length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
+      expect(key.bytes.length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
     });
 
     it("should create unique random keys", () => {
-      const key1 = SymmetricKey.new();
-      const key2 = SymmetricKey.new();
+      const key1 = SymmetricKey.random();
+      const key2 = SymmetricKey.random();
 
       expect(key1.equals(key2)).toBe(false);
     });
@@ -144,34 +144,34 @@ describe("SymmetricKey", () => {
     it("should create using random (alias)", () => {
       const key = SymmetricKey.random();
 
-      expect(key.data().length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
+      expect(key.bytes.length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
     });
 
     it("should create from raw data", () => {
       const data = new Uint8Array(32);
-      const key = SymmetricKey.fromData(data);
+      const key = SymmetricKey.from(data);
 
-      expect(key.data()).toEqual(data);
+      expect(key.bytes).toEqual(data);
     });
 
     it("should create using fromDataRef", () => {
       const data = new Uint8Array(32);
-      const key = SymmetricKey.fromDataRef(data);
+      const key = SymmetricKey.from(data);
 
-      expect(key.data().length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
+      expect(key.bytes.length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const wrongSizeData = new Uint8Array(31);
 
-      expect(() => SymmetricKey.fromDataRef(wrongSizeData)).toThrow();
+      expect(() => SymmetricKey.from(wrongSizeData)).toThrow();
     });
 
     it("should create using from (legacy alias)", () => {
       const data = new Uint8Array(32);
       const key = SymmetricKey.from(data);
 
-      expect(key.data().length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
+      expect(key.bytes.length).toBe(SymmetricKey.SYMMETRIC_KEY_SIZE);
     });
 
     it("should create from hex string", () => {
@@ -183,22 +183,22 @@ describe("SymmetricKey", () => {
 
   describe("accessors", () => {
     it("should return data as bytes", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
 
-      expect(key.data()).toBeInstanceOf(Uint8Array);
-      expect(key.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(key.toData()).toBeInstanceOf(Uint8Array);
+      expect(key.bytes).toBeInstanceOf(Uint8Array);
+      expect(key.bytes).toBeInstanceOf(Uint8Array);
+      expect(key.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {
       const key = SymmetricKey.fromHex(TEST_HEX);
 
-      expect(key.hex()).toBe(TEST_HEX);
+      expect(key.toHex()).toBe(TEST_HEX);
       expect(key.toHex()).toBe(TEST_HEX);
     });
 
     it("should return base64 representation", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
 
       expect(typeof key.toBase64()).toBe("string");
     });
@@ -212,7 +212,7 @@ describe("SymmetricKey", () => {
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
 
       expect(key.equals(key)).toBe(true);
     });
@@ -226,7 +226,7 @@ describe("SymmetricKey", () => {
 
     it("should not be equal to a key with different data", () => {
       const key1 = SymmetricKey.fromHex(TEST_HEX);
-      const key2 = SymmetricKey.new();
+      const key2 = SymmetricKey.random();
 
       expect(key1.equals(key2)).toBe(false);
     });
@@ -234,7 +234,7 @@ describe("SymmetricKey", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const tags = key.cborTags();
 
       expect(tags.length).toBe(1);
@@ -242,21 +242,21 @@ describe("SymmetricKey", () => {
     });
 
     it("should serialize to untagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const untagged = key.untaggedCbor();
 
       expect(untagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const tagged = key.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const data = key.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
@@ -264,7 +264,7 @@ describe("SymmetricKey", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const data = key.toCbor().toData();
       const restored = SymmetricKey.fromCbor(decodeCbor(data));
 
@@ -272,7 +272,7 @@ describe("SymmetricKey", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const data = key.untaggedCbor().toData();
       const restored = SymmetricKey.fromCbor(decodeCbor(data));
 
@@ -301,10 +301,10 @@ describe("EncryptedMessage", () => {
       const nonce = Nonce.fromHex(NONCE_HEX);
       const encrypted = key.encrypt(PLAINTEXT, AAD, nonce);
 
-      expect(bytesToHex(encrypted.ciphertext())).toBe(CIPHERTEXT_HEX);
-      expect(bytesToHex(encrypted.aad())).toBe(bytesToHex(AAD));
-      expect(encrypted.nonce().toHex()).toBe(NONCE_HEX);
-      expect(encrypted.authenticationTag().toHex()).toBe(AUTH_HEX);
+      expect(bytesToHex(encrypted.ciphertext)).toBe(CIPHERTEXT_HEX);
+      expect(bytesToHex(encrypted.aad)).toBe(bytesToHex(AAD));
+      expect(encrypted.nonce.toHex()).toBe(NONCE_HEX);
+      expect(encrypted.authenticationTag.toHex()).toBe(AUTH_HEX);
     });
 
     it("should decrypt to original plaintext", () => {
@@ -319,8 +319,8 @@ describe("EncryptedMessage", () => {
 
   describe("random key and nonce", () => {
     it("should encrypt and decrypt correctly", () => {
-      const key = SymmetricKey.new();
-      const nonce = Nonce.new();
+      const key = SymmetricKey.random();
+      const nonce = Nonce.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD, nonce);
       const decrypted = key.decrypt(encrypted);
 
@@ -330,7 +330,7 @@ describe("EncryptedMessage", () => {
 
   describe("empty data", () => {
     it("should encrypt and decrypt empty data", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(new Uint8Array(0));
       const decrypted = key.decrypt(encrypted);
 
@@ -340,45 +340,45 @@ describe("EncryptedMessage", () => {
 
   describe("accessors", () => {
     it("should return ciphertext", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT);
 
-      expect(encrypted.ciphertext()).toBeInstanceOf(Uint8Array);
-      expect(encrypted.ciphertext().length).toBe(PLAINTEXT.length);
+      expect(encrypted.ciphertext).toBeInstanceOf(Uint8Array);
+      expect(encrypted.ciphertext.length).toBe(PLAINTEXT.length);
     });
 
     it("should return nonce", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT);
 
-      expect(encrypted.nonce()).toBeInstanceOf(Nonce);
+      expect(encrypted.nonce).toBeInstanceOf(Nonce);
     });
 
     it("should return authentication tag", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT);
 
-      expect(encrypted.authenticationTag()).toBeInstanceOf(AuthenticationTag);
+      expect(encrypted.authenticationTag).toBeInstanceOf(AuthenticationTag);
     });
 
     it("should return AAD", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
 
-      expect(encrypted.aad()).toEqual(AAD);
+      expect(encrypted.aad).toEqual(AAD);
     });
 
     it("should return empty AAD when not provided", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT);
 
-      expect(encrypted.aad().length).toBe(0);
+      expect(encrypted.aad.length).toBe(0);
     });
   });
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
 
       expect(encrypted.equals(encrypted)).toBe(true);
@@ -394,7 +394,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should not be equal with different nonce", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted1 = key.encrypt(PLAINTEXT, AAD);
       const encrypted2 = key.encrypt(PLAINTEXT, AAD);
 
@@ -405,7 +405,7 @@ describe("EncryptedMessage", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const tags = encrypted.cborTags();
 
@@ -414,7 +414,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should serialize to untagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const untagged = encrypted.untaggedCbor();
 
@@ -422,7 +422,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should serialize to tagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const tagged = encrypted.toCbor();
 
@@ -430,7 +430,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const data = encrypted.toCbor().toData();
 
@@ -439,7 +439,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const data = encrypted.toCbor().toData();
       const restored = EncryptedMessage.fromCbor(decodeCbor(data));
@@ -448,7 +448,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const data = encrypted.untaggedCbor().toData();
       const restored = EncryptedMessage.fromCbor(decodeCbor(data));
@@ -471,7 +471,7 @@ describe("EncryptedMessage", () => {
 
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const ur = encrypted.toUR();
 
@@ -479,7 +479,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should serialize to UR string", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const urString = encrypted.toUR().toString();
 
@@ -487,7 +487,7 @@ describe("EncryptedMessage", () => {
     });
 
     it("should roundtrip through UR string", () => {
-      const key = SymmetricKey.new();
+      const key = SymmetricKey.random();
       const encrypted = key.encrypt(PLAINTEXT, AAD);
       const urString = encrypted.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), EncryptedMessage.codec);

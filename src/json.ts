@@ -29,8 +29,8 @@
  * console.log(json.asStr()); // {"key": "value"}
  *
  * // Create JSON from bytes
- * const json2 = JSON.fromData(new TextEncoder().encode('[1, 2, 3]'));
- * console.log(json2.len()); // 9
+ * const json2 = JSON.from(new TextEncoder().encode('[1, 2, 3]'));
+ * console.log(json2.byteLength); // 9
  * ```
  */
 
@@ -61,7 +61,7 @@ export class JSON implements ToCbor {
   /**
    * Create a new JSON instance from byte data.
    */
-  static fromData(data: Uint8Array): JSON {
+  static from(data: Uint8Array): JSON {
     return new JSON(data);
   }
 
@@ -84,10 +84,8 @@ export class JSON implements ToCbor {
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Return the length of the JSON data in bytes.
-   */
-  len(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 
@@ -98,10 +96,8 @@ export class JSON implements ToCbor {
     return this._data.length === 0;
   }
 
-  /**
-   * Return the data as a byte slice.
-   */
-  asBytes(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
@@ -118,15 +114,8 @@ export class JSON implements ToCbor {
   /**
    * Return the data as a hexadecimal string.
    */
-  hex(): string {
+  toHex(): string {
     return bytesToHex(this._data);
-  }
-
-  /**
-   * Return a copy of the underlying data.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
@@ -156,7 +145,7 @@ export class JSON implements ToCbor {
     tags: [TAG_JSON],
     decodeUntagged: (cborValue) => {
       const data = expectBytes(cborValue);
-      return JSON.fromData(data);
+      return JSON.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

@@ -71,8 +71,8 @@ describe("SignatureScheme", () => {
 
       expect(privateKey).toBeInstanceOf(SigningPrivateKey);
       expect(publicKey).toBeInstanceOf(SigningPublicKey);
-      expect(privateKey.scheme()).toBe(SignatureScheme.Ed25519);
-      expect(publicKey.scheme()).toBe(SignatureScheme.Ed25519);
+      expect(privateKey.scheme).toBe(SignatureScheme.Ed25519);
+      expect(publicKey.scheme).toBe(SignatureScheme.Ed25519);
     });
 
     it("should create different keypairs each time", () => {
@@ -84,22 +84,22 @@ describe("SignatureScheme", () => {
 
     it("should create SSH Ed25519 keypair", () => {
       const [privateKey, publicKey] = createKeypair(SignatureScheme.SshEd25519);
-      expect(privateKey.scheme()).toBe(SignatureScheme.SshEd25519);
-      expect(publicKey.scheme()).toBe(SignatureScheme.SshEd25519);
+      expect(privateKey.scheme).toBe(SignatureScheme.SshEd25519);
+      expect(publicKey.scheme).toBe(SignatureScheme.SshEd25519);
       expect(privateKey.isSsh()).toBe(true);
       expect(publicKey.isSsh()).toBe(true);
     });
 
     it("should create SSH ECDSA P-256 keypair", () => {
       const [privateKey, publicKey] = createKeypair(SignatureScheme.SshEcdsaP256);
-      expect(privateKey.scheme()).toBe(SignatureScheme.SshEcdsaP256);
-      expect(publicKey.scheme()).toBe(SignatureScheme.SshEcdsaP256);
+      expect(privateKey.scheme).toBe(SignatureScheme.SshEcdsaP256);
+      expect(publicKey.scheme).toBe(SignatureScheme.SshEcdsaP256);
     });
 
     it("should create SSH ECDSA P-384 keypair", () => {
       const [privateKey, publicKey] = createKeypair(SignatureScheme.SshEcdsaP384);
-      expect(privateKey.scheme()).toBe(SignatureScheme.SshEcdsaP384);
-      expect(publicKey.scheme()).toBe(SignatureScheme.SshEcdsaP384);
+      expect(privateKey.scheme).toBe(SignatureScheme.SshEcdsaP384);
+      expect(publicKey.scheme).toBe(SignatureScheme.SshEcdsaP384);
     });
 
     it("throws for SSH DSA keypair (DSA-1024 keygen not yet ported)", () => {
@@ -129,9 +129,9 @@ describe("SigningPrivateKey", () => {
   describe("creation", () => {
     it("should create from Ed25519PrivateKey", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
-      expect(privateKey.scheme()).toBe(SignatureScheme.Ed25519);
+      expect(privateKey.scheme).toBe(SignatureScheme.Ed25519);
       expect(privateKey.isEd25519()).toBe(true);
     });
 
@@ -139,15 +139,15 @@ describe("SigningPrivateKey", () => {
       const privateKey = SigningPrivateKey.random();
 
       expect(privateKey).toBeInstanceOf(SigningPrivateKey);
-      expect(privateKey.scheme()).toBe(SignatureScheme.Ed25519);
+      expect(privateKey.scheme).toBe(SignatureScheme.Ed25519);
     });
 
     it("should return underlying Ed25519 key", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
-      const retrieved = privateKey.toEd25519();
-      expect(retrieved).not.toBeNull();
+      const retrieved = privateKey.asEd25519();
+      expect(retrieved).toBeDefined();
       expect(retrieved?.equals(ed25519Key)).toBe(true);
     });
   });
@@ -155,27 +155,27 @@ describe("SigningPrivateKey", () => {
   describe("publicKey", () => {
     it("should derive public key", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const publicKey = privateKey.publicKey();
       expect(publicKey).toBeInstanceOf(SigningPublicKey);
-      expect(publicKey.scheme()).toBe(SignatureScheme.Ed25519);
+      expect(publicKey.scheme).toBe(SignatureScheme.Ed25519);
     });
   });
 
   describe("signing", () => {
     it("should sign a message", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const signature = privateKey.sign(TEST_MESSAGE);
       expect(signature).toBeInstanceOf(Signature);
-      expect(signature.scheme()).toBe(SignatureScheme.Ed25519);
+      expect(signature.scheme).toBe(SignatureScheme.Ed25519);
     });
 
     it("should produce deterministic signatures for Ed25519", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const signature1 = privateKey.sign(TEST_MESSAGE);
       const signature2 = privateKey.sign(TEST_MESSAGE);
@@ -187,7 +187,7 @@ describe("SigningPrivateKey", () => {
   describe("verification via private key (Schnorr-only — matches Rust Verifier impl)", () => {
     it("should verify own Ed25519 signatures via publicKey()", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const signature = privateKey.sign(TEST_MESSAGE);
       // Rust restricts SigningPrivateKey::verify to Schnorr; for other
@@ -198,7 +198,7 @@ describe("SigningPrivateKey", () => {
 
     it("should reject tampered messages via publicKey()", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const signature = privateKey.sign(TEST_MESSAGE);
       const tamperedMessage = new TextEncoder().encode("Wolf Mcnally"); // lowercase 'n'
@@ -206,7 +206,7 @@ describe("SigningPrivateKey", () => {
     });
 
     it("should verify own Schnorr signatures directly", () => {
-      const privateKey = SigningPrivateKey.randomSchnorr();
+      const privateKey = SigningPrivateKey.random({ scheme: SignatureScheme.Schnorr });
       const signature = privateKey.sign(TEST_MESSAGE);
       expect(privateKey.verify(signature, TEST_MESSAGE)).toBe(true);
     });
@@ -215,7 +215,7 @@ describe("SigningPrivateKey", () => {
   describe("equality", () => {
     it("should be equal to itself", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       expect(privateKey.equals(privateKey)).toBe(true);
     });
@@ -223,8 +223,8 @@ describe("SigningPrivateKey", () => {
     it("should be equal to another key with same data", () => {
       const ed25519Key1 = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
       const ed25519Key2 = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey1 = SigningPrivateKey.newEd25519(ed25519Key1);
-      const privateKey2 = SigningPrivateKey.newEd25519(ed25519Key2);
+      const privateKey1 = SigningPrivateKey.fromEd25519(ed25519Key1);
+      const privateKey2 = SigningPrivateKey.fromEd25519(ed25519Key2);
 
       expect(privateKey1.equals(privateKey2)).toBe(true);
     });
@@ -248,7 +248,7 @@ describe("SigningPrivateKey", () => {
 
     it("should serialize to untagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const cbor = privateKey.untaggedCbor();
       expect(cbor).toBeTruthy();
@@ -256,7 +256,7 @@ describe("SigningPrivateKey", () => {
 
     it("should serialize to tagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const cbor = privateKey.toCbor();
       expect(cbor).toBeTruthy();
@@ -264,7 +264,7 @@ describe("SigningPrivateKey", () => {
 
     it("should serialize to tagged CBOR binary data", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const data = privateKey.toCbor().toData();
       expect(data).toBeInstanceOf(Uint8Array);
@@ -273,7 +273,7 @@ describe("SigningPrivateKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const data = privateKey.toCbor().toData();
       const recovered = SigningPrivateKey.fromCbor(decodeCbor(data));
@@ -283,7 +283,7 @@ describe("SigningPrivateKey", () => {
 
     it("should roundtrip through untagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const cbor = privateKey.untaggedCbor();
       const data = cbor.toData();
@@ -301,7 +301,7 @@ describe("SigningPublicKey", () => {
       const ed25519PublicKey = ed25519Key.publicKey();
       const publicKey = SigningPublicKey.fromEd25519(ed25519PublicKey);
 
-      expect(publicKey.scheme()).toBe(SignatureScheme.Ed25519);
+      expect(publicKey.scheme).toBe(SignatureScheme.Ed25519);
       expect(publicKey.isEd25519()).toBe(true);
     });
 
@@ -310,8 +310,8 @@ describe("SigningPublicKey", () => {
       const ed25519PublicKey = ed25519Key.publicKey();
       const publicKey = SigningPublicKey.fromEd25519(ed25519PublicKey);
 
-      const retrieved = publicKey.toEd25519();
-      expect(retrieved).not.toBeNull();
+      const retrieved = publicKey.asEd25519();
+      expect(retrieved).toBeDefined();
       expect(retrieved?.equals(ed25519PublicKey)).toBe(true);
     });
   });
@@ -319,7 +319,7 @@ describe("SigningPublicKey", () => {
   describe("verification", () => {
     it("should verify valid signatures", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
       const signature = privateKey.sign(TEST_MESSAGE);
@@ -328,7 +328,7 @@ describe("SigningPublicKey", () => {
 
     it("should reject invalid signatures", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
       const signature = privateKey.sign(TEST_MESSAGE);
@@ -349,7 +349,7 @@ describe("SigningPublicKey", () => {
   describe("equality", () => {
     it("should be equal to itself", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
       expect(publicKey.equals(publicKey)).toBe(true);
@@ -357,7 +357,7 @@ describe("SigningPublicKey", () => {
 
     it("should be equal to another key with same data", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey1 = privateKey.publicKey();
       const publicKey2 = privateKey.publicKey();
 
@@ -395,7 +395,7 @@ describe("SigningPublicKey", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
       const data = publicKey.toCbor().toData();
@@ -406,7 +406,7 @@ describe("SigningPublicKey", () => {
 
     it("should roundtrip through untagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const publicKey = privateKey.publicKey();
 
       const cbor = publicKey.untaggedCbor();
@@ -422,20 +422,20 @@ describe("Signature", () => {
   describe("creation", () => {
     it("should create Ed25519 signature from data", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
-      expect(signature.scheme()).toBe(SignatureScheme.Ed25519);
+      expect(signature.scheme).toBe(SignatureScheme.Ed25519);
       expect(signature.isEd25519()).toBe(true);
     });
 
     it("should have 64-byte signature data for Ed25519", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
-      const sigData = signature.toEd25519();
-      expect(sigData).not.toBeNull();
+      const sigData = signature.asEd25519();
+      expect(sigData).toBeDefined();
       expect(sigData?.length).toBe(64);
     });
   });
@@ -443,7 +443,7 @@ describe("Signature", () => {
   describe("equality", () => {
     it("should be equal for same signature data", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
 
       const sig1 = privateKey.sign(TEST_MESSAGE);
       const sig2 = privateKey.sign(TEST_MESSAGE);
@@ -483,7 +483,7 @@ describe("Signature", () => {
 
     it("should roundtrip through tagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
       const data = signature.toCbor().toData();
@@ -494,7 +494,7 @@ describe("Signature", () => {
 
     it("should roundtrip through untagged CBOR", () => {
       const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+      const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
       const signature = privateKey.sign(TEST_MESSAGE);
 
       const cbor = signature.untaggedCbor();
@@ -509,7 +509,7 @@ describe("Signature", () => {
 describe("Ed25519 signing integration", () => {
   it("should match Rust test vector for signing", () => {
     const ed25519Key = Ed25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-    const privateKey = SigningPrivateKey.newEd25519(ed25519Key);
+    const privateKey = SigningPrivateKey.fromEd25519(ed25519Key);
     const publicKey = privateKey.publicKey();
 
     const signature = privateKey.sign(TEST_MESSAGE);
@@ -567,24 +567,24 @@ describe("Schnorr signing (secp256k1)", () => {
 
       expect(privateKey).toBeInstanceOf(SigningPrivateKey);
       expect(publicKey).toBeInstanceOf(SigningPublicKey);
-      expect(privateKey.scheme()).toBe(SignatureScheme.Schnorr);
-      expect(publicKey.scheme()).toBe(SignatureScheme.Schnorr);
+      expect(privateKey.scheme).toBe(SignatureScheme.Schnorr);
+      expect(publicKey.scheme).toBe(SignatureScheme.Schnorr);
       expect(privateKey.isSchnorr()).toBe(true);
       expect(publicKey.isSchnorr()).toBe(true);
     });
 
     it("should create from ECPrivateKey", () => {
       const ecKey = ECPrivateKey.random();
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
 
-      expect(privateKey.scheme()).toBe(SignatureScheme.Schnorr);
-      expect(privateKey.toEc()?.equals(ecKey)).toBe(true);
+      expect(privateKey.scheme).toBe(SignatureScheme.Schnorr);
+      expect(privateKey.asEc()?.equals(ecKey)).toBe(true);
     });
 
     it("should create random Schnorr key", () => {
-      const privateKey = SigningPrivateKey.randomSchnorr();
+      const privateKey = SigningPrivateKey.random({ scheme: SignatureScheme.Schnorr });
 
-      expect(privateKey.scheme()).toBe(SignatureScheme.Schnorr);
+      expect(privateKey.scheme).toBe(SignatureScheme.Schnorr);
       expect(privateKey.isSchnorr()).toBe(true);
     });
   });
@@ -595,7 +595,7 @@ describe("Schnorr signing (secp256k1)", () => {
       const message = new TextEncoder().encode("Hello Schnorr!");
 
       const signature = privateKey.sign(message);
-      expect(signature.scheme()).toBe(SignatureScheme.Schnorr);
+      expect(signature.scheme).toBe(SignatureScheme.Schnorr);
       expect(signature.isSchnorr()).toBe(true);
 
       expect(publicKey.verify(signature, message)).toBe(true);
@@ -624,13 +624,13 @@ describe("Schnorr signing (secp256k1)", () => {
   describe("CBOR serialization", () => {
     it("should roundtrip private key through CBOR", () => {
       const ecKey = ECPrivateKey.random();
-      const privateKey = SigningPrivateKey.newSchnorr(ecKey);
+      const privateKey = SigningPrivateKey.fromSchnorr(ecKey);
 
       const data = privateKey.toCbor().toData();
       const recovered = SigningPrivateKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(privateKey)).toBe(true);
-      expect(recovered.scheme()).toBe(SignatureScheme.Schnorr);
+      expect(recovered.scheme).toBe(SignatureScheme.Schnorr);
     });
 
     it("should roundtrip public key through CBOR", () => {
@@ -641,7 +641,7 @@ describe("Schnorr signing (secp256k1)", () => {
       const recovered = SigningPublicKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(publicKey)).toBe(true);
-      expect(recovered.scheme()).toBe(SignatureScheme.Schnorr);
+      expect(recovered.scheme).toBe(SignatureScheme.Schnorr);
     });
 
     it("should roundtrip signature through CBOR", () => {
@@ -653,7 +653,7 @@ describe("Schnorr signing (secp256k1)", () => {
       const recovered = Signature.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(signature)).toBe(true);
-      expect(recovered.scheme()).toBe(SignatureScheme.Schnorr);
+      expect(recovered.scheme).toBe(SignatureScheme.Schnorr);
     });
   });
 });
@@ -665,24 +665,24 @@ describe("ECDSA signing (secp256k1)", () => {
 
       expect(privateKey).toBeInstanceOf(SigningPrivateKey);
       expect(publicKey).toBeInstanceOf(SigningPublicKey);
-      expect(privateKey.scheme()).toBe(SignatureScheme.Ecdsa);
-      expect(publicKey.scheme()).toBe(SignatureScheme.Ecdsa);
+      expect(privateKey.scheme).toBe(SignatureScheme.Ecdsa);
+      expect(publicKey.scheme).toBe(SignatureScheme.Ecdsa);
       expect(privateKey.isEcdsa()).toBe(true);
       expect(publicKey.isEcdsa()).toBe(true);
     });
 
     it("should create from ECPrivateKey", () => {
       const ecKey = ECPrivateKey.random();
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
 
-      expect(privateKey.scheme()).toBe(SignatureScheme.Ecdsa);
-      expect(privateKey.toEc()?.equals(ecKey)).toBe(true);
+      expect(privateKey.scheme).toBe(SignatureScheme.Ecdsa);
+      expect(privateKey.asEc()?.equals(ecKey)).toBe(true);
     });
 
     it("should create random ECDSA key", () => {
-      const privateKey = SigningPrivateKey.randomEcdsa();
+      const privateKey = SigningPrivateKey.random({ scheme: SignatureScheme.Ecdsa });
 
-      expect(privateKey.scheme()).toBe(SignatureScheme.Ecdsa);
+      expect(privateKey.scheme).toBe(SignatureScheme.Ecdsa);
       expect(privateKey.isEcdsa()).toBe(true);
     });
   });
@@ -693,7 +693,7 @@ describe("ECDSA signing (secp256k1)", () => {
       const message = new TextEncoder().encode("Hello ECDSA!");
 
       const signature = privateKey.sign(message);
-      expect(signature.scheme()).toBe(SignatureScheme.Ecdsa);
+      expect(signature.scheme).toBe(SignatureScheme.Ecdsa);
       expect(signature.isEcdsa()).toBe(true);
 
       expect(publicKey.verify(signature, message)).toBe(true);
@@ -722,13 +722,13 @@ describe("ECDSA signing (secp256k1)", () => {
   describe("CBOR serialization", () => {
     it("should roundtrip private key through CBOR", () => {
       const ecKey = ECPrivateKey.random();
-      const privateKey = SigningPrivateKey.newEcdsa(ecKey);
+      const privateKey = SigningPrivateKey.fromEcdsa(ecKey);
 
       const data = privateKey.toCbor().toData();
       const recovered = SigningPrivateKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(privateKey)).toBe(true);
-      expect(recovered.scheme()).toBe(SignatureScheme.Ecdsa);
+      expect(recovered.scheme).toBe(SignatureScheme.Ecdsa);
     });
 
     it("should roundtrip public key through CBOR", () => {
@@ -739,7 +739,7 @@ describe("ECDSA signing (secp256k1)", () => {
       const recovered = SigningPublicKey.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(publicKey)).toBe(true);
-      expect(recovered.scheme()).toBe(SignatureScheme.Ecdsa);
+      expect(recovered.scheme).toBe(SignatureScheme.Ecdsa);
     });
 
     it("should roundtrip signature through CBOR", () => {
@@ -751,7 +751,7 @@ describe("ECDSA signing (secp256k1)", () => {
       const recovered = Signature.fromCbor(decodeCbor(data));
 
       expect(recovered.equals(signature)).toBe(true);
-      expect(recovered.scheme()).toBe(SignatureScheme.Ecdsa);
+      expect(recovered.scheme).toBe(SignatureScheme.Ecdsa);
     });
   });
 });

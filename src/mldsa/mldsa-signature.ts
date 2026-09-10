@@ -83,28 +83,17 @@ export class MLDSASignature implements ToCbor, ToUR {
   /**
    * Returns the security level of this signature.
    */
-  level(): MLDSALevel {
+  get level(): MLDSALevel {
     return this._level;
   }
 
-  /**
-   * Returns the raw signature bytes.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Returns a copy of the raw signature bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
-  /**
-   * Returns the size of the signature in bytes.
-   */
-  size(): number {
+  /** Number of bytes. */
+  get byteLength(): number {
     return this._data.length;
   }
 

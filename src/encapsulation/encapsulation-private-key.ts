@@ -103,7 +103,7 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
    * Create an EncapsulationPrivateKey from raw X25519 private key bytes.
    */
   static fromX25519Data(data: Uint8Array): EncapsulationPrivateKey {
-    const privateKey = X25519PrivateKey.fromDataRef(data);
+    const privateKey = X25519PrivateKey.from(data);
     return EncapsulationPrivateKey.fromX25519PrivateKey(privateKey);
   }
 
@@ -111,7 +111,7 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
    * Create an EncapsulationPrivateKey from an MLKEMPrivateKey.
    */
   static fromMlkem(privateKey: MLKEMPrivateKey): EncapsulationPrivateKey {
-    const scheme = mlkemLevelToScheme(privateKey.level());
+    const scheme = mlkemLevelToScheme(privateKey.level);
     return new EncapsulationPrivateKey(scheme, undefined, privateKey);
   }
 
@@ -123,88 +123,42 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
     return EncapsulationPrivateKey.fromMlkem(privateKey);
   }
 
-  /**
-   * Generate a new random X25519 encapsulation private key.
-   */
-  static new(): EncapsulationPrivateKey {
-    return EncapsulationPrivateKey.random();
-  }
-
-  /**
-   * Generate a new random X25519 encapsulation private key.
-   */
-  static random(): EncapsulationPrivateKey {
-    const rng = secureRng();
-    return EncapsulationPrivateKey.newUsing(rng);
-  }
-
-  /**
-   * Generate a new random X25519 encapsulation private key using provided RNG.
-   */
-  static newUsing(rng: RandomNumberGenerator): EncapsulationPrivateKey {
-    const x25519Private = X25519PrivateKey.newUsing(rng);
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({
+    rng = secureRng(),
+  }: { rng?: RandomNumberGenerator } = {}): EncapsulationPrivateKey {
+    const x25519Private = X25519PrivateKey.random({ rng: rng });
     return EncapsulationPrivateKey.fromX25519PrivateKey(x25519Private);
   }
 
-  /**
-   * Generate a new MLKEM encapsulation private key.
-   */
-  static newMlkem(level: MLKEMLevel = MLKEMLevel.MLKEM768): EncapsulationPrivateKey {
-    const mlkemPrivate = MLKEMPrivateKey.new(level);
+  /** A fresh ML-KEM private key at `level`; pass `rng` to make it deterministic. */
+  static randomMlkem(
+    level: MLKEMLevel = MLKEMLevel.MLKEM768,
+    { rng = secureRng() }: { rng?: RandomNumberGenerator } = {},
+  ): EncapsulationPrivateKey {
+    const mlkemPrivate = MLKEMPrivateKey.random(level, { rng: rng });
     return EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
   }
 
-  /**
-   * Generate a new MLKEM encapsulation private key using provided RNG.
-   */
-  static newMlkemUsing(level: MLKEMLevel, rng: RandomNumberGenerator): EncapsulationPrivateKey {
-    const mlkemPrivate = MLKEMPrivateKey.newUsing(level, rng);
-    return EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
+  /** A fresh private key and its public key. */
+  static keypair({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): [
+    EncapsulationPrivateKey,
+    EncapsulationPublicKey,
+  ] {
+    const privateKey = EncapsulationPrivateKey.random({ rng });
+    return [privateKey, privateKey.publicKey()];
   }
 
-  /**
-   * Generate a new keypair for X25519.
-   */
-  static keypair(): [EncapsulationPrivateKey, EncapsulationPublicKey] {
-    const privateKey = EncapsulationPrivateKey.new();
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
-  }
-
-  /**
-   * Generate a new keypair using the given RNG (X25519).
-   */
-  static keypairUsing(
-    rng: RandomNumberGenerator,
-  ): [EncapsulationPrivateKey, EncapsulationPublicKey] {
-    const privateKey = EncapsulationPrivateKey.newUsing(rng);
-    const publicKey = privateKey.publicKey();
-    return [privateKey, publicKey];
-  }
-
-  /**
-   * Generate a new MLKEM keypair.
-   */
+  /** A fresh ML-KEM private key at `level` and its public key. */
   static mlkemKeypair(
     level: MLKEMLevel = MLKEMLevel.MLKEM768,
+    { rng = secureRng() }: { rng?: RandomNumberGenerator } = {},
   ): [EncapsulationPrivateKey, EncapsulationPublicKey] {
-    const [mlkemPrivate, mlkemPublic] = MLKEMPrivateKey.keypair(level);
-    const privateKey = EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
-    const publicKey = EncapsulationPublicKey.fromMlkem(mlkemPublic);
-    return [privateKey, publicKey];
-  }
-
-  /**
-   * Generate a new MLKEM keypair using the given RNG.
-   */
-  static mlkemKeypairUsing(
-    level: MLKEMLevel,
-    rng: RandomNumberGenerator,
-  ): [EncapsulationPrivateKey, EncapsulationPublicKey] {
-    const [mlkemPrivate, mlkemPublic] = MLKEMPrivateKey.keypairUsing(level, rng);
-    const privateKey = EncapsulationPrivateKey.fromMlkem(mlkemPrivate);
-    const publicKey = EncapsulationPublicKey.fromMlkem(mlkemPublic);
-    return [privateKey, publicKey];
+    const [mlkemPrivate, mlkemPublic] = MLKEMPrivateKey.keypair(level, { rng });
+    return [
+      EncapsulationPrivateKey.fromMlkem(mlkemPrivate),
+      EncapsulationPublicKey.fromMlkem(mlkemPublic),
+    ];
   }
 
   // ============================================================================
@@ -214,7 +168,7 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
   /**
    * Returns the encapsulation scheme.
    */
-  encapsulationScheme(): EncapsulationScheme {
+  get encapsulationScheme(): EncapsulationScheme {
     return this._scheme;
   }
 
@@ -257,29 +211,27 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
   /**
    * Returns the X25519 private key if available, or null.
    */
-  toX25519(): X25519PrivateKey | null {
-    return this._x25519PrivateKey ?? null;
+  asX25519(): X25519PrivateKey | undefined {
+    return this._x25519PrivateKey ?? undefined;
   }
 
   /**
    * Returns the MLKEM private key if available, or null.
    */
-  toMlkem(): MLKEMPrivateKey | null {
-    return this._mlkemPrivateKey ?? null;
+  asMlkem(): MLKEMPrivateKey | undefined {
+    return this._mlkemPrivateKey ?? undefined;
   }
 
-  /**
-   * Returns the raw private key data.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PrivateKey;
       if (pk === undefined) throw ComponentsError.invalidData("X25519 private key not set");
-      return pk.data();
+      return pk.bytes;
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
       if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
-      return pk.data();
+      return pk.bytes;
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -311,9 +263,9 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
    */
   decapsulateSharedSecret(ciphertext: EncapsulationCiphertext): SymmetricKey {
     // Verify scheme matches
-    if (ciphertext.encapsulationScheme() !== this._scheme) {
+    if (ciphertext.encapsulationScheme !== this._scheme) {
       throw ComponentsError.invalidData(
-        `Scheme mismatch: expected ${String(this._scheme)}, got ${String(ciphertext.encapsulationScheme())}`,
+        `Scheme mismatch: expected ${String(this._scheme)}, got ${String(ciphertext.encapsulationScheme)}`,
       );
     }
 
@@ -360,9 +312,9 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
    */
   toString(): string {
     if (this._scheme === EncapsulationScheme.X25519) {
-      return `EncapsulationPrivateKey(X25519, ${bytesToHex(this.data()).substring(0, 16)}...)`;
+      return `EncapsulationPrivateKey(X25519, ${bytesToHex(this.bytes).substring(0, 16)}...)`;
     } else if (isMlkemScheme(this._scheme)) {
-      return `EncapsulationPrivateKey(${String(this._scheme)}, ${bytesToHex(this.data()).substring(0, 16)}...)`;
+      return `EncapsulationPrivateKey(${String(this._scheme)}, ${bytesToHex(this.bytes).substring(0, 16)}...)`;
     }
     return `EncapsulationPrivateKey(${String(this._scheme)})`;
   }
@@ -379,7 +331,7 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
    */
   reference(): Reference {
     const digest = Digest.fromImage(this.toCbor().toData());
-    return Reference.from(digest);
+    return Reference.fromDigest(digest);
   }
 
   // ============================================================================
@@ -390,9 +342,7 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
   static readonly codec: ComponentCodec<EncapsulationPrivateKey> = defineCodec({
     tags: [TAG_X25519_PRIVATE_KEY, TAG_MLKEM_PRIVATE_KEY],
     decodeUntagged: (cborValue) =>
-      EncapsulationPrivateKey.fromX25519PrivateKey(
-        X25519PrivateKey.fromDataRef(expectBytes(cborValue)),
-      ),
+      EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.from(expectBytes(cborValue))),
     decodeTagged: (tag, content, whole) =>
       tag.value === TAG_MLKEM_PRIVATE_KEY.value
         ? EncapsulationPrivateKey.fromMlkem(MLKEMPrivateKey.fromCbor(whole))
@@ -420,7 +370,7 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
     if (this._scheme === EncapsulationScheme.X25519) {
       const pk = this._x25519PrivateKey;
       if (pk === undefined) throw ComponentsError.invalidData("X25519 private key not set");
-      return cbor(pk.data());
+      return cbor(pk.bytes);
     } else if (isMlkemScheme(this._scheme)) {
       const pk = this._mlkemPrivateKey;
       if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");

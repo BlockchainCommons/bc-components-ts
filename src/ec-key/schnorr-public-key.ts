@@ -52,65 +52,31 @@ export class SchnorrPublicKey implements ECKeyBase {
   /**
    * Restore a SchnorrPublicKey from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): SchnorrPublicKey {
-    return new SchnorrPublicKey(new Uint8Array(data));
-  }
-
-  /**
-   * Restore a SchnorrPublicKey from a reference to an array of bytes.
-   * Validates the length.
-   */
-  static fromDataRef(data: Uint8Array): SchnorrPublicKey {
-    if (data.length !== SCHNORR_PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(SCHNORR_PUBLIC_KEY_SIZE, data.length);
-    }
-    return SchnorrPublicKey.fromData(data);
-  }
-
-  /**
-   * Create a SchnorrPublicKey from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): SchnorrPublicKey {
-    return SchnorrPublicKey.fromData(data);
+    return new SchnorrPublicKey(new Uint8Array(data));
   }
 
   /**
    * Restore a SchnorrPublicKey from a hex string.
    */
   static fromHex(hex: string): SchnorrPublicKey {
-    return SchnorrPublicKey.fromData(hexToBytes(hex));
+    return SchnorrPublicKey.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get a reference to the fixed-size array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the raw public key bytes (copy).
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * Get hex string representation.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -152,7 +118,7 @@ export class SchnorrPublicKey implements ECKeyBase {
    * Mirrors Rust `Display for SchnorrPublicKey`
    * (`bc-components-rust/src/ec_key/schnorr_public_key.rs:116-120`)
    * — the reference is computed from the **raw 32-byte key data**
-   * (not the tagged-CBOR form): `Reference::from_digest(Digest::from_image(self.data()))`.
+   * (not the tagged-CBOR form): `Reference::from_digest(Digest::from_image(self.bytes))`.
    * `ref_hex_short()` returns the first 8 hex chars of that
    * reference's binary form (= SHA-256(data)[0..4]).
    */

@@ -50,25 +50,25 @@ const signingCases: SigningCase[] = [
   {
     name: "schnorr",
     scheme: SignatureScheme.Schnorr,
-    key: SigningPrivateKey.newSchnorr(ECPrivateKey.fromData(seed)),
+    key: SigningPrivateKey.fromSchnorr(ECPrivateKey.from(seed)),
     own: "Schnorr",
   },
   {
     name: "ecdsa",
     scheme: SignatureScheme.Ecdsa,
-    key: SigningPrivateKey.newEcdsa(ECPrivateKey.fromData(seed)),
+    key: SigningPrivateKey.fromEcdsa(ECPrivateKey.from(seed)),
     own: "Ecdsa",
   },
   {
     name: "ed25519",
     scheme: SignatureScheme.Ed25519,
-    key: SigningPrivateKey.newEd25519(Ed25519PrivateKey.from(seed)),
+    key: SigningPrivateKey.fromEd25519(Ed25519PrivateKey.from(seed)),
     own: "Ed25519",
   },
   {
     name: "sr25519",
     scheme: SignatureScheme.Sr25519,
-    key: SigningPrivateKey.newSr25519(Sr25519PrivateKey.from(seed)),
+    key: SigningPrivateKey.fromSr25519(Sr25519PrivateKey.from(seed)),
     own: "Sr25519",
   },
   {
@@ -80,7 +80,7 @@ const signingCases: SigningCase[] = [
   {
     name: "ssh-ed25519",
     scheme: SignatureScheme.SshEd25519,
-    key: PrivateKeyBase.fromData(seed).sshSigningPrivateKey({ kind: "ed25519" }, "c"),
+    key: PrivateKeyBase.from(seed).sshSigningPrivateKey({ kind: "ed25519" }, "c"),
     own: "Ssh",
   },
 ];
@@ -90,22 +90,22 @@ describe("SigningPrivateKey over every scheme", () => {
   for (const c of signingCases) {
     it(c.name, () => {
       const k = c.key;
-      expect(k.scheme()).toBe(c.scheme);
-      expect(typeof k.keyType()).toBe("string");
+      expect(k.scheme).toBe(c.scheme);
+      expect(typeof k.keyType).toBe("string");
       for (const p of PREDICATES) {
         const is = (k as unknown as Record<string, () => boolean>)[`is${p}`]!();
         expect(is, p).toBe(p === c.own);
-        const to = (k as unknown as Record<string, () => unknown>)[`to${p}`]!();
-        expect(to !== null, `to${p}`).toBe(p === c.own);
+        const to = (k as unknown as Record<string, () => unknown>)[`as${p}`]!();
+        expect(to !== undefined, `as${p}`).toBe(p === c.own);
       }
-      expect(k.toEc() !== null).toBe(c.own === "Schnorr" || c.own === "Ecdsa");
+      expect(k.asEc() !== undefined).toBe(c.own === "Schnorr" || c.own === "Ecdsa");
       // ML-DSA cannot derive its public key from the private key alone.
       if (c.own === "Mldsa") {
         expect(() => k.publicKey()).toThrow(ComponentsError);
         return;
       }
       const pub = k.publicKey();
-      expect(pub.scheme()).toBe(c.scheme);
+      expect(pub.scheme).toBe(c.scheme);
       const sig =
         c.own === "Ssh"
           ? k.signWithOptions(msg, { type: "Ssh", namespace: "t", hashAlg: "sha256" })
@@ -119,7 +119,7 @@ describe("SigningPrivateKey over every scheme", () => {
       expect(k.reference().toCbor().toData().length).toBeGreaterThan(0);
       const back = SigningPrivateKey.fromCbor(decodeCbor(k.toCbor().toData()));
       expect(back.equals(k)).toBe(true);
-      expect(back.scheme()).toBe(c.scheme);
+      expect(back.scheme).toBe(c.scheme);
       const viaUr = decodeURWith(UR.parse(k.toUR().toString()), SigningPrivateKey.codec);
       expect(viaUr.equals(k)).toBe(true);
       expect(k.toUR().type.name).toBe("signing-private-key");
@@ -135,9 +135,9 @@ describe("SigningPrivateKey over every scheme", () => {
 
   it("random constructors produce the named scheme", () => {
     expect(SigningPrivateKey.random().isEd25519()).toBe(true);
-    expect(SigningPrivateKey.randomSchnorr().isSchnorr()).toBe(true);
-    expect(SigningPrivateKey.randomEcdsa().isEcdsa()).toBe(true);
-    expect(SigningPrivateKey.randomSr25519().isSr25519()).toBe(true);
+    expect(SigningPrivateKey.random({ scheme: SignatureScheme.Schnorr }).isSchnorr()).toBe(true);
+    expect(SigningPrivateKey.random({ scheme: SignatureScheme.Ecdsa }).isEcdsa()).toBe(true);
+    expect(SigningPrivateKey.random({ scheme: SignatureScheme.Sr25519 }).isSr25519()).toBe(true);
   });
 
   it("keys of different schemes are not equal", () => {
@@ -153,11 +153,11 @@ describe("SigningPublicKey and Signature over every scheme", () => {
       for (const p of PREDICATES) {
         expect((pub as unknown as Record<string, () => boolean>)[`is${p}`]!(), p).toBe(p === c.own);
         expect(
-          (pub as unknown as Record<string, () => unknown>)[`to${p}`]!() !== null,
-          `to${p}`,
+          (pub as unknown as Record<string, () => unknown>)[`as${p}`]!() !== undefined,
+          `as${p}`,
         ).toBe(p === c.own);
       }
-      expect(typeof pub.keyType()).toBe("string");
+      expect(typeof pub.keyType).toBe("string");
       expect(pub.toString()).toContain("SigningPublicKey");
       expect(pub.equals(pub)).toBe(true);
       const back = SigningPublicKey.fromCbor(decodeCbor(pub.toCbor().toData()));
@@ -178,13 +178,13 @@ describe("SigningPublicKey and Signature over every scheme", () => {
         c.own === "Ssh"
           ? c.key.signWithOptions(msg, { type: "Ssh", namespace: "t", hashAlg: "sha256" })
           : c.key.sign(msg);
-      expect(sig.scheme()).toBe(c.scheme);
-      expect(typeof sig.signatureType()).toBe("string");
+      expect(sig.scheme).toBe(c.scheme);
+      expect(typeof sig.signatureType).toBe("string");
       for (const p of PREDICATES) {
         expect((sig as unknown as Record<string, () => boolean>)[`is${p}`]!(), p).toBe(p === c.own);
         expect(
-          (sig as unknown as Record<string, () => unknown>)[`to${p}`]!() !== null,
-          `to${p}`,
+          (sig as unknown as Record<string, () => unknown>)[`as${p}`]!() !== undefined,
+          `as${p}`,
         ).toBe(p === c.own);
       }
       expect(sig.toHex().length).toBeGreaterThan(0);
@@ -201,9 +201,9 @@ describe("SigningPublicKey and Signature over every scheme", () => {
     const [priv, pub] = createKeypair(SignatureScheme.MLDSA44);
     const sig = priv.sign(msg);
     expect(sig.isMldsa()).toBe(true);
-    expect(sig.toMldsa()).not.toBeNull();
+    expect(sig.asMldsa()).toBeDefined();
     expect(pub.isMldsa()).toBe(true);
-    expect(pub.toMldsa()).not.toBeNull();
+    expect(pub.asMldsa()).toBeDefined();
     expect(pub.verify(sig, msg)).toBe(true);
     expect(Signature.fromCbor(decodeCbor(sig.toCbor().toData())).equals(sig)).toBe(true);
     expect(SigningPublicKey.fromCbor(decodeCbor(pub.toCbor().toData())).equals(pub)).toBe(true);
@@ -215,14 +215,14 @@ describe("SigningPublicKey and Signature over every scheme", () => {
   });
 
   it("hex constructors round-trip the raw signature bytes", () => {
-    const ec = ECPrivateKey.fromData(seed);
-    const e = SigningPrivateKey.newEcdsa(ec).sign(msg);
+    const ec = ECPrivateKey.from(seed);
+    const e = SigningPrivateKey.fromEcdsa(ec).sign(msg);
     expect(Signature.ecdsaFromHex(e.toHex()).equals(e)).toBe(true);
-    const s = SigningPrivateKey.newSchnorr(ec).sign(msg);
+    const s = SigningPrivateKey.fromSchnorr(ec).sign(msg);
     expect(Signature.schnorrFromHex(s.toHex()).equals(s)).toBe(true);
-    const d = SigningPrivateKey.newEd25519(Ed25519PrivateKey.from(seed)).sign(msg);
+    const d = SigningPrivateKey.fromEd25519(Ed25519PrivateKey.from(seed)).sign(msg);
     expect(Signature.ed25519FromHex(d.toHex()).equals(d)).toBe(true);
-    const r = SigningPrivateKey.newSr25519(Sr25519PrivateKey.from(seed)).sign(msg);
+    const r = SigningPrivateKey.fromSr25519(Sr25519PrivateKey.from(seed)).sign(msg);
     expect(Signature.sr25519FromHex(r.toHex()).equals(r)).toBe(true);
     expect(() => Signature.ecdsaFromData(new Uint8Array(3))).toThrow(ComponentsError);
   });
@@ -237,8 +237,8 @@ describe("keypair factories", () => {
         continue;
       }
       const [priv, pub] = createKeypair(scheme, "comment");
-      expect(priv.scheme()).toBe(scheme);
-      expect(pub.scheme()).toBe(scheme);
+      expect(priv.scheme).toBe(scheme);
+      expect(pub.scheme).toBe(scheme);
       if (!priv.isMldsa()) expect(pub.equals(priv.publicKey())).toBe(true);
       const sig = priv.isSsh()
         ? priv.signWithOptions(msg, { type: "Ssh", namespace: "t", hashAlg: "sha256" })
@@ -264,8 +264,10 @@ describe("keypair factories", () => {
 });
 
 describe("Encapsulation types over both schemes", () => {
-  const x = EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.fromData(seed));
-  const m = EncapsulationPrivateKey.fromMlkem(MLKEMPrivateKey.newUsing(MLKEMLevel.MLKEM512, rng()));
+  const x = EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.from(seed));
+  const m = EncapsulationPrivateKey.fromMlkem(
+    MLKEMPrivateKey.random(MLKEMLevel.MLKEM512, { rng: rng() }),
+  );
   const cases: [string, EncapsulationPrivateKey, EncapsulationScheme][] = [
     ["x25519", x, EncapsulationScheme.X25519],
     ["mlkem512", m, EncapsulationScheme.MLKEM512],
@@ -273,14 +275,14 @@ describe("Encapsulation types over both schemes", () => {
   for (const [name, priv, scheme] of cases) {
     it(name, () => {
       const isX = scheme === EncapsulationScheme.X25519;
-      expect(priv.encapsulationScheme()).toBe(scheme);
+      expect(priv.encapsulationScheme).toBe(scheme);
       expect(priv.isX25519()).toBe(isX);
       expect(priv.isMlkem()).toBe(!isX);
-      expect(priv.toX25519() !== null).toBe(isX);
-      expect(priv.toMlkem() !== null).toBe(!isX);
+      expect(priv.asX25519() !== undefined).toBe(isX);
+      expect(priv.asMlkem() !== undefined).toBe(!isX);
       if (isX) expect(() => priv.mlkemPrivateKey()).toThrow(ComponentsError);
       else expect(() => priv.x25519PrivateKey()).toThrow(ComponentsError);
-      expect(priv.data().length).toBeGreaterThan(0);
+      expect(priv.bytes.length).toBeGreaterThan(0);
       expect(priv.equals(priv)).toBe(true);
       expect(priv.toString()).toContain("EncapsulationPrivateKey");
       expect(priv.reference().toCbor().toData().length).toBeGreaterThan(0);
@@ -292,14 +294,14 @@ describe("Encapsulation types over both schemes", () => {
       expect(priv.toUR().type.name).toBe(isX ? "agreement-private-key" : "mlkem-private-key");
 
       const pub = priv.publicKey();
-      expect(pub.encapsulationScheme()).toBe(scheme);
+      expect(pub.encapsulationScheme).toBe(scheme);
       expect(pub.isX25519()).toBe(isX);
       expect(pub.isMlkem()).toBe(!isX);
-      expect(pub.toX25519() !== null).toBe(isX);
-      expect(pub.toMlkem() !== null).toBe(!isX);
+      expect(pub.asX25519() !== undefined).toBe(isX);
+      expect(pub.asMlkem() !== undefined).toBe(!isX);
       if (isX) expect(() => pub.mlkemPublicKey()).toThrow(ComponentsError);
       else expect(() => pub.x25519PublicKey()).toThrow(ComponentsError);
-      expect(pub.data().length).toBeGreaterThan(0);
+      expect(pub.bytes.length).toBeGreaterThan(0);
       expect(pub.encapsulationPublicKey().equals(pub)).toBe(true);
       expect(pub.toString()).toContain("EncapsulationPublicKey");
       expect(pub.reference().equals(priv.reference())).toBe(false);
@@ -311,14 +313,14 @@ describe("Encapsulation types over both schemes", () => {
       ).toBe(true);
 
       const [shared, ct] = pub.encapsulateNewSharedSecret();
-      expect(ct.encapsulationScheme()).toBe(scheme);
+      expect(ct.encapsulationScheme).toBe(scheme);
       expect(ct.isX25519()).toBe(isX);
       expect(ct.isMlkem()).toBe(!isX);
-      expect(ct.toX25519() !== null).toBe(isX);
-      expect(ct.toMlkem() !== null).toBe(!isX);
+      expect(ct.asX25519() !== undefined).toBe(isX);
+      expect(ct.asMlkem() !== undefined).toBe(!isX);
       if (isX) expect(() => ct.mlkemCiphertext()).toThrow(ComponentsError);
       else expect(() => ct.x25519PublicKey()).toThrow(ComponentsError);
-      expect(ct.data().length).toBeGreaterThan(0);
+      expect(ct.bytes.length).toBeGreaterThan(0);
       expect(ct.equals(ct)).toBe(true);
       expect(ct.toString()).toContain("EncapsulationCiphertext");
       const ctBack = EncapsulationCiphertext.fromCbor(decodeCbor(ct.toCbor().toData()));
@@ -332,27 +334,29 @@ describe("Encapsulation types over both schemes", () => {
 
   it("data constructors and random constructors", () => {
     expect(EncapsulationPrivateKey.fromX25519Data(seed).equals(x)).toBe(true);
-    expect(EncapsulationPublicKey.fromX25519Data(x.publicKey().data()).equals(x.publicKey())).toBe(
+    expect(EncapsulationPublicKey.fromX25519Data(x.publicKey().bytes).equals(x.publicKey())).toBe(
       true,
     );
     expect(EncapsulationCiphertext.fromX25519Data(seed).isX25519()).toBe(true);
-    const mp = EncapsulationPrivateKey.fromMlkemData(MLKEMLevel.MLKEM512, m.data());
+    const mp = EncapsulationPrivateKey.fromMlkemData(MLKEMLevel.MLKEM512, m.bytes);
     expect(mp.equals(m)).toBe(true);
     expect(
-      EncapsulationPublicKey.fromMlkemData(MLKEMLevel.MLKEM512, m.publicKey().data()).equals(
+      EncapsulationPublicKey.fromMlkemData(MLKEMLevel.MLKEM512, m.publicKey().bytes).equals(
         m.publicKey(),
       ),
     ).toBe(true);
     const [, ct] = m.publicKey().encapsulateNewSharedSecret();
-    expect(EncapsulationCiphertext.fromMlkemData(MLKEMLevel.MLKEM512, ct.data()).equals(ct)).toBe(
+    expect(EncapsulationCiphertext.fromMlkemData(MLKEMLevel.MLKEM512, ct.bytes).equals(ct)).toBe(
       true,
     );
-    expect(EncapsulationPrivateKey.new().isX25519()).toBe(true);
+    expect(EncapsulationPrivateKey.random().isX25519()).toBe(true);
     expect(EncapsulationPrivateKey.random().isX25519()).toBe(true);
     expect(
-      EncapsulationPrivateKey.newUsing(rng()).equals(EncapsulationPrivateKey.newUsing(rng())),
+      EncapsulationPrivateKey.random({ rng: rng() }).equals(
+        EncapsulationPrivateKey.random({ rng: rng() }),
+      ),
     ).toBe(true);
-    expect(EncapsulationPrivateKey.newMlkem().isMlkem()).toBe(true);
+    expect(EncapsulationPrivateKey.randomMlkem().isMlkem()).toBe(true);
     const [kp, kpub] = EncapsulationPrivateKey.keypair();
     expect(kp.publicKey().equals(kpub)).toBe(true);
     expect(x.equals(m)).toBe(false);
@@ -370,7 +374,7 @@ describe("Encapsulation types over both schemes", () => {
       expect(schemeToMlkemLevel(scheme)).toBe(level);
       expect(mlkemLevelToScheme(level)).toBe(scheme);
       const [priv, pub] = createEncapsulationKeypair(scheme);
-      expect(priv.encapsulationScheme()).toBe(scheme);
+      expect(priv.encapsulationScheme).toBe(scheme);
       expect(priv.publicKey().equals(pub)).toBe(true);
       expect(() => createEncapsulationKeypairUsing(rng(), scheme)).toThrow(ComponentsError);
     }

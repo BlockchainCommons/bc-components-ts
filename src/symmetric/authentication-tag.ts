@@ -45,57 +45,24 @@ export class AuthenticationTag {
   /**
    * Restore an AuthenticationTag from a fixed-size array of bytes.
    */
-  static fromData(data: Uint8Array): AuthenticationTag {
-    return new AuthenticationTag(new Uint8Array(data));
-  }
-
-  /**
-   * Restore an AuthenticationTag from a reference to an array of bytes.
-   */
-  static fromDataRef(data: Uint8Array): AuthenticationTag {
-    if (data.length !== AUTHENTICATION_TAG_SIZE) {
-      throw ComponentsError.invalidSize(AUTHENTICATION_TAG_SIZE, data.length);
-    }
-    return AuthenticationTag.fromData(data);
-  }
-
-  /**
-   * Create an AuthenticationTag from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): AuthenticationTag {
-    return AuthenticationTag.fromData(data);
+    return new AuthenticationTag(new Uint8Array(data));
   }
 
   /**
    * Create an AuthenticationTag from hex string.
    */
   static fromHex(hex: string): AuthenticationTag {
-    return AuthenticationTag.fromData(hexToBytes(hex));
+    return AuthenticationTag.from(hexToBytes(hex));
   }
 
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get a reference to the fixed-size array of bytes.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the reference as a byte slice.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Get the raw tag bytes as a copy.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
@@ -154,7 +121,7 @@ export class AuthenticationTag {
    */
   static fromCbor(cbor: Cbor): AuthenticationTag {
     const data = expectBytes(cbor);
-    return AuthenticationTag.fromDataRef(data);
+    return AuthenticationTag.from(data);
   }
 
   /**

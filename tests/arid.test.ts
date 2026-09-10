@@ -15,14 +15,14 @@ describe("ARID", () => {
 
   describe("creation", () => {
     it("should create a new random ARID", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
 
-      expect(arid.data().length).toBe(ARID.ARID_SIZE);
+      expect(arid.bytes.length).toBe(ARID.ARID_SIZE);
     });
 
     it("should create unique random ARIDs", () => {
-      const arid1 = ARID.new();
-      const arid2 = ARID.new();
+      const arid1 = ARID.random();
+      const arid2 = ARID.random();
 
       // While technically random, it's astronomically unlikely they'd be equal
       expect(arid1.equals(arid2)).toBe(false);
@@ -31,69 +31,69 @@ describe("ARID", () => {
     it("should create an ARID using random (alias)", () => {
       const arid = ARID.random();
 
-      expect(arid.data().length).toBe(ARID.ARID_SIZE);
+      expect(arid.bytes.length).toBe(ARID.ARID_SIZE);
     });
 
     it("should create an ARID from raw data", () => {
       const rawData = new Uint8Array(ARID.ARID_SIZE);
-      const arid = ARID.fromData(rawData);
+      const arid = ARID.from(rawData);
 
-      expect(arid.data()).toEqual(rawData);
+      expect(arid.bytes).toEqual(rawData);
     });
 
     it("should create an ARID using fromDataRef", () => {
       const rawData = new Uint8Array(ARID.ARID_SIZE);
-      const arid = ARID.fromDataRef(rawData);
+      const arid = ARID.from(rawData);
 
-      expect(arid.data().length).toBe(ARID.ARID_SIZE);
+      expect(arid.bytes.length).toBe(ARID.ARID_SIZE);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const wrongSizeData = new Uint8Array(ARID.ARID_SIZE + 1);
 
-      expect(() => ARID.fromDataRef(wrongSizeData)).toThrow();
+      expect(() => ARID.from(wrongSizeData)).toThrow();
     });
 
     it("should create an ARID using from (legacy alias)", () => {
       const rawData = new Uint8Array(ARID.ARID_SIZE);
       const arid = ARID.from(rawData);
 
-      expect(arid.data().length).toBe(ARID.ARID_SIZE);
+      expect(arid.bytes.length).toBe(ARID.ARID_SIZE);
     });
 
     it("should create an ARID from hex string", () => {
       const arid = ARID.fromHex(TEST_HEX);
 
-      expect(arid.data().length).toBe(ARID.ARID_SIZE);
-      expect(arid.hex()).toBe(TEST_HEX);
+      expect(arid.bytes.length).toBe(ARID.ARID_SIZE);
+      expect(arid.toHex()).toBe(TEST_HEX);
     });
   });
 
   describe("accessors", () => {
     it("should return data as bytes", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
 
-      expect(arid.data()).toBeInstanceOf(Uint8Array);
-      expect(arid.asBytes()).toBeInstanceOf(Uint8Array);
-      expect(arid.toData()).toBeInstanceOf(Uint8Array);
+      expect(arid.bytes).toBeInstanceOf(Uint8Array);
+      expect(arid.bytes).toBeInstanceOf(Uint8Array);
+      expect(arid.bytes).toBeInstanceOf(Uint8Array);
     });
 
     it("should return hex representation", () => {
-      const arid = ARID.new();
-      const hex = arid.hex();
+      const arid = ARID.random();
+      const hex = arid.toHex();
 
       expect(typeof hex).toBe("string");
       expect(hex.length).toBe(ARID.ARID_SIZE * 2);
     });
 
     it("should return same hex from hex() and toHex()", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
 
-      expect(arid.hex()).toBe(arid.toHex());
+      expect(arid.toHex()).toBe(arid.toHex());
     });
 
     it("should return base64 representation", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
 
       expect(typeof arid.toBase64()).toBe("string");
     });
@@ -107,7 +107,7 @@ describe("ARID", () => {
     });
 
     it("should return string representation", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const str = arid.toString();
 
       expect(str).toContain("ARID");
@@ -131,8 +131,8 @@ describe("ARID", () => {
 
   describe("hex roundtrip", () => {
     it("should roundtrip through hex", () => {
-      const arid = ARID.new();
-      const hex = arid.hex();
+      const arid = ARID.random();
+      const hex = arid.toHex();
       const restored = ARID.fromHex(hex);
 
       expect(restored.equals(arid)).toBe(true);
@@ -141,7 +141,7 @@ describe("ARID", () => {
 
   describe("equality", () => {
     it("should be equal to itself", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
 
       expect(arid.equals(arid)).toBe(true);
     });
@@ -165,28 +165,28 @@ describe("ARID", () => {
 
   describe("CBOR serialization", () => {
     it("should return correct CBOR tags", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const tags = arid.cborTags();
 
       expect(tags.length).toBeGreaterThan(0);
     });
 
     it("should serialize to untagged CBOR", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const untagged = arid.untaggedCbor();
 
       expect(untagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const tagged = arid.toCbor();
 
       expect(tagged).toBeDefined();
     });
 
     it("should serialize to tagged CBOR binary data", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const data = arid.toCbor().toData();
 
       expect(data).toBeInstanceOf(Uint8Array);
@@ -194,7 +194,7 @@ describe("ARID", () => {
     });
 
     it("should roundtrip through tagged CBOR", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const data = arid.toCbor().toData();
       const restored = ARID.fromCbor(decodeCbor(data));
 
@@ -202,7 +202,7 @@ describe("ARID", () => {
     });
 
     it("should roundtrip through untagged CBOR", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const data = arid.untaggedCbor().toData();
       const restored = ARID.fromCbor(decodeCbor(data));
 
@@ -212,21 +212,21 @@ describe("ARID", () => {
 
   describe("UR serialization", () => {
     it("should serialize to UR", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const ur = arid.toUR();
 
       expect(ur).toBeDefined();
     });
 
     it("should serialize to UR string", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const urString = arid.toUR().toString();
 
       expect(urString.startsWith("ur:arid/")).toBe(true);
     });
 
     it("should roundtrip through UR string", () => {
-      const arid = ARID.new();
+      const arid = ARID.random();
       const urString = arid.toUR().toString();
       const restored = decodeURWith(UR.parse(urString), ARID.codec);
 

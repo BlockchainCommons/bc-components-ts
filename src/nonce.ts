@@ -39,14 +39,14 @@
  * import { Nonce } from '@blockchaincommons/components';
  *
  * // Generate a new random nonce
- * const nonce = Nonce.new();
+ * const nonce = Nonce.random();
  *
  * // Create a nonce from a byte array
  * const data = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
- * const nonce2 = Nonce.fromData(data);
+ * const nonce2 = Nonce.from(data);
  *
  * // Access the nonce data
- * const nonceData = nonce2.data();
+ * const nonceData = nonce2.bytes;
  * ```
  */
 
@@ -75,43 +75,16 @@ export class Nonce implements ToCbor, ToUR {
   // Static Factory Methods
   // ============================================================================
 
-  /**
-   * Create a new random nonce.
-   */
-  static new(): Nonce {
-    const rng = secureRng();
+  /** A fresh random value; pass `rng` to make it deterministic. */
+  static random({ rng = secureRng() }: { rng?: RandomNumberGenerator } = {}): Nonce {
     return new Nonce(randomBytes(Nonce.NONCE_SIZE, { rng: rng }));
-  }
-
-  /**
-   * Create a new random nonce (alias for compatibility).
-   */
-  static random(): Nonce {
-    return Nonce.new();
   }
 
   /**
    * Restores a nonce from data.
    */
-  static fromData(data: Uint8Array): Nonce {
-    return new Nonce(new Uint8Array(data));
-  }
-
-  /**
-   * Restores a nonce from data (validates length).
-   */
-  static fromDataRef(data: Uint8Array): Nonce {
-    if (data.length !== Nonce.NONCE_SIZE) {
-      throw ComponentsError.invalidSize(Nonce.NONCE_SIZE, data.length);
-    }
-    return Nonce.fromData(data);
-  }
-
-  /**
-   * Create a Nonce from raw bytes (legacy alias).
-   */
   static from(data: Uint8Array): Nonce {
-    return Nonce.fromData(data);
+    return new Nonce(new Uint8Array(data));
   }
 
   /**
@@ -123,50 +96,20 @@ export class Nonce implements ToCbor, ToUR {
     return new Nonce(hexToBytes(hex));
   }
 
-  /**
-   * Generate a random nonce using provided RNG.
-   */
-  static randomUsing(rng: RandomNumberGenerator): Nonce {
-    return new Nonce(randomBytes(Nonce.NONCE_SIZE, { rng: rng }));
-  }
-
   // ============================================================================
   // Instance Methods
   // ============================================================================
 
-  /**
-   * Get the data of the nonce.
-   */
-  data(): Uint8Array {
+  /** The bytes (a view; do not mutate). */
+  get bytes(): Uint8Array {
     return this._data;
-  }
-
-  /**
-   * Get the nonce as a byte slice.
-   */
-  asBytes(): Uint8Array {
-    return this._data;
-  }
-
-  /**
-   * Get the raw nonce bytes as a copy.
-   */
-  toData(): Uint8Array {
-    return new Uint8Array(this._data);
   }
 
   /**
    * The data as a hexadecimal string.
    */
-  hex(): string {
-    return bytesToHex(this._data);
-  }
-
-  /**
-   * Get hex string representation (alias for hex()).
-   */
   toHex(): string {
-    return this.hex();
+    return bytesToHex(this._data);
   }
 
   /**
@@ -191,7 +134,7 @@ export class Nonce implements ToCbor, ToUR {
    * Get string representation.
    */
   toString(): string {
-    return `Nonce(${this.hex()})`;
+    return `Nonce(${this.toHex()})`;
   }
 
   // ============================================================================
@@ -203,7 +146,7 @@ export class Nonce implements ToCbor, ToUR {
     tags: [TAG_NONCE],
     decodeUntagged: (cbor) => {
       const data = expectBytes(cbor);
-      return Nonce.fromDataRef(data);
+      return Nonce.from(data);
     },
     encodeUntagged: (value) => value.untaggedCbor(),
   });

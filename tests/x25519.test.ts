@@ -19,9 +19,9 @@ const TEST_KEY_MATERIAL = new TextEncoder().encode("test key material for deriva
 describe("X25519PrivateKey", () => {
   describe("creation", () => {
     it("should create a new random key", () => {
-      const key = X25519PrivateKey.new();
+      const key = X25519PrivateKey.random();
       expect(key).toBeInstanceOf(X25519PrivateKey);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes.length).toBe(32);
     });
 
     it("should create unique random keys", () => {
@@ -32,37 +32,37 @@ describe("X25519PrivateKey", () => {
 
     it("should create from raw data", () => {
       const data = hexToBytes(TEST_PRIVATE_KEY_HEX);
-      const key = X25519PrivateKey.fromData(data);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      const key = X25519PrivateKey.from(data);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should create using fromDataRef", () => {
       const data = hexToBytes(TEST_PRIVATE_KEY_HEX);
-      const key = X25519PrivateKey.fromDataRef(data);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      const key = X25519PrivateKey.from(data);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const data = new Uint8Array(16);
-      expect(() => X25519PrivateKey.fromDataRef(data)).toThrow();
+      expect(() => X25519PrivateKey.from(data)).toThrow();
     });
 
     it("should create using from (legacy alias)", () => {
       const data = hexToBytes(TEST_PRIVATE_KEY_HEX);
       const key = X25519PrivateKey.from(data);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should create from hex string", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
     it("should create using provided RNG", () => {
       const rng = new SecureRng();
-      const key = X25519PrivateKey.newUsing(rng);
+      const key = X25519PrivateKey.random({ rng: rng });
       expect(key).toBeInstanceOf(X25519PrivateKey);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes.length).toBe(32);
     });
   });
 
@@ -77,7 +77,7 @@ describe("X25519PrivateKey", () => {
 
     it("should create keypair using provided RNG", () => {
       const rng = new SecureRng();
-      const [privateKey, publicKey] = X25519PrivateKey.keypairUsing(rng);
+      const [privateKey, publicKey] = X25519PrivateKey.keypair({ rng: rng });
 
       expect(privateKey).toBeInstanceOf(X25519PrivateKey);
       expect(publicKey).toBeInstanceOf(X25519PublicKey);
@@ -89,7 +89,7 @@ describe("X25519PrivateKey", () => {
     it("should derive key from key material", () => {
       const key = X25519PrivateKey.deriveFromKeyMaterial(TEST_KEY_MATERIAL);
       expect(key).toBeInstanceOf(X25519PrivateKey);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes.length).toBe(32);
     });
 
     it("should produce deterministic keys from same material", () => {
@@ -110,13 +110,13 @@ describe("X25519PrivateKey", () => {
   describe("accessors", () => {
     it("should return data as bytes", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      expect(key.data()).toBeInstanceOf(Uint8Array);
-      expect(key.data().length).toBe(32);
+      expect(key.bytes).toBeInstanceOf(Uint8Array);
+      expect(key.bytes.length).toBe(32);
     });
 
     it("should return hex representation", () => {
       const key = X25519PrivateKey.fromHex(TEST_PRIVATE_KEY_HEX);
-      expect(key.hex()).toBe(TEST_PRIVATE_KEY_HEX);
+      expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
       expect(key.toHex()).toBe(TEST_PRIVATE_KEY_HEX);
     });
 
@@ -136,7 +136,7 @@ describe("X25519PrivateKey", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
       expect(publicKey).toBeInstanceOf(X25519PublicKey);
-      expect(publicKey.data().length).toBe(32);
+      expect(publicKey.bytes.length).toBe(32);
     });
 
     it("should cache derived public key", () => {
@@ -277,30 +277,30 @@ describe("X25519PublicKey", () => {
     it("should create from raw data", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const data = publicKey.data();
+      const data = publicKey.bytes;
 
-      const restored = X25519PublicKey.fromData(data);
+      const restored = X25519PublicKey.from(data);
       expect(restored.equals(publicKey)).toBe(true);
     });
 
     it("should create using fromDataRef", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const data = publicKey.data();
+      const data = publicKey.bytes;
 
-      const restored = X25519PublicKey.fromDataRef(data);
+      const restored = X25519PublicKey.from(data);
       expect(restored.equals(publicKey)).toBe(true);
     });
 
     it("should throw on wrong size with fromDataRef", () => {
       const data = new Uint8Array(16);
-      expect(() => X25519PublicKey.fromDataRef(data)).toThrow();
+      expect(() => X25519PublicKey.from(data)).toThrow();
     });
 
     it("should create using from (legacy alias)", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const data = publicKey.data();
+      const data = publicKey.bytes;
 
       const restored = X25519PublicKey.from(data);
       expect(restored.equals(publicKey)).toBe(true);
@@ -309,7 +309,7 @@ describe("X25519PublicKey", () => {
     it("should create from hex string", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      const hex = publicKey.hex();
+      const hex = publicKey.toHex();
 
       const restored = X25519PublicKey.fromHex(hex);
       expect(restored.equals(publicKey)).toBe(true);
@@ -320,15 +320,15 @@ describe("X25519PublicKey", () => {
     it("should return data as bytes", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      expect(publicKey.data()).toBeInstanceOf(Uint8Array);
-      expect(publicKey.data().length).toBe(32);
+      expect(publicKey.bytes).toBeInstanceOf(Uint8Array);
+      expect(publicKey.bytes.length).toBe(32);
     });
 
     it("should return hex representation", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey = privateKey.publicKey();
-      expect(publicKey.hex().length).toBe(64);
-      expect(publicKey.toHex()).toBe(publicKey.hex());
+      expect(publicKey.toHex().length).toBe(64);
+      expect(publicKey.toHex()).toBe(publicKey.toHex());
     });
 
     it("should return base64 representation", () => {
@@ -354,7 +354,7 @@ describe("X25519PublicKey", () => {
     it("should be equal to another key with same data", () => {
       const privateKey = X25519PrivateKey.random();
       const publicKey1 = privateKey.publicKey();
-      const publicKey2 = X25519PublicKey.fromData(publicKey1.data());
+      const publicKey2 = X25519PublicKey.from(publicKey1.bytes);
       expect(publicKey1.equals(publicKey2)).toBe(true);
     });
 
@@ -462,7 +462,7 @@ describe("X25519 key agreement integration", () => {
     expect(aliceShared.equals(bobShared)).toBe(true);
 
     // The shared key can be used for symmetric encryption
-    expect(aliceShared.data().length).toBe(32);
+    expect(aliceShared.bytes.length).toBe(32);
   });
 
   it("should work with serialized keys", () => {

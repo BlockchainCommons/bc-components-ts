@@ -48,37 +48,27 @@ export class PBKDF2Params implements KeyDerivation {
     this._hashType = hashType;
   }
 
-  /**
-   * Create new PBKDF2 parameters with default settings.
-   * Uses a random 16-byte salt, 100,000 iterations, and SHA-256.
-   */
-  static new(): PBKDF2Params {
-    return PBKDF2Params.newOpt(
-      Salt.newWithLen(SALT_LEN),
-      DEFAULT_PBKDF2_ITERATIONS,
-      HashType.SHA256,
-    );
-  }
-
-  /**
-   * Create PBKDF2 parameters with custom settings.
-   */
-  static newOpt(salt: Salt, iterations: number, hashType: HashType): PBKDF2Params {
+  /** Parameters with a fresh random salt unless one is given. */
+  static from({
+    salt = Salt.random({ length: SALT_LEN }),
+    iterations = DEFAULT_PBKDF2_ITERATIONS,
+    hashType = HashType.SHA256,
+  }: { salt?: Salt; iterations?: number; hashType?: HashType } = {}): PBKDF2Params {
     return new PBKDF2Params(salt, iterations, hashType);
   }
 
   /** Returns the salt. */
-  salt(): Salt {
+  get salt(): Salt {
     return this._salt;
   }
 
   /** Returns the number of iterations. */
-  iterations(): number {
+  get iterations(): number {
     return this._iterations;
   }
 
   /** Returns the hash type. */
-  hashType(): HashType {
+  get hashType(): HashType {
     return this._hashType;
   }
 
@@ -92,13 +82,13 @@ export class PBKDF2Params implements KeyDerivation {
    */
   lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Encode the method parameters as AAD
     const encodedMethod = this.toCbor().toData();
 
     // Encrypt the content key using the derived key
-    return derivedKey.encrypt(contentKey.data(), encodedMethod, Nonce.new());
+    return derivedKey.encrypt(contentKey.bytes, encodedMethod, Nonce.random());
   }
 
   /**
@@ -106,22 +96,22 @@ export class PBKDF2Params implements KeyDerivation {
    */
   unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey {
     const derivedKeyData = this._deriveKey(secret);
-    const derivedKey = SymmetricKey.fromData(derivedKeyData);
+    const derivedKey = SymmetricKey.from(derivedKeyData);
 
     // Decrypt to get the content key
     const contentKeyData = derivedKey.decrypt(encryptedMessage);
-    return SymmetricKey.fromData(contentKeyData);
+    return SymmetricKey.from(contentKeyData);
   }
 
   private _deriveKey(secret: Uint8Array): Uint8Array {
     switch (this._hashType) {
       case HashType.SHA256:
-        return pbkdf2Sha256(secret, this._salt.asBytes(), {
+        return pbkdf2Sha256(secret, this._salt.bytes, {
           iterations: this._iterations,
           dkLen: 32,
         });
       case HashType.SHA512:
-        return pbkdf2Sha512(secret, this._salt.asBytes(), {
+        return pbkdf2Sha512(secret, this._salt.bytes, {
           iterations: this._iterations,
           dkLen: 32,
         });

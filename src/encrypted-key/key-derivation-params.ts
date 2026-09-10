@@ -41,28 +41,28 @@ export type KeyDerivationParams =
  * Create HKDF derivation parameters.
  */
 export function hkdfParams(params?: HKDFParams): KeyDerivationParams {
-  return { type: "hkdf", params: params ?? HKDFParams.new() };
+  return { type: "hkdf", params: params ?? HKDFParams.from() };
 }
 
 /**
  * Create PBKDF2 derivation parameters.
  */
 export function pbkdf2Params(params?: PBKDF2Params): KeyDerivationParams {
-  return { type: "pbkdf2", params: params ?? PBKDF2Params.new() };
+  return { type: "pbkdf2", params: params ?? PBKDF2Params.from() };
 }
 
 /**
  * Create Scrypt derivation parameters.
  */
 export function scryptParams(params?: ScryptParams): KeyDerivationParams {
-  return { type: "scrypt", params: params ?? ScryptParams.new() };
+  return { type: "scrypt", params: params ?? ScryptParams.from() };
 }
 
 /**
  * Create Argon2id derivation parameters.
  */
 export function argon2idParams(params?: Argon2idParams): KeyDerivationParams {
-  return { type: "argon2id", params: params ?? Argon2idParams.new() };
+  return { type: "argon2id", params: params ?? Argon2idParams.from() };
 }
 
 /**
@@ -72,7 +72,7 @@ export function argon2idParams(params?: Argon2idParams): KeyDerivationParams {
  */
 export function sshAgentParams(idOrParams: string | SSHAgentParams): KeyDerivationParams {
   if (typeof idOrParams === "string") {
-    return { type: "sshagent", params: SSHAgentParams.new(idOrParams) };
+    return { type: "sshagent", params: SSHAgentParams.from({ id: idOrParams }) };
   }
   return { type: "sshagent", params: idOrParams };
 }

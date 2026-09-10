@@ -49,7 +49,7 @@ export function redesignedShapedAdapterFor(
   const rngOf = (spec: RngSpec): any => {
     if ("fake" in spec) return gen(FAKE_FILL);
     if ("hkdf" in spec) {
-      const h = m.HKDFRng.new(toBytes(spec.hkdf.km), spec.hkdf.salt);
+      const h = new m.HKDFRng(toBytes(spec.hkdf.km), spec.hkdf.salt);
       return gen((d) => h.fillBytes(d));
     }
     const seed = spec.seed.map(BigInt);
@@ -63,69 +63,69 @@ export function redesignedShapedAdapterFor(
   const valueOf = (type: ValueType, data: Uint8Array): any => {
     switch (type) {
       case "digest":
-        return m.Digest.fromData(data);
+        return m.Digest.from(data);
       case "nonce":
-        return m.Nonce.fromData(data);
+        return m.Nonce.from(data);
       case "salt":
-        return m.Salt.fromData(data);
+        return m.Salt.from(data);
       case "arid":
-        return m.ARID.fromData(data);
+        return m.ARID.from(data);
       case "uuid":
-        return m.UUID.fromData(data);
+        return m.UUID.from(data);
       case "xid":
-        return m.XID.fromData(data);
+        return m.XID.from(data);
       case "reference":
-        return m.Reference.fromData(data);
+        return m.Reference.from(data);
       case "symmetricKey":
-        return m.SymmetricKey.fromData(data);
+        return m.SymmetricKey.from(data);
       case "json":
-        return m.JSON.fromData(data);
+        return m.JSON.from(data);
       case "uri":
-        return m.URI.new(new TextDecoder().decode(data));
+        return m.URI.from(new TextDecoder().decode(data));
       case "authTag":
-        return m.AuthenticationTag.fromData(data);
+        return m.AuthenticationTag.from(data);
       case "x25519Priv":
-        return m.X25519PrivateKey.fromData(data);
+        return m.X25519PrivateKey.from(data);
       case "x25519Pub":
-        return m.X25519PublicKey.fromData(data);
+        return m.X25519PublicKey.from(data);
       case "ecPriv":
-        return m.ECPrivateKey.fromData(data);
+        return m.ECPrivateKey.from(data);
       case "ecPub":
-        return m.ECPublicKey.fromData(data);
+        return m.ECPublicKey.from(data);
       case "ecUncompressed":
-        return m.ECUncompressedPublicKey.fromData(data);
+        return m.ECUncompressedPublicKey.from(data);
       case "schnorrPub":
-        return m.SchnorrPublicKey.fromData(data);
+        return m.SchnorrPublicKey.from(data);
       case "ed25519Priv":
         return m.Ed25519PrivateKey.from(data);
       case "ed25519Pub":
         return m.Ed25519PublicKey.from(data);
       case "sr25519Priv":
-        return m.Sr25519PrivateKey.fromSeed(data);
+        return m.Sr25519PrivateKey.from(data);
       case "sr25519Pub":
         return m.Sr25519PublicKey.from(data);
       case "privateKeyBase":
-        return m.PrivateKeyBase.fromData(data);
+        return m.PrivateKeyBase.from(data);
       case "sskrShare":
-        return m.SSKRShareCbor.fromData(data);
+        return m.SSKRShareCbor.from(data);
     }
   };
   const describe = (v: any): string => {
     if (typeof v.toCbor === "function") return codable(v);
     if (typeof v.toCborData === "function") return hex(v.toCborData());
-    if (typeof v.toData === "function") return hex(v.toData());
-    return hex(v.asBytes());
+    if (typeof v.toData === "function") return hex(v.bytes);
+    return hex(v.bytes);
   };
   const signingPriv = (scheme: Scheme, key: Uint8Array): any => {
     switch (scheme) {
       case "schnorr":
-        return m.SigningPrivateKey.newSchnorr(m.ECPrivateKey.fromData(key));
+        return m.SigningPrivateKey.fromSchnorr(m.ECPrivateKey.from(key));
       case "ecdsa":
-        return m.SigningPrivateKey.newEcdsa(m.ECPrivateKey.fromData(key));
+        return m.SigningPrivateKey.fromEcdsa(m.ECPrivateKey.from(key));
       case "ed25519":
-        return m.SigningPrivateKey.newEd25519(m.Ed25519PrivateKey.from(key));
+        return m.SigningPrivateKey.fromEd25519(m.Ed25519PrivateKey.from(key));
       case "sr25519":
-        return m.SigningPrivateKey.newSr25519(m.Sr25519PrivateKey.fromSeed(key));
+        return m.SigningPrivateKey.fromSr25519(m.Sr25519PrivateKey.from(key));
     }
   };
   const schemeEnum = (s: Scheme): any =>
@@ -135,28 +135,32 @@ export function redesignedShapedAdapterFor(
       ? { kind: "ed25519" }
       : { kind: "ecdsa", curve: a === "ecdsa-p256" ? "nistp256" : "nistp384" };
   const paramsOf = (p: ParamsSpec): any => {
-    const salt = m.Salt.fromData(B(p.salt));
+    const salt = m.Salt.from(B(p.salt));
     const hash = p.hash === "sha512" ? m.HashType.SHA512 : m.HashType.SHA256;
     switch (p.method) {
       case "hkdf":
-        return m.hkdfParams(m.HKDFParams.newOpt(salt, hash));
+        return m.hkdfParams(m.HKDFParams.from({ salt: salt, hashType: hash }));
       case "pbkdf2":
         return m.pbkdf2Params(
-          m.PBKDF2Params.newOpt(salt, p.iterations ?? m.DEFAULT_PBKDF2_ITERATIONS, hash),
+          m.PBKDF2Params.from({
+            salt: salt,
+            iterations: p.iterations ?? m.DEFAULT_PBKDF2_ITERATIONS,
+            hashType: hash,
+          }),
         );
       case "scrypt":
         return m.scryptParams(
-          m.ScryptParams.newOpt(
-            salt,
-            p.logN ?? m.DEFAULT_SCRYPT_LOG_N,
-            p.r ?? m.DEFAULT_SCRYPT_R,
-            p.p ?? m.DEFAULT_SCRYPT_P,
-          ),
+          m.ScryptParams.from({
+            salt: salt,
+            logN: p.logN ?? m.DEFAULT_SCRYPT_LOG_N,
+            r: p.r ?? m.DEFAULT_SCRYPT_R,
+            p: p.p ?? m.DEFAULT_SCRYPT_P,
+          }),
         );
       case "argon2id":
-        return m.argon2idParams(m.Argon2idParams.newOpt(salt));
+        return m.argon2idParams(m.Argon2idParams.from({ salt: salt }));
       case "sshAgent":
-        return m.sshAgentParams(m.SSHAgentParams.newOpt(salt, p.id ?? "id"));
+        return m.sshAgentParams(m.SSHAgentParams.from({ salt: salt, id: p.id ?? "id" }));
     }
   };
   const decoder = (type: DecodeType): any =>
@@ -230,10 +234,10 @@ export function redesignedShapedAdapterFor(
           const v = valueOf(r.type, B(r.data));
           const extras: string[] = [];
           if (r.type === "ecPriv")
-            extras.push(hex(v.publicKey().toData()), hex(v.schnorrPublicKey().toData()));
+            extras.push(hex(v.publicKey().bytes), hex(v.schnorrPublicKey().bytes));
           if (r.type === "ed25519Priv" || r.type === "x25519Priv" || r.type === "sr25519Priv")
-            extras.push(hex(v.publicKey().toData()));
-          if (r.type === "ecPub") extras.push(hex(v.uncompressedPublicKey().toData()));
+            extras.push(hex(v.publicKey().bytes));
+          if (r.type === "ecPub") extras.push(hex(v.uncompressedPublicKey().bytes));
           if (r.type === "ecUncompressed") extras.push(hex(v.compressedData()));
           if (r.type === "xid")
             extras.push(
@@ -246,7 +250,7 @@ export function redesignedShapedAdapterFor(
           if (r.type === "uuid") extras.push(v.toString());
           if (r.type === "sskrShare")
             extras.push(
-              `${v.identifier()},${v.groupThreshold()},${v.groupCount()},${v.groupIndex()},${v.memberThreshold()},${v.memberIndex()}`,
+              `${v.identifier},${v.groupThreshold},${v.groupCount},${v.groupIndex},${v.memberThreshold},${v.memberIndex}`,
             );
           return [describe(v), ...extras].join("|");
         }
@@ -254,27 +258,27 @@ export function redesignedShapedAdapterFor(
           const rng = rngOf(r.rng);
           switch (r.type) {
             case "nonce":
-              return hex(m.Nonce.randomUsing(rng).data());
+              return hex(m.Nonce.random({ rng: rng }).bytes);
             case "salt":
-              return hex(m.Salt.newWithLenUsing(r.len ?? 16, rng).asBytes());
+              return hex(m.Salt.random({ length: r.len ?? 16, rng: rng }).bytes);
             case "arid":
-              return hex(m.ARID.fromData(rng.randomData(32)).data());
+              return hex(m.ARID.from(rng.randomData(32)).bytes);
             case "uuid":
-              return hex(m.UUID.fromData(rng.randomData(16)).data());
+              return hex(m.UUID.from(rng.randomData(16)).bytes);
             case "symmetricKey":
-              return hex(m.SymmetricKey.randomUsing(rng).data());
+              return hex(m.SymmetricKey.random({ rng: rng }).bytes);
             case "x25519Priv":
-              return hex(m.X25519PrivateKey.newUsing(rng).data());
+              return hex(m.X25519PrivateKey.random({ rng: rng }).bytes);
             case "ecPriv":
-              return hex(m.ECPrivateKey.newUsing(rng).data());
+              return hex(m.ECPrivateKey.random({ rng: rng }).bytes);
             case "ed25519Priv":
-              return hex(m.Ed25519PrivateKey.randomUsing(rng).data());
+              return hex(m.Ed25519PrivateKey.random({ rng: rng }).bytes);
             case "sr25519Priv":
-              return hex(m.Sr25519PrivateKey.randomUsing(rng).toData());
+              return hex(m.Sr25519PrivateKey.random({ rng: rng }).bytes);
             case "privateKeyBase":
-              return hex(m.PrivateKeyBase.newUsing(rng).data());
+              return hex(m.PrivateKeyBase.random({ rng: rng }).bytes);
             case "seed":
-              return hex(m.Seed.newWithLenUsing(r.len ?? 32, rng).asBytes());
+              return hex(m.Seed.random({ length: r.len ?? 32, rng: rng }).bytes);
           }
           break;
         }
@@ -283,26 +287,26 @@ export function redesignedShapedAdapterFor(
           switch (r.type) {
             case "x25519": {
               const k = m.X25519PrivateKey.deriveFromKeyMaterial(km);
-              return `${hex(k.data())}|${hex(k.publicKey().data())}`;
+              return `${hex(k.bytes)}|${hex(k.publicKey().bytes)}`;
             }
             case "ec": {
               const k = m.ECPrivateKey.deriveFromKeyMaterial(km);
-              return `${hex(k.data())}|${hex(k.publicKey().data())}|${hex(k.schnorrPublicKey().data())}`;
+              return `${hex(k.bytes)}|${hex(k.publicKey().bytes)}|${hex(k.schnorrPublicKey().bytes)}`;
             }
             case "ed25519": {
               const k = m.Ed25519PrivateKey.deriveFromKeyMaterial(km);
-              return `${hex(k.data())}|${hex(k.publicKey().data())}`;
+              return `${hex(k.bytes)}|${hex(k.publicKey().bytes)}`;
             }
             case "sr25519": {
               const k = m.Sr25519PrivateKey.deriveFromKeyMaterial(km);
-              return `${hex(k.toData())}|${hex(k.publicKey().toData())}`;
+              return `${hex(k.bytes)}|${hex(k.publicKey().bytes)}`;
             }
           }
           break;
         }
         case "digest": {
           const d = m.Digest.fromImage(B(r.image));
-          return `${hex(d.data())}|${d.toUR().toString()}|${d.shortDescription()}`;
+          return `${hex(d.bytes)}|${d.toUR().toString()}|${d.shortDescription()}`;
         }
         case "compressed": {
           const data = B(r.data);
@@ -314,32 +318,31 @@ export function redesignedShapedAdapterFor(
           return `${tagged(c)}|${hex(back) === hex(data) ? "roundtrip" : "MISMATCH"}`;
         }
         case "seed": {
-          const s = m.Seed.newOpt(
-            B(r.data),
-            r.name,
-            r.note,
-            r.date === undefined ? undefined : new Date(r.date),
-          );
+          const s = m.Seed.from(B(r.data), {
+            name: r.name,
+            note: r.note,
+            creationDate: r.date === undefined ? undefined : new Date(r.date),
+          });
           return codable(s);
         }
         case "encrypt": {
-          const key = m.SymmetricKey.fromData(B(r.key));
+          const key = m.SymmetricKey.from(B(r.key));
           const msg = key.encrypt(
             B(r.plaintext),
             r.aad ? B(r.aad) : undefined,
-            m.Nonce.fromData(B(r.nonce)),
+            m.Nonce.from(B(r.nonce)),
           );
           const back = key.decrypt(msg);
           return `${codable(msg)}|${hex(back) === hex(B(r.plaintext)) ? "roundtrip" : "MISMATCH"}`;
         }
         case "x25519Shared": {
-          const priv = m.X25519PrivateKey.fromData(B(r.priv));
-          return hex(priv.sharedKeyWith(m.X25519PublicKey.fromData(B(r.pub))).data());
+          const priv = m.X25519PrivateKey.from(B(r.priv));
+          return hex(priv.sharedKeyWith(m.X25519PublicKey.from(B(r.pub))).bytes);
         }
         case "signingKeys": {
           const priv = signingPriv(r.scheme, B(r.key));
           const pub = priv.publicKey();
-          return `${codable(priv)}|${codable(pub)}|${hex(m.XID.fromSigningPublicKey(pub).data())}|${hex(pub.reference().data())}`;
+          return `${codable(priv)}|${codable(pub)}|${hex(m.XID.fromSigningPublicKey(pub).bytes)}|${hex(pub.reference().bytes)}`;
         }
         case "sign": {
           const priv = signingPriv(r.scheme, B(r.key));
@@ -348,10 +351,12 @@ export function redesignedShapedAdapterFor(
             ? priv.signWithOptions(msg, { type: "Schnorr", rng: rngOf(r.rng) })
             : priv.sign(msg);
           const ok = priv.publicKey().verify(sig, msg);
+          // Sr25519 signatures are randomised; pin only the verification.
+          if (r.scheme === "sr25519") return `nondeterministic|${ok ? "verified" : "INVALID"}`;
           return `${codable(sig)}|${ok ? "verified" : "INVALID"}`;
         }
         case "sshFromSeed": {
-          const pkb = m.PrivateKeyBase.fromData(B(r.seed));
+          const pkb = m.PrivateKeyBase.from(B(r.seed));
           const priv = pkb.sshSigningPrivateKey(sshAlgOf(r.alg), r.comment);
           const pub = priv.publicKey();
           const parts = [priv.toSshOpenssh(), pub.toSshOpenssh(), tagged(priv), tagged(pub)];
@@ -385,7 +390,7 @@ export function redesignedShapedAdapterFor(
           return parts.join("|");
         }
         case "pkb": {
-          const pkb = m.PrivateKeyBase.fromData(B(r.seed));
+          const pkb = m.PrivateKeyBase.from(B(r.seed));
           const ed = pkb.ed25519SigningPrivateKey();
           const sch = pkb.schnorrSigningPrivateKey();
           const ec = pkb.ecdsaSigningPrivateKey();
@@ -395,8 +400,8 @@ export function redesignedShapedAdapterFor(
             tagged(ed),
             tagged(sch.publicKey()),
             tagged(ec),
-            hex(x.data()),
-            hex(x.publicKey().data()),
+            hex(x.bytes),
+            hex(x.publicKey().bytes),
             tagged(pkb.ed25519PublicKeys()),
             tagged(pkb.schnorrPublicKeys()),
             tagged(pkb.ecdsaPrivateKeys()),
@@ -414,28 +419,27 @@ export function redesignedShapedAdapterFor(
             encEnum,
             rngOf(r.rng),
           );
-          return `${codable(priv)}|${codable(pub)}|${hex(pub.reference().data())}|${pub.equals(priv.publicKeys()) ? "consistent" : "INCONSISTENT"}`;
+          return `${codable(priv)}|${codable(pub)}|${hex(pub.reference().bytes)}|${pub.equals(priv.publicKeys()) ? "consistent" : "INCONSISTENT"}`;
         }
         case "seal": {
           let priv: any;
           if ("x25519" in r.recipient)
             priv = m.EncapsulationPrivateKey.fromX25519PrivateKey(
-              m.X25519PrivateKey.fromData(B(r.recipient.x25519)),
+              m.X25519PrivateKey.from(B(r.recipient.x25519)),
             );
           else
-            priv = m.EncapsulationPrivateKey.newMlkemUsing(
-              mlkemLevel(r.recipient.mlkem),
-              rngOf(r.recipient.rng),
-            );
+            priv = m.EncapsulationPrivateKey.randomMlkem(mlkemLevel(r.recipient.mlkem), {
+              rng: rngOf(r.recipient.rng),
+            });
           const pub = priv.publicKey();
           const pt = B(r.plaintext);
           const sealed = r.aad
-            ? m.SealedMessage.newOpt(pt, pub, B(r.aad), undefined)
-            : m.SealedMessage.new(pt, pub);
+            ? m.SealedMessage.seal(pt, pub, { aad: B(r.aad) })
+            : m.SealedMessage.seal(pt, pub);
           const back = sealed.decrypt(priv);
           const bytes = sealed.toCbor().toData();
           const re = m.SealedMessage.fromCbor(decodeCbor(bytes));
-          return `${sealed.encapsulationScheme()}|len=${bytes.length}|${hex(back) === hex(pt) ? "roundtrip" : "MISMATCH"}|${hex(re.decrypt(priv)) === hex(pt) ? "cbor-roundtrip" : "CBOR-MISMATCH"}|${"x25519" in r.recipient ? tagged(pub) : `pubLen=${pub.toCbor().toData().length}`}`;
+          return `${sealed.encapsulationScheme}|len=${bytes.length}|${hex(back) === hex(pt) ? "roundtrip" : "MISMATCH"}|${hex(re.decrypt(priv)) === hex(pt) ? "cbor-roundtrip" : "CBOR-MISMATCH"}|${"x25519" in r.recipient ? tagged(pub) : `pubLen=${pub.toCbor().toData().length}`}`;
         }
         case "params": {
           const kdp = paramsOf(r);
@@ -447,13 +451,13 @@ export function redesignedShapedAdapterFor(
         case "encryptedKey": {
           if (r.method === "sshAgent") {
             try {
-              m.EncryptedKey.lockOpt(paramsOf(r), B(r.secret), m.SymmetricKey.fromData(B(r.key)));
+              m.EncryptedKey.lockOpt(paramsOf(r), B(r.secret), m.SymmetricKey.from(B(r.key)));
               return "locked";
             } catch (e) {
               return `unsupported:${this.errorCode(e)}`;
             }
           }
-          const key = m.SymmetricKey.fromData(B(r.key));
+          const key = m.SymmetricKey.from(B(r.key));
           const ek = m.EncryptedKey.lockOpt(paramsOf(r), B(r.secret), key);
           const bytes = ek.toCbor().toData();
           const re = m.EncryptedKey.fromCbor(decodeCbor(bytes));
@@ -465,19 +469,19 @@ export function redesignedShapedAdapterFor(
           } catch {
             /* expected */
           }
-          return `${m.keyDerivationParamsToString(re.params())}|len=${bytes.length}|${back.equals(key) ? "unlocked" : "MISMATCH"}|${wrong}|aad=${hex(ek.encryptedMessage().aad())}`;
+          return `${m.keyDerivationParamsToString(re.params)}|len=${bytes.length}|${back.equals(key) ? "unlocked" : "MISMATCH"}|${wrong}|aad=${hex(ek.encryptedMessage.aad)}`;
         }
         case "hkdfRng": {
           const g = r.pageLen
-            ? m.HKDFRng.newWithPageLength(B(r.km), r.salt, r.pageLen)
-            : m.HKDFRng.new(B(r.km), r.salt);
+            ? new m.HKDFRng(B(r.km), r.salt, { pageLength: r.pageLen })
+            : new m.HKDFRng(B(r.km), r.salt);
           return (
             r.draws.map((n) => hex(g.randomData(n))).join("|") +
             `|u32=${g.nextU32()}|u64=${g.nextU64()}`
           );
         }
         case "mldsa": {
-          const priv = m.MLDSAPrivateKey.newUsing(mldsaLevel(r.level), rngOf(r.rng));
+          const priv = m.MLDSAPrivateKey.random(mldsaLevel(r.level), { rng: rngOf(r.rng) });
           const pub = priv.publicKey();
           const parts = [codable(priv), codable(pub)];
           if (r.message) {
@@ -490,7 +494,7 @@ export function redesignedShapedAdapterFor(
           return parts.join("|");
         }
         case "mlkem": {
-          const priv = m.MLKEMPrivateKey.newUsing(mlkemLevel(r.level), rngOf(r.rng));
+          const priv = m.MLKEMPrivateKey.random(mlkemLevel(r.level), { rng: rngOf(r.rng) });
           const pub = priv.publicKey();
           const { sharedSecret, ciphertext } = pub.encapsulate();
           const back = priv.decapsulate(ciphertext);
