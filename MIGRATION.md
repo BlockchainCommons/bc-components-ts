@@ -1,10 +1,5 @@
 # Migrating from `@bcts/components` to `@blockchaincommons/components`
 
-`@blockchaincommons/components` is the canonical home of this library. It was extracted from the
-[`paritytech/bcts`](https://github.com/paritytech/bcts) monorepo, where it was
-published as `@bcts/components`, into its own Blockchain Commons repository at
-[`BlockchainCommons/bc-components-ts`](https://github.com/BlockchainCommons/bc-components-ts).
-
 The extraction release, **`1.0.0-beta.1`**, renames the package and
 redesigns the API (second part of this guide). `@bcts/components` remains published for one beta cycle as a
 thin re-export of this package, so nothing breaks the moment you update.
