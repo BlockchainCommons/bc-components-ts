@@ -1,0 +1,8 @@
+# Version map: TypeScript package -> Reference implementation
+# Used by workflow automation to track upstream reference versions.
+packages:
+  components:
+    npm: "@blockchaincommons/components"
+    repo: "BlockchainCommons/bc-components-rust"
+    version: "0.31.1"
+    commit: "d843f5d8f66330eaa4471662d57f5c1bebfd0c7c"

@@ -1,0 +1,372 @@
+/**
+ * A compressed binary object with integrity verification.
+ *
+ * `Compressed` provides a way to efficiently store and transmit binary data
+ * using the DEFLATE compression algorithm. It includes built-in integrity
+ * verification through a CRC32 checksum and optional cryptographic digest.
+ *
+ * The compression is implemented using the raw DEFLATE format as described in
+ * [IETF RFC 1951](https://www.ietf.org/rfc/rfc1951.txt).
+ *
+ * Features:
+ * - Automatic compression with configurable compression level
+ * - Integrity verification via CRC32 checksum
+ * - Optional cryptographic digest for content identification
+ * - Smart behavior for small data (stores decompressed if compression would
+ *   increase size)
+ * - CBOR serialization/deserialization support
+ *
+ * @example
+ * ```typescript
+ * import { Compressed } from '@blockchaincommons/components';
+ *
+ * // Compress a string
+ * const data = new TextEncoder().encode(
+ *   "This is a longer string that should compress well with repeated patterns."
+ * );
+ * const compressed = Compressed.fromDecompressedData(data);
+ *
+ * // The compressed size should be smaller than the original
+ * console.log(compressed.compressionRatio); // < 1.0
+ *
+ * // We can recover the original data
+ * const decompressed = compressed.decompress();
+ * ```
+ */
+
+import { deflateRaw, inflateRaw } from "pako";
+import { crc32 } from "@blockchaincommons/crypto";
+import {
+  type Cbor,
+  type Tag,
+  type CborInput,
+  cbor,
+  expectArray,
+  expectInteger,
+  expectBytes,
+  type ToCbor,
+} from "@blockchaincommons/dcbor";
+import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
+import { TAG_COMPRESSED } from "@blockchaincommons/tags";
+import { Digest } from "./digest.js";
+import type { DigestProvider } from "./digest-provider.js";
+import { ComponentsError } from "./error.js";
+import { bytesToHex } from "./utils.js";
+import { type UR, urFor } from "@blockchaincommons/uniform-resources";
+
+// The codec is built on first use so that an unused class tree-shakes away.
+let COMPRESSED_CODEC: ComponentCodec<Compressed> | undefined;
+
+/**
+ * A compressed binary object with integrity verification.
+ *
+ * Uses DEFLATE compression with CRC32 checksums for integrity verification.
+ * Optionally includes a cryptographic digest for content identification.
+ */
+export class Compressed implements ToCbor, DigestProvider {
+  /** CRC32 checksum of the decompressed data for integrity verification */
+  private readonly _checksum: number;
+  /** Size of the original decompressed data in bytes */
+  private readonly _decompressedSize: number;
+  /** The compressed data (or original data if compression is ineffective) */
+  private readonly _compressedData: Uint8Array;
+  /** Optional cryptographic digest of the content */
+  private readonly _digest: Digest | undefined;
+
+  private constructor(
+    checksum: number,
+    decompressedSize: number,
+    compressedData: Uint8Array,
+    digest?: Digest,
+  ) {
+    if (compressedData.length > decompressedSize) {
+      throw ComponentsError.crypto("compressed data is larger than decompressed size");
+    }
+    this._checksum = checksum;
+    this._decompressedSize = decompressedSize;
+    this._compressedData = new Uint8Array(compressedData);
+    this._digest = digest;
+  }
+
+  // ============================================================================
+  // Static Factory Methods
+  // ============================================================================
+
+  /**
+   * Creates a new `Compressed` object with the specified parameters.
+   *
+   * This is a low-level constructor that allows direct creation of a
+   * `Compressed` object without performing compression. It's primarily
+   * intended for deserialization or when working with pre-compressed data.
+   *
+   * @returns A new `Compressed` object
+   * @throws ComponentsError if the compressed data is larger than the decompressed size
+   * @param parts - `checksum`, `decompressedSize`, `compressedData` and the optional `digest`
+   */
+  static fromParts({
+    checksum,
+    decompressedSize,
+    compressedData,
+    digest,
+  }: {
+    checksum: number;
+    decompressedSize: number;
+    compressedData: Uint8Array;
+    digest?: Digest | undefined;
+  }): Compressed {
+    return new Compressed(checksum, decompressedSize, compressedData, digest);
+  }
+
+  /**
+   * Creates a new `Compressed` object by compressing the provided data.
+   *
+   * This is the primary method for creating compressed data. It automatically
+   * handles compression using the DEFLATE algorithm with compression level 6.
+   *
+   * If the compressed data would be larger than the original data (which can
+   * happen with small or already compressed inputs), the original data is
+   * stored instead.
+   *
+   * @param decompressedData - The original data to compress
+   * @param digest - Optional cryptographic digest of the content
+   * @returns A new `Compressed` object containing the compressed (or original) data
+   */
+  static fromDecompressedData(decompressedData: Uint8Array, digest?: Digest): Compressed {
+    // Raw DEFLATE (RFC 1951, no zlib header/trailer) at level 6 — matches
+    // The reference uses `miniz_oxide::deflate::compress_to_vec(data, 6)`.
+    const compressedData = deflateRaw(decompressedData, { level: 6 });
+    const checksum = crc32(decompressedData);
+    const decompressedSize = decompressedData.length;
+    const compressedSize = compressedData.length;
+
+    // If compression didn't help, store original data
+    if (compressedSize !== 0 && compressedSize < decompressedSize) {
+      return new Compressed(checksum, decompressedSize, compressedData, digest);
+    } else {
+      return new Compressed(checksum, decompressedSize, new Uint8Array(decompressedData), digest);
+    }
+  }
+
+  // ============================================================================
+  // Instance Methods
+  // ============================================================================
+
+  /**
+   * Decompresses and returns the original decompressed data.
+   *
+   * This method performs the reverse of the compression process, restoring
+   * the original data. It also verifies the integrity of the data using the
+   * stored checksum.
+   *
+   * @returns The decompressed data
+   * @throws ComponentsError if the compressed data is corrupt or checksum doesn't match
+   */
+  decompress(): Uint8Array {
+    const compressedSize = this._compressedData.length;
+
+    // If data wasn't actually compressed (sizes equal), return as-is
+    if (compressedSize >= this._decompressedSize) {
+      return new Uint8Array(this._compressedData);
+    }
+
+    try {
+      const decompressedData = inflateRaw(this._compressedData);
+
+      // Verify checksum
+      if (crc32(decompressedData) !== this._checksum) {
+        throw ComponentsError.compression("checksum mismatch");
+      }
+
+      return decompressedData;
+    } catch (e) {
+      if (e instanceof ComponentsError) throw e;
+      throw ComponentsError.compression("corrupt compressed data", e);
+    }
+  }
+
+  /**
+   * Returns the size of the compressed data in bytes.
+   */
+  get compressedSize(): number {
+    return this._compressedData.length;
+  }
+
+  /**
+   * Returns the size of the decompressed data in bytes.
+   */
+  get decompressedSize(): number {
+    return this._decompressedSize;
+  }
+
+  /**
+   * Returns the CRC32 checksum of the decompressed data.
+   */
+  get checksum(): number {
+    return this._checksum;
+  }
+
+  /**
+   * Returns the compression ratio of the data.
+   *
+   * The compression ratio is calculated as (compressed size) / (decompressed size),
+   * so lower values indicate better compression.
+   *
+   * @returns A floating-point value representing the compression ratio.
+   * - Values less than 1.0 indicate effective compression
+   * - Values equal to 1.0 indicate no compression was applied
+   * - Values of NaN can occur if the decompressed size is zero
+   */
+  get compressionRatio(): number {
+    return this._compressedData.length / this._decompressedSize;
+  }
+
+  /**
+   * Returns the digest of the compressed data, if available.
+   *
+   * @returns The `Digest` associated with this compressed data, or undefined if none.
+   */
+  digestOpt(): Digest | undefined {
+    return this._digest;
+  }
+
+  /**
+   * Returns whether this compressed data has an associated digest.
+   */
+  hasDigest(): boolean {
+    return this._digest !== undefined;
+  }
+
+  // ============================================================================
+  // DigestProvider implementation
+  // ============================================================================
+
+  /**
+   * Returns the cryptographic digest associated with this compressed data.
+   *
+   * @returns A `Digest`
+   * @throws Error if there is no digest associated with this compressed data
+   */
+  digest(): Digest {
+    if (this._digest === undefined) {
+      throw ComponentsError.compression("No digest associated with this compressed data");
+    }
+    return this._digest;
+  }
+
+  // ============================================================================
+  // Comparison and String representation
+  // ============================================================================
+
+  /**
+   * Compare with another Compressed.
+   */
+  equals(other: Compressed): boolean {
+    if (this._checksum !== other._checksum) return false;
+    if (this._decompressedSize !== other._decompressedSize) return false;
+    if (this._compressedData.length !== other._compressedData.length) return false;
+    for (let i = 0; i < this._compressedData.length; i++) {
+      if (this._compressedData[i] !== other._compressedData[i]) return false;
+    }
+    // Don't compare digests for equality
+    return true;
+  }
+
+  /**
+   * Get string representation.
+   */
+  toString(): string {
+    const checksumHex = bytesToHex(
+      new Uint8Array([
+        (this._checksum >>> 24) & 0xff,
+        (this._checksum >>> 16) & 0xff,
+        (this._checksum >>> 8) & 0xff,
+        this._checksum & 0xff,
+      ]),
+    );
+    const digestStr = this._digest?.shortDescription() ?? "None";
+    return `Compressed(checksum: ${checksumHex}, size: ${this.compressedSize}/${this._decompressedSize}, ratio: ${this.compressionRatio.toFixed(2)}, digest: ${digestStr})`;
+  }
+
+  // ============================================================================
+  // CBOR Serialization (ToCbor)
+  // ============================================================================
+
+  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+  static get codec(): ComponentCodec<Compressed> {
+    return (COMPRESSED_CODEC ??= defineCodec({
+      tags: [TAG_COMPRESSED],
+      decodeUntagged: (cborValue) => {
+        const elements = expectArray(cborValue);
+        if (elements.length < 3 || elements.length > 4) {
+          throw ComponentsError.invalidData("invalid number of elements in compressed");
+        }
+
+        const checksum = expectInteger(elements[0]);
+        const decompressedSize = expectInteger(elements[1]);
+        const compressedData = expectBytes(elements[2]);
+
+        let digest: Digest | undefined;
+        if (elements.length === 4) {
+          digest = Digest.fromCbor(elements[3]);
+        }
+
+        return Compressed.fromParts({
+          checksum: Number(checksum),
+          decompressedSize: Number(decompressedSize),
+          compressedData,
+          digest,
+        });
+      },
+      encodeUntagged: (value) => value.untaggedCbor(),
+    }));
+  }
+
+  /** The CBOR tags this type decodes from; the first one is used to encode. */
+  cborTags(): Tag[] {
+    return [...Compressed.codec.tags];
+  }
+
+  /**
+   * Returns the untagged CBOR encoding (as an array).
+   *
+   * Format:
+   * ```
+   * [
+   *   checksum: uint,
+   *   decompressed_size: uint,
+   *   compressed_data: bytes,
+   *   digest?: Digest  // Optional
+   * ]
+   * ```
+   */
+  untaggedCbor(): Cbor {
+    const elements: CborInput[] = [
+      this._checksum >>> 0, // Ensure unsigned 32-bit
+      this._decompressedSize,
+      cbor(this._compressedData),
+    ];
+    if (this._digest !== undefined) {
+      elements.push(this._digest.toCbor());
+    }
+    return cbor(elements);
+  }
+
+  /** The tagged CBOR form. */
+  toCbor(): Cbor {
+    return taggedCborOf(this);
+  }
+
+  /** As a UR, typed by the first tag's name. */
+  toUR(): UR {
+    return urFor(this);
+  }
+
+  /** Decode tagged or untagged CBOR. */
+  static fromCbor(cborValue: Cbor): Compressed {
+    return Compressed.codec.decode(cborValue);
+  }
+
+  // ============================================================================
+  // CBOR Deserialization (CborTaggedDecodable)
+  // ============================================================================
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "name": "ESM root entry (import *), minified + gzipped",
+    "path": "dist/index.mjs",
+    "limit": "89 kB"
+  },
+  {
+    "name": "root entry, Digest + SymmetricKey + EncryptedMessage only (tree-shaken, siblings external)",
+    "path": "dist/index.mjs",
+    "import": "{ Digest, SymmetricKey, EncryptedMessage }",
+    "ignore": [
+      "@blockchaincommons/crypto",
+      "@blockchaincommons/dcbor",
+      "@blockchaincommons/rand",
+      "@blockchaincommons/sskr",
+      "@blockchaincommons/tags",
+      "@blockchaincommons/uniform-resources"
+    ],
+    "limit": "9 kB"
+  },
+  {
+    "name": "root entry, package's own code (siblings external)",
+    "path": "dist/index.mjs",
+    "ignore": [
+      "@blockchaincommons/crypto",
+      "@blockchaincommons/dcbor",
+      "@blockchaincommons/rand",
+      "@blockchaincommons/sskr",
+      "@blockchaincommons/tags",
+      "@blockchaincommons/uniform-resources"
+    ],
+    "limit": "69 kB"
+  },
+  {
+    "name": "ssh subpath, minified + gzipped",
+    "path": "dist/ssh.mjs",
+    "limit": "31 kB"
+  },
+  {
+    "name": "pq subpath, minified + gzipped",
+    "path": "dist/pq.mjs",
+    "limit": "31 kB"
+  },
+  {
+    "name": "kdf subpath, minified + gzipped",
+    "path": "dist/kdf.mjs",
+    "limit": "32 kB"
+  },
+  {
+    "name": "sskr subpath, minified + gzipped",
+    "path": "dist/sskr.mjs",
+    "limit": "19 kB"
+  },
+  {
+    "name": "tags subpath, package's own code (the package itself and siblings external)",
+    "path": "dist/tags.mjs",
+    "limit": "4 kB",
+    "ignore": [
+      "@blockchaincommons/components",
+      "@blockchaincommons/crypto",
+      "@blockchaincommons/dcbor",
+      "@blockchaincommons/rand",
+      "@blockchaincommons/sskr",
+      "@blockchaincommons/tags",
+      "@blockchaincommons/uniform-resources"
+    ]
+  }
+]
