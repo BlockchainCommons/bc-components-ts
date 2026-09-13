@@ -20,7 +20,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let api;
 if (process.env["VECTORS_FROM"] === "baseline") {
   const m = await import("../tests/baseline/components-baseline.mjs");
-  const rand = await import("../../bc-rand-ts/tests/baseline/rand-baseline.mjs");
+  const rand = await import("../tests/baseline/rand-baseline.mjs");
   api = baselineAdapterFor(m, rand);
 } else {
   const m = {
