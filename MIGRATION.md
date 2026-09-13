@@ -1,8 +1,6 @@
 # Migrating from `@bcts/components` to `@blockchaincommons/components`
 
-The extraction release, **`1.0.0-beta.1`**, renames the package and
-redesigns the API (second part of this guide). `@bcts/components` remains published for one beta cycle as a
-thin re-export of this package, so nothing breaks the moment you update.
+`@blockchaincommons/components` is the redesigned successor to `@bcts/components`.
 
 ## TL;DR checklist
 

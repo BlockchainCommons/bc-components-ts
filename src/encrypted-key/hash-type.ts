@@ -17,13 +17,17 @@ import { ComponentsError } from "../error.js";
 /**
  * Enum representing supported hash types for key derivation.
  */
-export const HashType: Readonly<{ readonly SHA256: 0; readonly SHA512: 1 }> =
-  /*#__PURE__*/ Object.freeze({
-    /** SHA-256 hash algorithm */
-    SHA256: 0,
-    /** SHA-512 hash algorithm */
-    SHA512: 1,
-  } as const);
+export const HashType: Readonly<{
+  /** SHA-256; the CBOR discriminator is 0. */
+  readonly SHA256: 0;
+  /** SHA-512; the CBOR discriminator is 1. */
+  readonly SHA512: 1;
+}> = /*#__PURE__*/ Object.freeze({
+  /** SHA-256 hash algorithm */
+  SHA256: 0,
+  /** SHA-512 hash algorithm */
+  SHA512: 1,
+} as const);
 
 /** One of the `HashType` values. */
 export type HashType = (typeof HashType)[keyof typeof HashType];

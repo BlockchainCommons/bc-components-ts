@@ -147,7 +147,11 @@ export type Recipe =
   /** A named JS-only input case from the adapter's table: `ok:…` or `throw:<class>:<code>`. */
   | { k: "domain"; case: string }
   /** The tag summariser applied to tagged CBOR: the summary, `error`, or `none`. */
-  | { k: "summary"; hex: string; note: string };
+  | { k: "summary"; hex: string; note: string }
+  /** `Salt.randomInRange(min, max, { rng })`: the length is a `usize` draw (N1). */
+  | { k: "saltInRange"; min: number; max: number; rng: RngSpec }
+  /** `Salt.forSize(size, { rng })`: proportional bounds, then the `usize` draw (N1). */
+  | { k: "saltForSize"; size: number; rng: RngSpec };
 export type Outcome = string;
 
 export interface VectorApi {
@@ -231,6 +235,10 @@ export function recipeName(r: Recipe): string {
       return `domain ${r.case}`;
     case "summary":
       return `summary ${r.note}`;
+    case "saltInRange":
+      return `saltInRange ${r.min}..=${r.max} ${rngName(r.rng)}`;
+    case "saltForSize":
+      return `saltForSize ${r.size} ${rngName(r.rng)}`;
   }
 }
 
@@ -240,6 +248,10 @@ export const BASELINE_UNSUPPORTED: ReadonlySet<Recipe["k"]> = new Set<Recipe["k"
   "kdfDomain",
   "domain",
   "summary",
+  // The baseline drew salt lengths through the 32-bit sampler (a different
+  // draw from the reference's `usize`); no twin to compare.
+  "saltInRange",
+  "saltForSize",
 ]);
 
 export function materialize(api: VectorApi, r: Recipe): Outcome {

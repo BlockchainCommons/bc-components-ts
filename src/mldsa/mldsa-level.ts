@@ -29,8 +29,11 @@ import { ComponentsError } from "../error.js";
  * - 5: NIST Level 5 (MLDSA87)
  */
 export const MLDSALevel: Readonly<{
+  /** ML-DSA-44 (NIST security category 2); the CBOR discriminator is 2. */
   readonly MLDSA44: 2;
+  /** ML-DSA-65 (category 3); the CBOR discriminator is 3. */
   readonly MLDSA65: 3;
+  /** ML-DSA-87 (category 5); the CBOR discriminator is 5. */
   readonly MLDSA87: 5;
 }> = /*#__PURE__*/ Object.freeze({
   /** NIST Level 2 - AES-128 equivalent security */

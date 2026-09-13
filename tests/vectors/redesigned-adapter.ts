@@ -322,6 +322,22 @@ export function redesignedShapedAdapterFor(
             );
           return [describe(v), ...extras].join("|");
         }
+        case "saltInRange":
+        case "saltForSize": {
+          // A real generator (the `gen()` wrapper has no integer draws): the
+          // length is a sampler draw and must consume the generator as the
+          // reference's `rng_next_in_closed_range::<usize>` does.
+          if (!opts.newRand || "fake" in r.rng) return "js-only";
+          const g =
+            "hkdf" in r.rng
+              ? new m.HKDFRng(toBytes(r.rng.hkdf.km), r.rng.hkdf.salt)
+              : new rand.SeededRng(r.rng.seed.map(BigInt));
+          const salt =
+            r.k === "saltInRange"
+              ? m.Salt.randomInRange(r.min, r.max, { rng: g })
+              : m.Salt.forSize(r.size, { rng: g });
+          return hex(salt.bytes);
+        }
         case "random": {
           const rng = rngOf(r.rng);
           switch (r.type) {

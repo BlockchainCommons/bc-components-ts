@@ -389,14 +389,19 @@ export class SSHPublicKey {
         case "ed25519":
           return ed25519.verify(signature.signatureBytes, signedData, this.data.pubBytes);
         case "ecdsa":
+          // `lowS: false`: SSH has no low-s rule. The reference's signatures
+          // (RustCrypto `ecdsa`, no normalisation) and OpenSSH's are high-s
+          // half the time; noble's default would reject them.
           switch (this.data.curve) {
             case "nistp256":
               return p256.verify(signature.signatureBytes, signedData, this.data.point, {
                 format: "compact",
+                lowS: false,
               });
             case "nistp384":
               return p384.verify(signature.signatureBytes, signedData, this.data.point, {
                 format: "compact",
+                lowS: false,
               });
           }
           return false;

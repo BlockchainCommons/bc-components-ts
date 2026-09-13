@@ -278,7 +278,7 @@ declare interface DigestProvider {
  * `EncryptedMessage` is serialized to CBOR with tag 40002.
  *
  * CDDL:
- * ```cddl
+ * ```text
  * EncryptedMessage =
  *     #6.40002([ ciphertext: bstr, nonce: bstr, auth: bstr, ? aad: bstr ])
  * ```
@@ -397,8 +397,11 @@ export declare interface MLDSAKeypairData {
  * - 5: NIST Level 5 (MLDSA87)
  */
 export declare const MLDSALevel: Readonly<{
+    /** ML-DSA-44 (NIST security category 2); the CBOR discriminator is 2. */
     readonly MLDSA44: 2;
+    /** ML-DSA-65 (category 3); the CBOR discriminator is 3. */
     readonly MLDSA65: 3;
+    /** ML-DSA-87 (category 5); the CBOR discriminator is 5. */
     readonly MLDSA87: 5;
 }>;
 
@@ -772,8 +775,11 @@ export declare interface MLKEMKeypairData {
  * - 1024: ML-KEM-1024 (NIST Level 5)
  */
 export declare const MLKEMLevel: Readonly<{
+    /** ML-KEM-512; the CBOR discriminator is 512. */
     readonly MLKEM512: 512;
+    /** ML-KEM-768; the CBOR discriminator is 768. */
     readonly MLKEM768: 768;
+    /** ML-KEM-1024; the CBOR discriminator is 1024. */
     readonly MLKEM1024: 1024;
 }>;
 

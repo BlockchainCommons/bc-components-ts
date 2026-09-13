@@ -47,7 +47,7 @@ let ENCRYPTED_MESSAGE_CODEC: ComponentCodec<EncryptedMessage> | undefined;
  * `EncryptedMessage` is serialized to CBOR with tag 40002.
  *
  * CDDL:
- * ```cddl
+ * ```text
  * EncryptedMessage =
  *     #6.40002([ ciphertext: bstr, nonce: bstr, auth: bstr, ? aad: bstr ])
  * ```

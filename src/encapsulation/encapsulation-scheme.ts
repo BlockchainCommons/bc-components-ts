@@ -16,9 +16,13 @@ import { ComponentsError } from "../error.js";
  * Available key encapsulation schemes.
  */
 export const EncapsulationScheme: Readonly<{
+  /** X25519 Diffie–Hellman — the default scheme. */
   readonly X25519: "x25519";
+  /** ML-KEM-512 (FIPS 203), post-quantum. */
   readonly MLKEM512: "mlkem512";
+  /** ML-KEM-768 (FIPS 203), post-quantum. */
   readonly MLKEM768: "mlkem768";
+  /** ML-KEM-1024 (FIPS 203), post-quantum. */
   readonly MLKEM1024: "mlkem1024";
 }> = /*#__PURE__*/ Object.freeze({
   /**

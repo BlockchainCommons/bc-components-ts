@@ -505,10 +505,19 @@ export class SSHPrivateKey {
         switch (this.data.curve) {
           case "nistp256":
             // p256 default: prehash=true (SHA-256), format='compact' (r||s as 64 bytes).
-            signatureBytes = p256.sign(signedData, this.data.scalar, { format: "compact" });
+            // `lowS: false`: the reference (`ssh-key` over RustCrypto `ecdsa`) signs
+            // with RFC 6979 and does not normalise `s`, and neither does OpenSSH;
+            // with the same nonce the bytes are then identical to the reference's.
+            signatureBytes = p256.sign(signedData, this.data.scalar, {
+              format: "compact",
+              lowS: false,
+            });
             break;
           case "nistp384":
-            signatureBytes = p384.sign(signedData, this.data.scalar, { format: "compact" });
+            signatureBytes = p384.sign(signedData, this.data.scalar, {
+              format: "compact",
+              lowS: false,
+            });
             break;
         }
         break;

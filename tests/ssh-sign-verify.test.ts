@@ -119,3 +119,59 @@ describe("SSHSIG sign + verify — Rust round-trip parity", () => {
     expect(pub.verifySshSignature(NAMESPACE, MESSAGE, tamperedSig)).toBe(false);
   });
 });
+
+/**
+ * A signature the reference produced (`bc-components-rust` 0.31.1 over
+ * `ssh-key` 0.6.7 / RustCrypto `ecdsa` 0.16.9) for the key above, the
+ * message above and namespace "test": RFC 6979, and — as OpenSSH — with no
+ * low-s normalisation, so its `s` is above n/2. Tagged CBOR of the
+ * `Signature` (tag 40020 over tag 40802).
+ */
+const RUST_ECDSA_P256_SIGNATURE_HEX =
+  "d99c54d99f627901872d2d2d2d2d424547494e20535348205349474e41545552452d2d2d2d2d0a55314e4955306c48414141414151414141476741414141545a574e6b63324574633268684d69317561584e30634449314e6741414141687561584e30634449314e67414141450a45453751524f766c6b376e67496e713135663350332f4e79514a714d5a744a474a526a46544b48797a6c425869736478616c46744655565a593864634279394e33326859596b0a7a315566516a5275596d516c4b6d754869774141414152305a584e30414141414141414141415a7a614745794e5459414141426c414141414532566a5a484e684c584e6f59540a4974626d6c7a644841794e5459414141424b41414141495144394a67305678714d724f49507835484845756c6d366b4f466b6139523341374b4e37306661707262386f7741410a414345416a656e42395445664b54445a3477786d7a5052364f5673692f363471503877465a677545646865443538633d0a2d2d2d2d2d454e4420535348205349474e41545552452d2d2d2d2d0a";
+
+describe("SSHSIG ECDSA parity with the reference (D4 closed)", () => {
+  const P256_N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
+  const sOf = (sig: Uint8Array): bigint =>
+    BigInt("0x" + Array.from(sig.slice(32, 64), (b) => b.toString(16).padStart(2, "0")).join(""));
+  const sshOf = (sig: { asSsh(): SSHSignature | undefined }): SSHSignature => {
+    const ssh = sig.asSsh();
+    if (ssh === undefined) throw new Error("not an SSH signature");
+    return ssh;
+  };
+
+  it("verifies the reference's high-s signature", async () => {
+    const { decodeCbor, hexToBytes } = await import("@blockchaincommons/dcbor");
+    const { Signature } = await import("../src/signing/signature.js");
+    const rustSig = sshOf(
+      Signature.fromCbor(decodeCbor(hexToBytes(RUST_ECDSA_P256_SIGNATURE_HEX))),
+    );
+    expect(sOf(rustSig.signatureBytes) > P256_N / 2n).toBe(true);
+    const pub = SSHPrivateKey.fromOpenssh(RUST_ECDSA_P256_PRIVATE).publicKey();
+    expect(pub.verifySshSignature(NAMESPACE, MESSAGE, rustSig)).toBe(true);
+  });
+
+  it("produces the reference's bytes (same RFC 6979 nonce, no low-s normalisation)", async () => {
+    const { decodeCbor, hexToBytes } = await import("@blockchaincommons/dcbor");
+    const { Signature } = await import("../src/signing/signature.js");
+    const rustSig = sshOf(
+      Signature.fromCbor(decodeCbor(hexToBytes(RUST_ECDSA_P256_SIGNATURE_HEX))),
+    );
+    const priv = SSHPrivateKey.fromOpenssh(RUST_ECDSA_P256_PRIVATE);
+    const sig = priv.sign(NAMESPACE, "sha256", MESSAGE);
+    expect(sig.signatureBytes).toEqual(rustSig.signatureBytes);
+    // Both forms of the same signature verify: SSH has no low-s rule.
+    const pub = priv.publicKey();
+    const lowS = new Uint8Array(sig.signatureBytes);
+    const s = sOf(lowS);
+    const flipped = (P256_N - s).toString(16).padStart(64, "0");
+    for (let i = 0; i < 32; i++) lowS[32 + i] = parseInt(flipped.slice(i * 2, i * 2 + 2), 16);
+    expect(
+      pub.verifySshSignature(
+        NAMESPACE,
+        MESSAGE,
+        SSHSignature.fromParts(pub, NAMESPACE, "sha256", lowS),
+      ),
+    ).toBe(true);
+  });
+});

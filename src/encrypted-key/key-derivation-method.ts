@@ -21,10 +21,15 @@ import { ComponentsError } from "../error.js";
  * Enum representing supported key derivation methods.
  */
 export const KeyDerivationMethod: Readonly<{
+  /** HKDF (RFC 5869); the CBOR discriminator is 0. */
   readonly HKDF: 0;
+  /** PBKDF2 (RFC 8018); the CBOR discriminator is 1. */
   readonly PBKDF2: 1;
+  /** scrypt (RFC 7914); the CBOR discriminator is 2. */
   readonly Scrypt: 2;
+  /** Argon2id (RFC 9106); the CBOR discriminator is 3. */
   readonly Argon2id: 3;
+  /** An SSH agent signature as key material; the CBOR discriminator is 4. */
   readonly SSHAgent: 4;
 }> = /*#__PURE__*/ Object.freeze({
   /** HKDF (HMAC-based Key Derivation Function) - RFC 5869 */

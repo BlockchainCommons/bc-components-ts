@@ -1,5 +1,5 @@
 import { secureRng, randomBytes, type RngOptions } from "@blockchaincommons/rand";
-import { nextInClosedRangeI32 } from "@blockchaincommons/rand/samplers";
+import { nextInClosedRangeUsize } from "@blockchaincommons/rand/samplers";
 import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { TAG_SALT } from "@blockchaincommons/tags";
@@ -103,7 +103,8 @@ export class Salt implements ToCbor, ToUR {
   ): Salt {
     expectLength(minSize, MIN_SALT_SIZE, "salt");
     expectInt(maxSize, minSize, U32_MAX, "maxSize");
-    const count = nextInClosedRangeI32(rng, minSize, maxSize);
+    // The reference samples a `RangeInclusive<usize>`: the 64-bit draw.
+    const count = nextInClosedRangeUsize(rng, minSize, maxSize);
     return new Salt(randomBytes(count, { rng }));
   }
 

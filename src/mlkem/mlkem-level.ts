@@ -29,8 +29,11 @@ import { ComponentsError } from "../error.js";
  * - 1024: ML-KEM-1024 (NIST Level 5)
  */
 export const MLKEMLevel: Readonly<{
+  /** ML-KEM-512; the CBOR discriminator is 512. */
   readonly MLKEM512: 512;
+  /** ML-KEM-768; the CBOR discriminator is 768. */
   readonly MLKEM768: 768;
+  /** ML-KEM-1024; the CBOR discriminator is 1024. */
   readonly MLKEM1024: 1024;
 }> = /*#__PURE__*/ Object.freeze({
   /** NIST Level 1 - AES-128 equivalent security */
