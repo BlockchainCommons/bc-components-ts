@@ -154,9 +154,12 @@ fn value(t: &str, d: &[u8]) -> String {
         "xid" => { let v = tryc!(XID::from_data_ref(d)); format!("{}|{}|{}|{}", cod(&v), v.bytewords_identifier(true), v.bytemoji_identifier(true), v.short_description()) }
         "reference" => { let v = tryc!(Reference::from_data_ref(d)); format!("{}|{}|{}|{}", cod(&v), v.ref_hex_short(), v.bytewords_identifier(None), v.bytemoji_identifier(None)) }
         "symmetricKey" => cod(&tryc!(SymmetricKey::from_data_ref(d))),
-        "json" => format!("{}|-", tagged(&JSON::from_data(d))),
-        "uri" => format!("{}|-", tagged(&tryc!(URI::new(String::from_utf8_lossy(d).to_string())))),
-        "authTag" => h(CBOR::from(tryc!(AuthenticationTag::from_data_ref(d))).to_cbor_data()),
+        // JSON, URI and SSKRShare are `CBORTaggedEncodable`, so bc-ur's blanket
+        // `UREncodable` gives them `ur_string()` — printed, never assumed absent.
+        "json" => cod(&JSON::from_data(d)),
+        "uri" => cod(&tryc!(URI::new(String::from_utf8_lossy(d).to_string()))),
+        // AuthenticationTag has no `CBORTagged` impl: no UR on either side.
+        "authTag" => format!("{}|-", h(CBOR::from(tryc!(AuthenticationTag::from_data_ref(d))).to_cbor_data())),
         "x25519Priv" => { let v = tryc!(X25519PrivateKey::from_data_ref(d)); format!("{}|{}", cod(&v), h(v.public_key().data())) }
         "x25519Pub" => cod(&tryc!(X25519PublicKey::from_data_ref(d))),
         "ecPriv" => { let v = tryc!(ECPrivateKey::from_data_ref(d)); format!("{}|{}|{}", cod(&v), h(v.public_key().data()), h(v.schnorr_public_key().data())) }
@@ -166,7 +169,7 @@ fn value(t: &str, d: &[u8]) -> String {
         "ed25519Priv" => { let v = tryc!(Ed25519PrivateKey::from_data_ref(d)); format!("{}|{}", h(v.data()), h(v.public_key().data())) }
         "ed25519Pub" => h(tryc!(Ed25519PublicKey::from_data_ref(d)).data()),
         "privateKeyBase" => cod(&PrivateKeyBase::from_data(d)),
-        "sskrShare" => { if d.len() < 5 { return "throw:Error".into() } let v = SSKRShare::from_data(d); format!("{}|-|{},{},{},{},{},{}", tagged(&v), v.identifier(), v.group_threshold(), v.group_count(), v.group_index(), v.member_threshold(), v.member_index()) }
+        "sskrShare" => { if d.len() < 5 { return "throw:Error".into() } let v = SSKRShare::from_data(d); format!("{}|{},{},{},{},{},{}", cod(&v), v.identifier(), v.group_threshold(), v.group_count(), v.group_index(), v.member_threshold(), v.member_index()) }
         _ => "js-only".into(),
     }
 }
@@ -175,6 +178,15 @@ fn run(r: &J) -> String {
     let k = s(r, "k");
     match k.as_str() {
         "value" => value(&s(r, "type"), &bytes(&r["data"])),
+        "saltInRange" => {
+            let mut g = rng_of(&r["rng"]);
+            let (min, max) = (r["min"].as_u64().unwrap() as usize, r["max"].as_u64().unwrap() as usize);
+            h(tryc!(Salt::new_in_range_using(&(min..=max), &mut g)).as_bytes())
+        }
+        "saltForSize" => {
+            let mut g = rng_of(&r["rng"]);
+            h(Salt::new_for_size_using(r["size"].as_u64().unwrap() as usize, &mut g).as_bytes())
+        }
         "random" => {
             let mut g = rng_of(&r["rng"]);
             let len = r.get("len").and_then(|x| x.as_u64());
@@ -350,10 +362,10 @@ fn run(r: &J) -> String {
             match s(r, "type").as_str() {
                 "digest" => decu!(Digest), "nonce" => decu!(Nonce), "salt" => decu!(Salt), "arid" => decu!(ARID), "xid" => decu!(XID),
                 "reference" => decu!(Reference), "symmetricKey" => decu!(SymmetricKey), "uuid" => decu!(UUID),
-                "json" => format!("{}|-", dec!(JSON)), "uri" => format!("{}|-", dec!(URI)), "x25519Priv" => decu!(X25519PrivateKey),
+                "json" => decu!(JSON), "uri" => decu!(URI), "x25519Priv" => decu!(X25519PrivateKey),
                 "x25519Pub" => decu!(X25519PublicKey), "ecPriv" => "js-only".into(),
                 "ecPub" => "js-only".into(),
-                "privateKeyBase" => decu!(PrivateKeyBase), "sskrShare" => format!("{}|-", dec!(SSKRShare)),
+                "privateKeyBase" => decu!(PrivateKeyBase), "sskrShare" => decu!(SSKRShare),
                 "seed" => decu!(Seed), "compressed" => dec!(Compressed), "encryptedMessage" => decu!(EncryptedMessage), "signature" => decu!(Signature),
                 "signingPriv" => decu!(SigningPrivateKey), "signingPub" => decu!(SigningPublicKey), "encapPriv" => { let v: EncapsulationPrivateKey = tryd!(decode_any(&data)); cod_any(&v) }
                 "encapPub" => { let v: EncapsulationPublicKey = tryd!(decode_any(&data)); cod_any(&v) } "encapCiphertext" => { let v: EncapsulationCiphertext = tryd!(decode_any(&data)); format!("{}|-", tagged_any(&v)) } "sealedMessage" => decu!(SealedMessage),
@@ -446,8 +458,11 @@ const E1: &[(&str, &str, &str)] = &[
 /// point when the key is constructed; the reference copies the bytes and panics at first
 /// use (U2, U7). Only these decode types can carry such a key.
 const D6_TYPES: &[&str] = &["signingPriv", "signingPub", "privateKeys", "publicKeys", "ecPriv", "ecPub"];
-/// D5 made explicit: the only types with a UR in TypeScript and none in the reference.
-const D5_TYPES: &[&str] = &["sskrShare", "json", "authTag", "encapCiphertext"];
+/// D5 made explicit: the only type with a UR in TypeScript and none in the reference
+/// (`EncapsulationCiphertext` has `From<_> for CBOR` but no `CBORTagged`, two tags). JSON,
+/// SSKRShare and URI have the same UR on both sides (bc-ur's blanket `UREncodable`);
+/// AuthenticationTag has none on either.
+const D5_TYPES: &[&str] = &["encapCiphertext"];
 /// Pending divergences: TypeScript outcomes the plan still has to change.
 /// P-B2 (untagged decode) and P-B3 (the Ed25519 default) landed with Phase 3
 /// W1 and W2; the table is empty and stays so that a future plan has the hook.
@@ -463,8 +478,6 @@ fn expected_divergence(r: &J, got: &str, want: &str) -> Option<&'static str> {
     let k = r["k"].as_str().unwrap_or("");
     let ty = r.get("type").and_then(|x| x.as_str()).unwrap_or("");
     if let Some(p) = pending(k, got, want) { return Some(p); }
-    // URI has a UR in TypeScript only: compare the tagged CBOR.
-    if ty == "uri" && got.split('|').next() == want.split('|').next() { return Some("D2"); }
     if (k == "decode" || k == "decodeUntagged") && D6_TYPES.contains(&ty) && !got.starts_with("throw:") && want == "throw:InvalidData" { return Some("D6"); }
     // Both reject with a different code: only the enumerated pairs.
     if E1.iter().any(|(kk, g, w)| *kk == k && got == *g && want == *w) { return Some("E1"); }
@@ -474,16 +487,6 @@ fn expected_divergence(r: &J, got: &str, want: &str) -> Option<&'static str> {
     if k == "keypair" && r.get("encScheme").and_then(|x| x.as_str()).map_or(false, |e| e.starts_with("mlkem")) && got == "throw:General" && !want.starts_with("throw:") { return Some("D2"); }
     // Compressed bytes: pako level 6 vs miniz_oxide level 6 differ; both
     // decompress the other's output (checked here on the TypeScript bytes).
-    if k == "sshFromSeed" || k == "sshFromPem" {
-        let (g, w): (Vec<&str>, Vec<&str>) = (got.split('|').collect(), want.split('|').collect());
-        if g.len() == w.len() {
-            // D4: ECDSA SSH signatures are low-s normalised in TypeScript (noble's
-            // default) and not by the reference; both verify. Everything but the
-            // signature field must still match.
-            let alg = r.get("alg").and_then(|x| x.as_str()).unwrap_or("");
-            if alg.starts_with("ecdsa") && (0..g.len()).all(|i| g[i] == w[i] || (g[i].starts_with("d99c54d99f62") && w[i].starts_with("d99c54d99f62"))) { return Some("D4"); }
-        }
-    }
     if k == "compressed" {
         let (g, w): (Vec<&str>, Vec<&str>) = (got.split('|').collect(), want.split('|').collect());
         if g.len() == 3 && w.len() >= 2 && w[1] == "roundtrip" {

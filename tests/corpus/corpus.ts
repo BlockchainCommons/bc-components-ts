@@ -144,6 +144,24 @@ function* randoms(): Generator<Recipe> {
   for (const len of [8, 16, 24, 64]) yield { k: "random", type: "salt", rng: SEEDS[0], len };
   for (const len of [16, 24, 32]) yield { k: "random", type: "seed", rng: SEEDS[1], len };
 }
+/**
+ * Salt lengths drawn from a seeded generator: the reference samples a
+ * `RangeInclusive<usize>` (a 64-bit draw); the 32-bit sampler gives a
+ * different length from the same seed (N1 in the rand divergence review).
+ */
+function* saltLengths(): Generator<Recipe> {
+  for (const rng of [...SEEDS, HKDF]) {
+    for (const [min, max] of [
+      [8, 32],
+      [8, 17],
+      [16, 64],
+      [100, 4000],
+      [8, 8],
+    ] as [number, number][])
+      yield { k: "saltInRange", min, max, rng };
+    for (const size of [20, 65, 1000, 20000]) yield { k: "saltForSize", size, rng };
+  }
+}
 function* derives(): Generator<Recipe> {
   for (const km of [
     t("test key material"),
@@ -597,6 +615,7 @@ function* summaries(): Generator<Recipe> {
 export const categories: Record<string, () => Generator<Recipe>> = {
   values,
   randoms,
+  saltLengths,
   derives,
   digests,
   compresseds,

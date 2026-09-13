@@ -21,3 +21,7 @@ support (the reference has none). Its `import * as sr25519 from
 member throws, so the bundle loads without that package and the dead
 sr25519 paths stay dead; nothing the differential corpus exercises reaches
 them. The sha256 above pins the stubbed bundle.
+
+Rebuilding requires the historical source and matching dependency revisions.
+Run `bun scripts/build-baseline.ts` in that environment; rebuilding from the
+current source would replace the independent compatibility reference.

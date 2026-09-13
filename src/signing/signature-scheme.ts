@@ -30,15 +30,25 @@ import type { RandomNumberGenerator } from "@blockchaincommons/rand";
  * difference, not a parity gap.
  */
 export const SignatureScheme: Readonly<{
+  /** BIP-340 Schnorr over secp256k1 — the default scheme. */
   readonly Schnorr: "Schnorr";
+  /** ECDSA over secp256k1 (low-s, as the reference's `secp256k1` crate). */
   readonly Ecdsa: "Ecdsa";
+  /** Ed25519 (RFC 8032), verified strictly as the reference's `verify_strict`. */
   readonly Ed25519: "Ed25519";
+  /** ML-DSA-44 (FIPS 204), post-quantum. */
   readonly MLDSA44: "MLDSA44";
+  /** ML-DSA-65 (FIPS 204), post-quantum. */
   readonly MLDSA65: "MLDSA65";
+  /** ML-DSA-87 (FIPS 204), post-quantum. */
   readonly MLDSA87: "MLDSA87";
+  /** SSH `ssh-ed25519` (`sshsig`). */
   readonly SshEd25519: "SshEd25519";
+  /** SSH `ssh-dss` (`sshsig`); parsed keys only, no generation. */
   readonly SshDsa: "SshDsa";
+  /** SSH `ecdsa-sha2-nistp256` (`sshsig`); no low-s normalisation, as the reference and OpenSSH. */
   readonly SshEcdsaP256: "SshEcdsaP256";
+  /** SSH `ecdsa-sha2-nistp384` (`sshsig`); no low-s normalisation, as the reference and OpenSSH. */
   readonly SshEcdsaP384: "SshEcdsaP384";
 }> = /*#__PURE__*/ Object.freeze({
   /**

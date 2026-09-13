@@ -443,7 +443,7 @@ export declare class EncryptedKey implements ToCbor, ToUR {
  * `EncryptedMessage` is serialized to CBOR with tag 40002.
  *
  * CDDL:
- * ```cddl
+ * ```text
  * EncryptedMessage =
  *     #6.40002([ ciphertext: bstr, nonce: bstr, auth: bstr, ? aad: bstr ])
  * ```
@@ -525,7 +525,9 @@ declare class EncryptedMessage implements ToCbor, ToUR {
  * Enum representing supported hash types for key derivation.
  */
 export declare const HashType: Readonly<{
+    /** SHA-256; the CBOR discriminator is 0. */
     readonly SHA256: 0;
+    /** SHA-512; the CBOR discriminator is 1. */
     readonly SHA512: 1;
 }>;
 
@@ -758,10 +760,15 @@ export declare interface KeyDerivation {
  * Enum representing supported key derivation methods.
  */
 export declare const KeyDerivationMethod: Readonly<{
+    /** HKDF (RFC 5869); the CBOR discriminator is 0. */
     readonly HKDF: 0;
+    /** PBKDF2 (RFC 8018); the CBOR discriminator is 1. */
     readonly PBKDF2: 1;
+    /** scrypt (RFC 7914); the CBOR discriminator is 2. */
     readonly Scrypt: 2;
+    /** Argon2id (RFC 9106); the CBOR discriminator is 3. */
     readonly Argon2id: 3;
+    /** An SSH agent signature as key material; the CBOR discriminator is 4. */
     readonly SSHAgent: 4;
 }>;
 

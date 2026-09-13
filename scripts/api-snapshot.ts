@@ -28,7 +28,7 @@ const ENTRIES = ["index", "ssh", "pq", "kdf", "sskr", "tags"];
 const base = JSON.parse(readFileSync(join(root, "api-extractor.json"), "utf8"));
 
 /** Roll dist/<entry>.d.mts (and its chunks) up into one declaration file. */
-function rollup(entry) {
+function rollup(entry: string) {
   const dmts = join(root, "dist", `${entry}.d.mts`);
   const dts = join(root, "dist", `${entry}.d.ts`);
   const out = join(root, "dist", "api-temp", `${entry}.d.mts`);
@@ -57,7 +57,9 @@ function rollup(entry) {
     });
     const result = Extractor.invoke(config, { localBuild: true, showVerboseMessages: false });
     if (!result.succeeded) {
-      console.error(`api-extractor rollup of "${entry}" failed with ${result.errorCount} error(s).`);
+      console.error(
+        `api-extractor rollup of "${entry}" failed with ${result.errorCount} error(s).`,
+      );
       process.exit(1);
     }
   } finally {

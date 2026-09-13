@@ -1,5 +1,5 @@
 /**
- * Golden vector generator. `bun scripts/generate-vectors.mjs`.
+ * Golden vector generator. `bun scripts/generate-vectors.ts`.
  * Materialises the golden recipe subset with the WORKING TREE and writes
  * tests/vectors/vectors.json. With VECTORS_FROM=baseline it materialises
  * with the frozen bundle instead, the way the file was first created.
@@ -8,14 +8,19 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { materialize, recipeName, baselineAdapterFor, redesignedAdapterFor } from "../tests/vectors/recipes.ts";
+import {
+  materialize,
+  recipeName,
+  baselineAdapterFor,
+  redesignedAdapterFor,
+} from "../tests/vectors/recipes.ts";
 import { goldenRecipes } from "../tests/corpus/corpus.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let api;
-if (process.env.VECTORS_FROM === "baseline") {
+if (process.env["VECTORS_FROM"] === "baseline") {
   const m = await import("../tests/baseline/components-baseline.mjs");
-  const rand = await import("../../bc-rand-ts/tests/baseline/rand-baseline.mjs");
+  const rand = await import("../tests/baseline/rand-baseline.mjs");
   api = baselineAdapterFor(m, rand);
 } else {
   const m = {
@@ -30,6 +35,12 @@ if (process.env.VECTORS_FROM === "baseline") {
   api = redesignedAdapterFor(m, rand);
 }
 const vectors = [];
-for (const recipe of goldenRecipes()) vectors.push({ name: recipeName(recipe), recipe, expect: materialize(api, recipe) });
-writeFileSync(join(root, "tests/vectors/vectors.json"), JSON.stringify({ count: vectors.length, vectors }, null, 1) + "\n");
-console.log(`wrote ${vectors.length} vectors from ${process.env.VECTORS_FROM ?? "working tree"}`);
+for (const recipe of goldenRecipes())
+  vectors.push({ name: recipeName(recipe), recipe, expect: materialize(api, recipe) });
+writeFileSync(
+  join(root, "tests/vectors/vectors.json"),
+  JSON.stringify({ count: vectors.length, vectors }, null, 1) + "\n",
+);
+console.log(
+  `wrote ${vectors.length} vectors from ${process.env["VECTORS_FROM"] ?? "working tree"}`,
+);

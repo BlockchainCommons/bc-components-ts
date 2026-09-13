@@ -1570,9 +1570,13 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
  * Available key encapsulation schemes.
  */
 export declare const EncapsulationScheme: Readonly<{
+    /** X25519 Diffie–Hellman — the default scheme. */
     readonly X25519: "x25519";
+    /** ML-KEM-512 (FIPS 203), post-quantum. */
     readonly MLKEM512: "mlkem512";
+    /** ML-KEM-768 (FIPS 203), post-quantum. */
     readonly MLKEM768: "mlkem768";
+    /** ML-KEM-1024 (FIPS 203), post-quantum. */
     readonly MLKEM1024: "mlkem1024";
 }>;
 
@@ -1607,7 +1611,7 @@ export declare type EncapsulationScheme = (typeof EncapsulationScheme)[keyof typ
  * `EncryptedMessage` is serialized to CBOR with tag 40002.
  *
  * CDDL:
- * ```cddl
+ * ```text
  * EncryptedMessage =
  *     #6.40002([ ciphertext: bstr, nonce: bstr, auth: bstr, ? aad: bstr ])
  * ```
@@ -1866,8 +1870,11 @@ export declare interface MessageDetails {
  * - 5: NIST Level 5 (MLDSA87)
  */
 export declare const MLDSALevel: Readonly<{
+    /** ML-DSA-44 (NIST security category 2); the CBOR discriminator is 2. */
     readonly MLDSA44: 2;
+    /** ML-DSA-65 (category 3); the CBOR discriminator is 3. */
     readonly MLDSA65: 3;
+    /** ML-DSA-87 (category 5); the CBOR discriminator is 5. */
     readonly MLDSA87: 5;
 }>;
 
@@ -2122,8 +2129,11 @@ declare interface MLKEMEncapsulationPair {
  * - 1024: ML-KEM-1024 (NIST Level 5)
  */
 export declare const MLKEMLevel: Readonly<{
+    /** ML-KEM-512; the CBOR discriminator is 512. */
     readonly MLKEM512: 512;
+    /** ML-KEM-768; the CBOR discriminator is 768. */
     readonly MLKEM768: 768;
+    /** ML-KEM-1024; the CBOR discriminator is 1024. */
     readonly MLKEM1024: 1024;
 }>;
 
@@ -3445,15 +3455,25 @@ export declare class Signature implements ToCbor {
  * difference, not a parity gap.
  */
 export declare const SignatureScheme: Readonly<{
+    /** BIP-340 Schnorr over secp256k1 — the default scheme. */
     readonly Schnorr: "Schnorr";
+    /** ECDSA over secp256k1 (low-s, as the reference's `secp256k1` crate). */
     readonly Ecdsa: "Ecdsa";
+    /** Ed25519 (RFC 8032), verified strictly as the reference's `verify_strict`. */
     readonly Ed25519: "Ed25519";
+    /** ML-DSA-44 (FIPS 204), post-quantum. */
     readonly MLDSA44: "MLDSA44";
+    /** ML-DSA-65 (FIPS 204), post-quantum. */
     readonly MLDSA65: "MLDSA65";
+    /** ML-DSA-87 (FIPS 204), post-quantum. */
     readonly MLDSA87: "MLDSA87";
+    /** SSH `ssh-ed25519` (`sshsig`). */
     readonly SshEd25519: "SshEd25519";
+    /** SSH `ssh-dss` (`sshsig`); parsed keys only, no generation. */
     readonly SshDsa: "SshDsa";
+    /** SSH `ecdsa-sha2-nistp256` (`sshsig`); no low-s normalisation, as the reference and OpenSSH. */
     readonly SshEcdsaP256: "SshEcdsaP256";
+    /** SSH `ecdsa-sha2-nistp384` (`sshsig`); no low-s normalisation, as the reference and OpenSSH. */
     readonly SshEcdsaP384: "SshEcdsaP384";
 }>;
 

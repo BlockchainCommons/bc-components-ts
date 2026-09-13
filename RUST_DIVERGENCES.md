@@ -14,10 +14,11 @@ Every entry below is checked by `tests/rust-validation`, a Rust program that
 pins `bc-components = 0.31.1` (features `ssh`, `pqcrypto`) and replays
 `tests/vectors/vectors.json` through the reference. A vector either matches
 byte for byte, is listed here as an expected divergence, or fails the run.
-The current run: **473 vectors — 358 match, 59 expected divergences (D2 10,
-D3 24, D4 1, D5 8, D6 3, E1 13), 56 JS-only, 0 mismatches.** A JS-only
-vector is one the reference cannot express (a non-integer length, an unknown
-level, a seeded post-quantum key); it is counted, never compared.
+The current run: **509 vectors — 405 match, 48 expected divergences (D2 7,
+D3 24, D5 1, D6 3, E1 13), 56 JS-only, 0 mismatches.** A JS-only vector is
+one the reference cannot express (a non-integer length, an unknown level, a
+seeded post-quantum key) or a surface the harness adapter does not run; it
+is counted, never compared.
 
 This document has three kinds of entry:
 
@@ -28,10 +29,10 @@ This document has three kinds of entry:
 ## 1. True behavioral divergences
 
 Harness on the current tree (`tests/rust-validation`, `bc-components =
-0.31.1`, 2026-09-11): **473 vectors — 358 match, 59 expected divergence (D2
-10, D3 24, D4 1, D5 8, D6 3, E1 13), 56 JS-only, 0 mismatch.** The E1
-table, D5 type list and D6 rule are explicit in
-`tests/rust-validation/src/main.rs`; any other pair is a mismatch.
+0.31.1`, 2026-09-12): **509 vectors — 405 match, 48 expected divergence (D2
+7, D3 24, D5 1, D6 3, E1 13), 56 JS-only, 0 mismatch.** The E1 table, D5
+type list and D6 rule are explicit in `tests/rust-validation/src/main.rs`;
+any other pair is a mismatch.
 
 ### D3. `Compressed` bytes (24 vectors)
 
@@ -43,17 +44,14 @@ decompresses in Rust to the original bytes; `tests/compressed.test.ts`
 verifies the reverse direction on a miniz_oxide stream dumped by
 `tests/rust-validation/examples/dump_compressed.rs`.
 
-The wire is unaffected in practice: the `Compressed` CBOR carries the digest
-of the *uncompressed* content, so envelopes and their digests are identical on
-both sides; only the compressed payload bytes differ. The TypeScript bytes
-are the frozen behaviour.
-
-### D4. ECDSA SSH signatures are low-s normalised (1 vector)
-
-`SSHPrivateKey.sign` for `ecdsa-sha2-nistp256` produces a low-s signature
-(noble's default); the reference (via `ssh-key`/`p256`) does not normalise.
-Both signatures verify on both sides, and every other field of the signature
-(the namespace, the `sshsig` framing, the public key) matches.
+What differs on the wire, stated precisely: the `Compressed` CBOR is
+`[checksum, decompressedSize, compressedData, digest?]`, so the element's
+bytes — and therefore a compressed envelope's CBOR and UR — differ between
+the two implementations (executed on a 53-byte input: 16-byte stream here,
+28-byte stream there). The envelope digest is the digest of the
+*uncompressed* subject and is identical, so nothing signed or compared by
+digest is affected. Matching would mean porting miniz_oxide's compressor
+(or loading it as WASM); the TypeScript bytes are the frozen behaviour.
 
 ### D6. A zero scalar or an off-curve point is rejected at decode (3 vectors)
 
@@ -62,9 +60,12 @@ Both signatures verify on both sides, and every other field of the signature
 constructed** (`ComponentsError` `InvalidData`), so a `SigningPrivateKey`,
 `SigningPublicKey` or `PrivateKeys` CBOR carrying such a key fails to decode
 here. The reference copies the bytes unchecked and panics at first use
-(`ecdsa_keys.rs` `expect("32 bytes, within curve order")`; decompressing the
-point in `uncompressed_public_key()`), so no reference program can use such
-a key either. The three corpus rows that carry the all-zero key record the
+(executed: `ECPrivateKey::from_data_ref([0; 32])` is `Ok` and
+`.public_key()` panics in `bc-crypto` `ecdsa_keys.rs:31`, `expect("32
+bytes, within curve order")`; `ECPublicKey::from_data_ref` of a non-point
+is `Ok` and `.uncompressed_public_key()` panics), so no reference program
+can use such a key either. **Upstream fix:** validate in `from_data_ref`
+and return `Err`. The three corpus rows that carry the all-zero key record the
 rejection; their valid-key twins (scalar `2^248`, the generator `G`) decode
 identically on both sides.
 
@@ -93,6 +94,15 @@ the reference, each pinned by vectors:
   `reference()` / `refHexShort()` and prints the reference's `Display`
   form, checked string for string through the tag summarisers (25 `summary`
   vectors, `/tags`).
+- **ECDSA SSH signatures were low-s normalised, and a high-s one was
+  rejected** (D4, 1.0.0-beta.1). The reference (`ssh-key` over RustCrypto
+  `ecdsa`, RFC 6979, no normalisation) and OpenSSH produce `s > n/2` half
+  the time; noble's defaults normalised on signing and refused on
+  verification, so the port could not verify the reference's signatures.
+  Signing and verification pass `lowS: false` now: with the same nonce the
+  bytes are identical to the reference's (the `sshFromSeed … +sign` vector
+  matches byte for byte) and both forms verify on both sides; a fixture
+  test verifies a signature the reference produced.
 - **Lax Ed25519 verification** (B1) was fixed at its source in
   `@blockchaincommons/crypto` (`verify_strict` semantics); eight
   `verifyStrict` vectors pin the strict outcome against the reference here
@@ -101,28 +111,36 @@ the reference, each pinned by vectors:
 ## 2. JS-only input domain
 
 The following surfaces have no counterpart in `bc-components-rust` 0.31.1 and
-are exercised only by the TypeScript golden vectors (10 vectors in class `D2`
+are exercised only by the TypeScript golden vectors (7 vectors in class `D2`
 and 56 counted as JS-only in the harness):
 
-- **`toUR()` on every codable type.** The reference has no `UREncodable` for
-  `JSON`, `SSKRShare`, `EncapsulationCiphertext` or `AuthenticationTag`; the
-  TypeScript types produce `ur:json`, `ur:sskr`, `ur:agreement-public-key`
-  (X25519 ciphertext) and `ur:…` from their tag names (class `D5`, exactly
-  these four types, 8 vectors).
+- **`toUR()` on `EncapsulationCiphertext`.** The reference has `From<_> for
+  CBOR` but no `CBORTagged` for it (two tags), so no `UREncodable`; the
+  TypeScript type produces `ur:agreement-public-key/…` (X25519) or
+  `ur:mlkem-ciphertext/…` from its tag names (class `D5`, this type only,
+  1 vector). `JSON`, `SSKRShare` and `URI` are `CBORTaggedEncodable` in the
+  reference, so bc-ur's blanket `UREncodable` gives them `ur_string()` —
+  executed, `ur:json/…`, `ur:sskr/…` and `ur:url/…` are identical to the
+  port's (the harness adapter had typed a `-` for them until 1.0.0-beta.2);
+  `AuthenticationTag` has no UR on either side.
 - **EC key CBOR decoding.** The reference implements only the encoding
   direction for `ECPrivateKey`, `ECPublicKey`, `ECUncompressedPublicKey`, and
   `SchnorrPublicKey`; the TypeScript classes also decode.
-- **`URI` as a UR** (`ur:uri/…`); the reference has no `UREncodable` for URI.
-- **`SSHAgentParams` / `KeyDerivationMethod.SSHAgent`** — the reference needs
-  the optional `ssh-agent` feature, which the harness does not enable.
+- **`SSHAgentParams` / `KeyDerivationMethod.SSHAgent`** — the reference has
+  them behind the optional `ssh-agent` feature, which the harness does not
+  enable (2 vectors in `D2`: harness scope, not a divergence; the
+  `encryptedKey` row would need a running agent).
 - **Seeded post-quantum and SSH-ECDSA key generation.** TypeScript draws
   ML-DSA, ML-KEM and SSH ECDSA key material from the caller's RNG
   (`createKeypair` / `createEncapsulationKeypair` / `generateKeypair` with
   `rng`, and `MLKEMPublicKey.encapsulate({ rng })` for the encapsulation
-  randomness); the reference's `keypair_opt_using` refuses a seeded ML-KEM
-  keypair (5 `D2` vectors) and its `new_keypair` for these schemes uses its
-  own entropy source, so the harness compares only the deterministic parts
+  randomness); the reference's `keypair_using` returns
+  `General("Deterministic keypair generation not supported for this
+  encapsulation scheme" / "… signature scheme")` for every post-quantum
+  scheme (executed; 5 `D2` vectors) and its `keypair()` draws from the OS
+  through `pqcrypto`, so the harness compares only the deterministic parts
   (signature verification, decapsulation, the sealed-message structure).
+  Matching would remove a capability for no wire benefit.
 - **The JS input domain** (`domain` and out-of-width `kdfDomain` vectors,
   42 of the 56 JS-only rows): `NaN`, `Infinity`, negative or fractional
   lengths and parameters, a number where a string is expected, an unknown
@@ -137,10 +155,23 @@ and 56 counted as JS-only in the harness):
   TypeScript): a wrong shape, length or PQ level inside a tag `Cbor` →
   `InvalidData` / `InvalidSize` / `PostQuantum`; a UR of another type or an
   unparsable bytewords body `Cbor` → `UnexpectedType` / `Bytewords`; a bad
-  SSKR share `Error` → `Sskr`; a non-point `ECPublicKey` panics there and is
-  `InvalidData` here. Every other both-reject pair is a mismatch. A dcbor
-  failure that reaches the caller is `Cbor` on both sides (the reference's
-  `Error::Cbor`).
+  SSKR share `Error` → `Sskr` (the harness answers for the reference here:
+  `SSKRShare::from_data` on fewer than 5 bytes panics on an index); a
+  non-point `ECPublicKey` panics there and is `InvalidData` here. Every
+  other both-reject pair is a mismatch. A dcbor failure that reaches the
+  caller is `Cbor` on both sides (the reference's `Error::Cbor`).
+- **The low-order X25519 point** (B7 in the list above). Executed:
+  `shared_key_with(&X25519PublicKey::from_data([0; 32]))` returns a key
+  (`6ddeb1af…`) in the reference — `bc-crypto` HKDFs the all-zero
+  Diffie–Hellman output, so it does not look zero — where the port raises
+  `InvalidData` ("low-order point"). A predictable shared key is what the
+  check prevents; the port stays the safer side. **Upstream fix:** a
+  contributory check in `x25519_shared_key`.
+- **`MLDSAPrivateKey.publicKey()`.** Neither side derives the public key from
+  the private key: the reference's `MLDSAPrivateKey` has `sign`, `level`,
+  `size`, `as_bytes`, `from_bytes` and no `public_key()`; both hand out the
+  pair from `keypair()` / `createKeypair()`. The port's `publicKey()` stub
+  throws `General` and exists for the shape only.
 - **KDF parameter display** matches the reference (`PBKDF2(SHA256)`,
   `Scrypt`, `Argon2id`, `HKDF(SHA256)`); the structural rule the harness
   keeps for `params` / `encryptedKey` is never exercised.
@@ -160,9 +191,6 @@ and 56 counted as JS-only in the harness):
   `PrivateKeyBase.sshSigningPrivateKey({ kind: "dsa" })` throw; the
   reference's byte-deterministic DSA-1024 generation (FIPS 186-4 prime
   search) is not ported. DSA keys parsed from PEM sign, verify and round-trip.
-- **`MLDSAPrivateKey.publicKey()`.** noble's ML-DSA does not derive the
-  public key from the secret key; generate both with `keypair()` /
-  `createKeypair()`, which TypeScript does, and keep the public key.
 
 ## Maintenance
 

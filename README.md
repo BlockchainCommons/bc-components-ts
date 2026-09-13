@@ -22,8 +22,6 @@ yarn add @blockchaincommons/components
 bun add @blockchaincommons/components
 ```
 
-**Requirements:** TypeScript >= 5.7 is required to consume the published types. Node >= 22.12 is required.
-
 ## Usage Instructions
 
 ```typescript
@@ -90,6 +88,7 @@ bundle:
 
 ### Version History
 
+- **1.0.0-beta.2 (September 12, 2026)** - ECDSA SSH signatures follow the reference and OpenSSH: signing no longer low-s normalises (byte-identical to the reference) and verification accepts either form (a high-s `sshsig` from the reference or OpenSSH was rejected).
 - **1.0.0-beta.1 (September 9, 2026)** - Initial beta implementation.
 
 ### Roadmap
