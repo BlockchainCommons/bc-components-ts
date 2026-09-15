@@ -109,8 +109,7 @@ point (see the CHANGELOG for the full list). What a caller has to change:
 - `X.fromHex` is strict (no whitespace); `UUID.fromString` trims and drops
   `-` only; `URI.from` rejects with `InvalidData`; `CborJson.asStr` keeps a
   leading BOM.
-- `pako` is gone: DEFLATE is a port of `miniz_oxide`, so `Compressed` bytes
-  are the reference's.
+-  DEFLATE is a port of `miniz_oxide`, so `Compressed` bytes are the reference's.
 - **New:** SSH-agent lock/unlock (`SSHAgentParams.lock`/`unlock`,
   `EncryptedKey.lockWithAgent`/`unlockWithAgent`, `MemorySshAgent`, and the
   Node transport `@blockchaincommons/components/ssh-agent-node`); SSH DSA,

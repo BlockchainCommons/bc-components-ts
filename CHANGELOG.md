@@ -29,7 +29,7 @@
   every agent failure to `SshAgent`); `ComponentsError.cborDecode`.
 - `Seed.creationCborDate` (the stored `CborDate`, sub-second precision kept).
 - The DEFLATE implementation is a port of `miniz_oxide` 0.8.9 (`src/internal`),
-  so `Compressed` bytes equal the reference's; `pako` is no longer a dependency.
+  so `Compressed` bytes equal the reference's;
 
 ### Changed (breaking)
 
@@ -45,9 +45,7 @@
   negative wrap (`u8` / `u32` / `usize` widths).
 - **Tags follow the process-wide store.** `X.codec.tags` and `X.cborTags()`
   resolve names through the dcbor tags store at call time; `toUR()` throws
-  `URError` `TagUnnamed` until `registerTags()` (from
-  `@blockchaincommons/components/tags`) has run, as the reference's
-  `ur_string()` requires `register_tags()`.
+  `URError` `TagUnnamed` until `registerTags()`.
 - **Removed surfaces that have no reference counterpart:** `toUR()` on
   `EncapsulationPrivateKey`, `EncapsulationPublicKey` and
   `EncapsulationCiphertext`; `fromCbor` / `codec` on `ECPrivateKey`,
