@@ -9,6 +9,10 @@ import { Seed } from "../src/seed.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 describe("Seed", () => {
   // Test seed data (16 bytes minimum)
   const TEST_HEX = "59f2293a5bce7d4de59e71b4207ac5d2";
@@ -359,7 +363,7 @@ describe("Seed", () => {
 
       expect(bytes).toBeInstanceOf(Uint8Array);
       expect(bytes.length).toBe(16);
-      // `bytes` is a copy (B5): equal, never the same buffer
+      // `bytes` is a copy: equal, never the same buffer
       expect(bytes).toEqual(seed.bytes);
       expect(bytes).not.toBe(seed.bytes);
     });
@@ -372,7 +376,8 @@ describe("Seed", () => {
         creationDate: date,
       });
 
-      expect(seed.creationDate).toBe(seed.creationDate);
+      expect(seed.creationDate).toEqual(seed.creationDate);
+      expect(seed.creationDate?.getTime()).toBe(date.getTime());
     });
 
     it("should have setCreationDate() as alias for setCreatedAt()", () => {

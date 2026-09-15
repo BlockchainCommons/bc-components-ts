@@ -20,10 +20,10 @@ import {
   type Cbor,
   type Tag,
   cbor,
-  expectArray,
-  expectInteger,
   expectBytes,
   type ToCbor,
+  asArray,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
@@ -31,9 +31,9 @@ import { TAG_MLDSA_SIGNATURE } from "@blockchaincommons/tags";
 
 import {
   type MLDSALevel,
-  mldsaLevelFromValue,
   mldsaLevelToString,
   mldsaSignatureSize,
+  mldsaLevelFromCbor,
 } from "./mldsa-level.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
@@ -49,10 +49,12 @@ export class MLDSASignature implements ToCbor, ToUR {
   private readonly _data: Uint8Array;
 
   private constructor(level: MLDSALevel, data: Uint8Array) {
+    // pqcrypto's `DetachedSignature::from_bytes` accepts any length up to
+    // the scheme's; a shorter signature verifies as `false`.
     const expectedSize = mldsaSignatureSize(level);
-    if (data.length !== expectedSize) {
+    if (data.length > expectedSize) {
       throw ComponentsError.postQuantum(
-        `MLDSASignature (${mldsaLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
+        `error: DetachedSignature expected ${expectedSize} bytes, got ${data.length}`,
       );
     }
     this._level = level;
@@ -127,14 +129,10 @@ export class MLDSASignature implements ToCbor, ToUR {
     return (M_L_D_S_A_SIGNATURE_CODEC ??= defineCodec({
       tags: [TAG_MLDSA_SIGNATURE],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-        if (elements.length !== 2) {
-          throw ComponentsError.postQuantum(
-            `MLDSASignature CBOR must have 2 elements, got ${elements.length}`,
-          );
-        }
-        const levelValue = Number(expectInteger(elements[0]));
-        const level = mldsaLevelFromValue(levelValue);
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("MLDSASignature must be an array");
+        if (elements.length !== 2) throw CborError.custom("MLDSASignature must have two elements");
+        const level = mldsaLevelFromCbor(elements[0]);
         const data = expectBytes(elements[1]);
         return MLDSASignature.fromBytes(level, data);
       },

@@ -9,6 +9,10 @@ import { XID } from "../src/id/xid.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 describe("XID", () => {
   // Test XID hex string (32 bytes = 64 hex characters)
   const TEST_HEX = "de2853684ae55803a08b36dd7f4e566649970601927330299fd333f33fecc037";

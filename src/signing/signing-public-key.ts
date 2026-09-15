@@ -24,12 +24,13 @@ import {
   expectArray,
   expectBytes,
   expectText,
-  expectUnsigned,
   isBytes,
   isArray,
-  isTagged,
   asTaggedValue,
   type ToCbor,
+  CborError,
+  asUnsigned,
+  asBytes,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import {
@@ -43,6 +44,12 @@ import { SchnorrPublicKey } from "../ec-key/schnorr-public-key.js";
 import { MLDSAPublicKey } from "../mldsa/mldsa-public-key.js";
 import { MLDSALevel } from "../mldsa/mldsa-level.js";
 import { SSHPublicKey } from "../ssh/ssh-public-key.js";
+import {
+  sshKeyTypeName,
+  sshSchemeUnsupportedError,
+  sshSignatureScheme,
+  type SshAlgorithm,
+} from "../ssh/ssh-algorithm.js";
 import { SignatureScheme, isMldsaScheme } from "./signature-scheme.js";
 import type { Signature } from "./signature.js";
 import type { Verifier } from "./signer.js";
@@ -64,7 +71,7 @@ let SIGNING_PUBLIC_KEY_CODEC: ComponentCodec<SigningPublicKey> | undefined;
  * - MLDSA public keys (post-quantum) - tagged CBOR delegating to MLDSAPublicKey
  */
 export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
-  private readonly _type: SignatureScheme;
+  private readonly _type: SignatureScheme | undefined;
   private readonly _schnorrKey: SchnorrPublicKey | undefined;
   private readonly _ecdsaKey: ECPublicKey | undefined;
   private readonly _ed25519Key: Ed25519PublicKey | undefined;
@@ -72,7 +79,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   private readonly _sshKey: SSHPublicKey | undefined;
 
   private constructor(
-    type: SignatureScheme,
+    type: SignatureScheme | undefined,
     schnorrKey?: SchnorrPublicKey,
     ecdsaKey?: ECPublicKey,
     ed25519Key?: Ed25519PublicKey,
@@ -154,26 +161,14 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
    * @returns A new signing public key wrapping the SSH public key
    */
   static fromSsh(key: SSHPublicKey): SigningPublicKey {
-    let scheme: SignatureScheme;
-    switch (key.data.kind) {
-      case "ed25519":
-        scheme = SignatureScheme.SshEd25519;
-        break;
-      case "dsa":
-        scheme = SignatureScheme.SshDsa;
-        break;
-      case "ecdsa":
-        switch (key.data.curve) {
-          case "nistp256":
-            scheme = SignatureScheme.SshEcdsaP256;
-            break;
-          case "nistp384":
-            scheme = SignatureScheme.SshEcdsaP384;
-            break;
-        }
-        break;
-    }
-    return new SigningPublicKey(scheme, undefined, undefined, undefined, undefined, key);
+    return new SigningPublicKey(
+      sshSignatureScheme(key.algorithm),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      key,
+    );
   }
 
   // ============================================================================
@@ -182,9 +177,21 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
 
   /**
    * Returns the signature scheme of this key.
+   *
+   * SSH RSA and P-521 keys have no `SignatureScheme` (the reference defines
+   * none for them) and throw `Ssh` with the reference's text for their
+   * signatures: `Unsupported SSH signature algorithm` / `Unsupported SSH
+   * ECDSA curve`.
    */
   get scheme(): SignatureScheme {
+    if (this._type === undefined) throw sshSchemeUnsupportedError(this.sshAlgorithm());
     return this._type;
+  }
+
+  /** The SSH algorithm of an SSH key; `Ssh` failure for any other key. */
+  private sshAlgorithm(): SshAlgorithm {
+    if (this._sshKey === undefined) throw ComponentsError.ssh("not an SSH key");
+    return this._sshKey.algorithm;
   }
 
   /**
@@ -213,6 +220,8 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         return "SSH-ECDSA-P256";
       case SignatureScheme.SshEcdsaP384:
         return "SSH-ECDSA-P384";
+      case undefined:
+        return sshKeyTypeName(this.sshAlgorithm());
       default:
         return this._type;
     }
@@ -281,7 +290,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
    * @returns The MLDSAPublicKey if this is an MLDSA key, undefined otherwise
    */
   asMldsa(): MLDSAPublicKey | undefined {
-    if (isMldsaScheme(this._type) && this._mldsaKey !== undefined) {
+    if (this._type !== undefined && isMldsaScheme(this._type) && this._mldsaKey !== undefined) {
       return this._mldsaKey;
     }
     return undefined;
@@ -291,7 +300,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
    * Checks if this is an MLDSA signing key.
    */
   isMldsa(): boolean {
-    return isMldsaScheme(this._type);
+    return this._type !== undefined && isMldsaScheme(this._type);
   }
 
   /**
@@ -319,7 +328,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   withSshComment(comment: string): SigningPublicKey {
     if (this._sshKey === undefined) {
       throw ComponentsError.invalidData(
-        `SigningPublicKey.withSshComment: not an SSH key (scheme: ${this._type})`,
+        `SigningPublicKey.withSshComment: not an SSH key (scheme: ${String(this._type)})`,
       );
     }
     return SigningPublicKey.fromSsh(this._sshKey.withComment(comment));
@@ -348,7 +357,8 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
+      case SignatureScheme.SshEcdsaP384:
+      case undefined: {
         if (this._sshKey === undefined || other._sshKey === undefined) return false;
         return this._sshKey.equals(other._sshKey);
       }
@@ -383,7 +393,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384:
-        // (`signing_public_key.rs:592-594`).
+      case undefined:
         innerDisplay = this._sshKey?.toString() ?? `SSHPublicKey(${refShort})`;
         break;
     }
@@ -417,8 +427,20 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
    * @returns `true` if the signature is valid, `false` otherwise
    */
   verify(signature: Signature, message: Uint8Array): boolean {
+    // An SSH key verifies only `sshsig` signatures: the embedded key,
+    // namespace and algorithm-specific signature are checked by the SSH key.
+    if (this._sshKey !== undefined) {
+      const sshSig = signature.asSsh();
+      if (sshSig === undefined) return false;
+      try {
+        return this._sshKey.verifySshSignature(sshSig.namespace, message, sshSig);
+      } catch {
+        return false;
+      }
+    }
+
     // Check that signature scheme matches
-    if (signature.scheme !== this._type) {
+    if (signature.isSsh() || signature.scheme !== this._type) {
       return false;
     }
 
@@ -431,11 +453,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         if (sigData === undefined) {
           return false;
         }
-        try {
-          return this._schnorrKey.schnorrVerify(sigData, message);
-        } catch {
-          return false;
-        }
+        return this._schnorrKey.schnorrVerify(sigData, message);
       }
       case SignatureScheme.Ecdsa: {
         if (this._ecdsaKey === undefined) {
@@ -445,11 +463,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         if (sigData === undefined) {
           return false;
         }
-        try {
-          return this._ecdsaKey.verify(sigData, message);
-        } catch {
-          return false;
-        }
+        return this._ecdsaKey.verify(sigData, message);
       }
       case SignatureScheme.Ed25519: {
         if (this._ed25519Key === undefined) {
@@ -459,11 +473,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
         if (sigData === undefined) {
           return false;
         }
-        try {
-          return this._ed25519Key.verify(message, sigData);
-        } catch {
-          return false;
-        }
+        return this._ed25519Key.verify(message, sigData);
       }
       case SignatureScheme.MLDSA44:
       case SignatureScheme.MLDSA65:
@@ -484,17 +494,9 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
-        if (this._sshKey === undefined) return false;
-        const sshSig = signature.asSsh();
-        if (sshSig === undefined) return false;
-        // (`signing_public_key.rs:362-364`).
-        try {
-          return this._sshKey.verifySshSignature(sshSig.namespace, message, sshSig);
-        } catch {
-          return false;
-        }
-      }
+      case SignatureScheme.SshEcdsaP384:
+      case undefined:
+        return false;
     }
   }
 
@@ -506,53 +508,45 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   static get codec(): ComponentCodec<SigningPublicKey> {
     return (SIGNING_PUBLIC_KEY_CODEC ??= defineCodec({
       tags: [TAG_SIGNING_PUBLIC_KEY],
+      // The reference's `from_untagged_cbor`, branch for branch.
       decodeUntagged: (cborValue) => {
-        // Wire format: Schnorr is a bare byte string
+        // A byte string is a Schnorr key.
         if (isBytes(cborValue)) {
-          const keyData = expectBytes(cborValue);
-          return SigningPublicKey.fromSchnorr(SchnorrPublicKey.from(keyData));
+          return SigningPublicKey.fromSchnorr(SchnorrPublicKey.from(expectBytes(cborValue)));
         }
 
-        // Array format for ECDSA, Ed25519
+        // An array of exactly two elements, `[1, bytes]` or `[2, bytes]`
+        // (an exact `Unsigned(1)`/`Unsigned(2)` match: no wrap here).
         if (isArray(cborValue)) {
           const elements = expectArray(cborValue);
-
-          if (elements.length !== 2) {
-            throw ComponentsError.invalidData("SigningPublicKey array must have 2 elements");
+          if (elements.length === 2) {
+            const head = asUnsigned(elements[0]);
+            const keyData = asBytes(elements[1]);
+            if (keyData !== undefined) {
+              if (head === 1) return SigningPublicKey.fromEcdsa(ECPublicKey.from(keyData));
+              if (head === 2) return SigningPublicKey.fromEd25519(Ed25519PublicKey.from(keyData));
+            }
           }
-
-          const discriminator = expectUnsigned(elements[0]);
-          const keyData = expectBytes(elements[1]);
-
-          switch (Number(discriminator)) {
-            case 1: // ECDSA
-              return SigningPublicKey.fromEcdsa(ECPublicKey.from(keyData));
-            case 2: // Ed25519
-              return SigningPublicKey.fromEd25519(Ed25519PublicKey.from(keyData));
-            default:
-              throw ComponentsError.invalidData(
-                `Unknown SigningPublicKey discriminator: ${discriminator}`,
-              );
-          }
+          throw CborError.custom("invalid signing public key");
         }
 
-        // Tagged format for MLDSA / SSH
-        if (isTagged(cborValue)) {
-          const tagged = asTaggedValue(cborValue);
-          if (tagged?.[0].value === TAG_MLDSA_PUBLIC_KEY.value) {
-            const mldsaKey = MLDSAPublicKey.fromCbor(cborValue);
-            return SigningPublicKey.fromMldsa(mldsaKey);
-          }
-          if (tagged?.[0].value === TAG_SSH_TEXT_PUBLIC_KEY.value) {
+        // A tagged value: an SSH public key text or an ML-DSA key.
+        const tagged = asTaggedValue(cborValue);
+        if (tagged !== undefined) {
+          if (tagged[0].value === TAG_SSH_TEXT_PUBLIC_KEY.value) {
             const text = expectText(tagged[1]);
-            const sshKey = SSHPublicKey.fromOpenssh(text);
-            return SigningPublicKey.fromSsh(sshKey);
+            try {
+              return SigningPublicKey.fromSsh(SSHPublicKey.fromOpenssh(text));
+            } catch {
+              throw CborError.custom("invalid SSH public key");
+            }
+          }
+          if (tagged[0].value === TAG_MLDSA_PUBLIC_KEY.value) {
+            return SigningPublicKey.fromMldsa(MLDSAPublicKey.fromCbor(cborValue));
           }
         }
 
-        throw ComponentsError.invalidData(
-          "SigningPublicKey must be a byte string (Schnorr), array (ECDSA/Ed25519), tagged MLDSA, or tagged SSH",
-        );
+        throw CborError.custom("invalid signing public key");
       },
       encodeUntagged: (value) => value.untaggedCbor(),
     }));
@@ -604,7 +598,8 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
+      case SignatureScheme.SshEcdsaP384:
+      case undefined: {
         if (this._sshKey === undefined) {
           throw ComponentsError.invalidData("SSH public key is missing");
         }
@@ -652,7 +647,7 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
   toSshOpenssh(): string {
     if (this._sshKey === undefined) {
       throw ComponentsError.invalidData(
-        `SigningPublicKey is not an SSH key (scheme: ${this._type})`,
+        `SigningPublicKey is not an SSH key (scheme: ${String(this._type)})`,
       );
     }
     return this._sshKey.toOpenssh();

@@ -6,7 +6,7 @@
  * of the underlying derivation method.
  */
 
-import { type Cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { type Cbor, expectArray, expectUnsigned, CborError } from "@blockchaincommons/dcbor";
 
 import type { SymmetricKey } from "../symmetric/symmetric-key.js";
 import type { EncryptedMessage } from "../symmetric/encrypted-message.js";
@@ -16,7 +16,8 @@ import { PBKDF2Params } from "./pbkdf2-params.js";
 import { ScryptParams } from "./scrypt-params.js";
 import { Argon2idParams } from "./argon2id-params.js";
 import { SSHAgentParams } from "./ssh-agent-params.js";
-import { ComponentsError } from "../error.js";
+import { decodeWith } from "../codable.js";
+import { USIZE_FIELD } from "../domain.js";
 
 /**
  * Union type representing key derivation parameters.
@@ -133,9 +134,7 @@ export function isPasswordBased(kdp: KeyDerivationParams): boolean {
 /**
  * Check if the parameters use SSH Agent for key derivation.
  *
- * Note: SSH Agent key derivation is not yet functional in TypeScript.
- * This function is useful for detecting envelopes locked by other
- * implementations (the reference included).
+ * Such parameters lock and unlock with an `SshAgent` (see `SSHAgentParams.lock`).
  */
 export function isSshAgent(kdp: KeyDerivationParams): boolean {
   return kdp.type === "sshagent";
@@ -209,19 +208,23 @@ export function keyDerivationParamsToString(kdp: KeyDerivationParams): string {
 /**
  * Parse KeyDerivationParams from CBOR.
  */
+/**
+ * As the reference's `TryFrom<CBOR> for KeyDerivationParams` (a dcbor
+ * error): the first element, a `usize` with dcbor's negative wrap, selects
+ * the method, and that method's decoder reads the whole array.
+ */
 export function keyDerivationParamsFromCbor(cborValue: Cbor): KeyDerivationParams {
-  const array = expectArray(cborValue);
-  if (array.length === 0) {
-    throw ComponentsError.invalidData("Invalid KeyDerivationParams: empty array");
-  }
+  return decodeWith(() => {
+    const array = expectArray(cborValue);
+    const first = array[0];
+    if (first === undefined) throw CborError.custom("Missing index");
+    const method = keyDerivationMethodFromIndex(Number(expectUnsigned(first, USIZE_FIELD)));
+    if (method === undefined) throw CborError.custom("Invalid KeyDerivationMethod");
+    return keyDerivationParamsOf(method, cborValue);
+  });
+}
 
-  const index = expectNumber(array[0]);
-  const method = keyDerivationMethodFromIndex(Number(index));
-
-  if (method === undefined) {
-    throw ComponentsError.invalidData(`Invalid KeyDerivationMethod index: ${index}`);
-  }
-
+function keyDerivationParamsOf(method: KeyDerivationMethod, cborValue: Cbor): KeyDerivationParams {
   switch (method) {
     case KeyDerivationMethod.HKDF:
       return { type: "hkdf", params: HKDFParams.fromCbor(cborValue) };

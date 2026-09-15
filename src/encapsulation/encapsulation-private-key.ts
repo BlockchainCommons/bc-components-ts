@@ -18,9 +18,17 @@
  */
 
 import { secureRng, type RngOptions } from "@blockchaincommons/rand";
-import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import {
+  type Cbor,
+  type Tag,
+  cbor,
+  expectBytes,
+  type ToCbor,
+  asTaggedValue,
+  CborError,
+  tagsForValues,
+} from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
-import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { TAG_X25519_PRIVATE_KEY, TAG_MLKEM_PRIVATE_KEY } from "@blockchaincommons/tags";
 import { X25519PrivateKey } from "../x25519/x25519-private-key.js";
 import { type SymmetricKey } from "../symmetric/symmetric-key.js";
@@ -66,7 +74,7 @@ let ENCAPSULATION_PRIVATE_KEY_CODEC: ComponentCodec<EncapsulationPrivateKey> | u
  *
  * Use this to decapsulate a shared secret from ciphertext.
  */
-export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR {
+export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor {
   private readonly _scheme: EncapsulationScheme;
   private readonly _x25519PrivateKey: X25519PrivateKey | undefined;
   private readonly _mlkemPrivateKey: MLKEMPrivateKey | undefined;
@@ -228,7 +236,11 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
   }
 
   /**
-   * Get the public key corresponding to this private key.
+   * The public key corresponding to this private key.
+   *
+   * Only an X25519 key derives its public key. For an ML-KEM key this
+   * throws `Crypto` (`Deriving ML-KEM public key not supported`), as the
+   * reference does: keep the public key `mlkemKeypair` hands out.
    */
   publicKey(): EncapsulationPublicKey {
     if (this._scheme === EncapsulationScheme.X25519) {
@@ -237,10 +249,7 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
       const x25519Public = pk.publicKey();
       return EncapsulationPublicKey.fromX25519PublicKey(x25519Public);
     } else if (isMlkemScheme(this._scheme)) {
-      const pk = this._mlkemPrivateKey;
-      if (pk === undefined) throw ComponentsError.invalidData("MLKEM private key not set");
-      const mlkemPublic = pk.publicKey();
-      return EncapsulationPublicKey.fromMlkem(mlkemPublic);
+      throw ComponentsError.crypto("Deriving ML-KEM public key not supported");
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -329,16 +338,22 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
   // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+  /** Tagged-CBOR codec; the tag value selects the scheme, as the reference's `TryFrom<CBOR>`. */
   static get codec(): ComponentCodec<EncapsulationPrivateKey> {
     return (ENCAPSULATION_PRIVATE_KEY_CODEC ??= defineCodec({
       tags: [TAG_X25519_PRIVATE_KEY, TAG_MLKEM_PRIVATE_KEY],
       decodeUntagged: (cborValue) =>
         EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.from(expectBytes(cborValue))),
-      decodeTagged: (tag, content, whole) =>
-        tag.value === TAG_MLKEM_PRIVATE_KEY.value
-          ? EncapsulationPrivateKey.fromMlkem(MLKEMPrivateKey.fromCbor(whole))
-          : EncapsulationPrivateKey.codec.decodeUntagged(content),
+      // The reference's `TryFrom<CBOR>`: the tag value selects the inner
+      // decoder; anything else, an untagged value included, is its own text.
+      decodeAny: (whole) => {
+        const tag = asTaggedValue(whole)?.[0].value;
+        if (tag === TAG_X25519_PRIVATE_KEY.value)
+          return EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.fromCbor(whole));
+        if (tag === TAG_MLKEM_PRIVATE_KEY.value)
+          return EncapsulationPrivateKey.fromMlkem(MLKEMPrivateKey.fromCbor(whole));
+        throw CborError.custom("Invalid encapsulation private key");
+      },
       encodeUntagged: (value) => value.untaggedCbor(),
       encode: (value) => value.toCbor(),
     }));
@@ -349,9 +364,9 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
    */
   cborTags(): Tag[] {
     if (this._scheme === EncapsulationScheme.X25519) {
-      return [TAG_X25519_PRIVATE_KEY];
+      return tagsForValues([TAG_X25519_PRIVATE_KEY.value]);
     } else if (isMlkemScheme(this._scheme)) {
-      return [TAG_MLKEM_PRIVATE_KEY];
+      return tagsForValues([TAG_MLKEM_PRIVATE_KEY.value]);
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -377,11 +392,6 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
     return taggedCborOf(this);
   }
 
-  /** As a UR, typed by the scheme's tag name. */
-  toUR(): UR {
-    return urFor(this);
-  }
-
   /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
   static fromCbor(cborValue: Cbor): EncapsulationPrivateKey {
     return EncapsulationPrivateKey.codec.decode(cborValue);
@@ -389,9 +399,5 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
-  // ============================================================================
-
-  // ============================================================================
-  // UR Serialization (ToUR)
   // ============================================================================
 }

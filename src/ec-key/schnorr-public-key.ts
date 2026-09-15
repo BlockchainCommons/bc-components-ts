@@ -2,7 +2,7 @@ import { schnorr } from "@blockchaincommons/crypto";
 import { Digest } from "../digest.js";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
-import { bytesFromHex } from "../domain.js";
+import { bytesFromHex, guarded } from "../domain.js";
 import type { ECKeyBase } from "./ec-key-base.js";
 import { Reference } from "../reference.js";
 
@@ -36,7 +36,7 @@ export class SchnorrPublicKey implements ECKeyBase {
 
   private constructor(data: Uint8Array) {
     if (data.length !== schnorr.PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(schnorr.PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize("Schnorr public key", schnorr.PUBLIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -56,7 +56,7 @@ export class SchnorrPublicKey implements ECKeyBase {
    * Restore a SchnorrPublicKey from a hex string.
    */
   static fromHex(hex: string): SchnorrPublicKey {
-    return SchnorrPublicKey.from(bytesFromHex(hex, "SchnorrPublicKey"));
+    return SchnorrPublicKey.from(bytesFromHex(hex));
   }
 
   // ============================================================================
@@ -90,12 +90,12 @@ export class SchnorrPublicKey implements ECKeyBase {
    * @param message - The message that was signed
    * @returns true if the signature is valid
    */
+  /**
+   * Verify a BIP-340 signature. A key that is not an x-only point is an
+   * `InvalidData` failure (the reference's `schnorr_verify` panics on it).
+   */
   schnorrVerify(signature: Uint8Array, message: Uint8Array): boolean {
-    try {
-      return schnorr.verify(this._data, signature, message);
-    } catch {
-      return false;
-    }
+    return guarded("SchnorrPublicKey", () => schnorr.verify(this._data, signature, message));
   }
 
   /**

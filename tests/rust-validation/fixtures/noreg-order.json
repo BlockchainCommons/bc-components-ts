@@ -1,0 +1,26 @@
+{
+ "count": 2,
+ "vectors": [
+  {
+   "name": "digest text:hello world (11B)",
+   "recipe": {
+    "k": "digest",
+    "image": {
+     "text": "hello world"
+    }
+   },
+   "expect": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9|ur:digest/hdcxrhgtdirhmugtfmayondmgmtstnkipyzssslrwsvlkngulawymhloylpsvowssnwlamnlatrs|b94d27b9"
+  },
+  {
+   "name": "noreg cborTags seed (after a registered row: must be a MISMATCH)",
+   "recipe": {
+    "k": "noreg",
+    "inner": {
+     "k": "cborTags",
+     "type": "seed"
+    }
+   },
+   "expect": "40300,300"
+  }
+ ]
+}

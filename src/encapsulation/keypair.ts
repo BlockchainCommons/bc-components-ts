@@ -12,11 +12,16 @@ import type { RngOptions } from "@blockchaincommons/rand";
 import { EncapsulationPrivateKey } from "./encapsulation-private-key.js";
 import type { EncapsulationPublicKey } from "./encapsulation-public-key.js";
 import { EncapsulationScheme, schemeToMlkemLevel } from "./encapsulation-scheme.js";
+import { ComponentsError } from "../error.js";
 
 /**
- * A fresh encapsulation key pair for `scheme` (X25519 by default). With
- * `rng` the ML-KEM schemes throw, because their key generation cannot be
- * seeded.
+ * A fresh encapsulation key pair for `scheme` (X25519 by default). Without
+ * `rng` every scheme draws from the secure generator (`keypair`). With
+ * `rng` (`keypair_using`) the ML-KEM schemes throw `General` before drawing
+ * anything, as the reference does: their key generation takes no
+ * caller-supplied generator. Use `MLKEMPrivateKey.keypair(level, { rng })`
+ * or `EncapsulationPrivateKey.mlkemKeypair(level, { rng })` for a seeded
+ * ML-KEM pair.
  */
 export function createEncapsulationKeypair(
   scheme: EncapsulationScheme = EncapsulationScheme.X25519,
@@ -28,10 +33,12 @@ export function createEncapsulationKeypair(
     case EncapsulationScheme.MLKEM512:
     case EncapsulationScheme.MLKEM768:
     case EncapsulationScheme.MLKEM1024: {
-      return EncapsulationPrivateKey.mlkemKeypair(
-        schemeToMlkemLevel(scheme),
-        rng === undefined ? {} : { rng },
-      );
+      if (rng !== undefined) {
+        throw ComponentsError.general(
+          "Deterministic keypair generation not supported for this encapsulation scheme",
+        );
+      }
+      return EncapsulationPrivateKey.mlkemKeypair(schemeToMlkemLevel(scheme));
     }
   }
 }

@@ -8,6 +8,10 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, normalize, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 
 function* walk(dir: string): Generator<string> {

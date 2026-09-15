@@ -3,6 +3,7 @@ import { CborCodec } from '@blockchaincommons/dcbor';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
 import { RngOptions } from '@blockchaincommons/rand';
 import { Tag } from '@blockchaincommons/dcbor';
+import { TagValue } from '@blockchaincommons/dcbor';
 import { ToCbor } from '@blockchaincommons/dcbor';
 import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
@@ -66,6 +67,11 @@ declare class AuthenticationTag {
     /**
      * Creates an AuthenticationTag from CBOR.
      */
+    /**
+     * From the untagged byte string, as the reference's `TryFrom<CBOR>`
+     * (error type `Error`): a non-byte-string is `Cbor` (`CBOR error: …`), a
+     * wrong length `InvalidSize`.
+     */
     static fromCbor(cbor: Cbor): AuthenticationTag;
     /**
      * Creates an AuthenticationTag from CBOR binary data.
@@ -80,7 +86,13 @@ declare class AuthenticationTag {
  * tag has already been consumed by the caller.
  */
 declare interface ComponentCodec<T> extends CborCodec<T> {
-    /** The tags this type is written and read with; the first is written. */
+    /** The tag values this type is written and read with; the first is written. */
+    readonly tagValues: readonly TagValue[];
+    /**
+     * `tagValues` resolved through dcbor's global tags store at each access
+     * (the reference's `tags_for_values`): named once `registerTags()` ran,
+     * numeric otherwise.
+     */
     readonly tags: readonly Tag[];
     /** Decode a value tagged with any of `tags`; anything else is a `Cbor` failure. */
     decode: (cbor: Cbor) => T;
@@ -452,14 +464,6 @@ export declare class MLDSAPrivateKey implements ToCbor, ToUR {
      */
     sign(message: Uint8Array): MLDSASignature;
     /**
-     * Derive the public key from this private key.
-     *
-     * Note: ML-DSA doesn't have a direct derivation method, so we need to
-     * regenerate the keypair from seed. For now, we extract from the secret key
-     * structure (the public key is embedded in the secret key for ML-DSA).
-     */
-    publicKey(): MLDSAPublicKey;
-    /**
      * Compare with another MLDSAPrivateKey.
      */
     equals(other: MLDSAPrivateKey): boolean;
@@ -829,15 +833,6 @@ export declare class MLKEMPrivateKey implements ToCbor, ToUR {
      * @returns The decapsulated shared secret as a SymmetricKey
      */
     decapsulate(ciphertext: MLKEMCiphertext): SymmetricKey;
-    /**
-     * Derives and returns the corresponding public key.
-     *
-     * In ML-KEM (FIPS 203), the decapsulation key contains the encapsulation key (public key)
-     * embedded within it. This method extracts that public key.
-     *
-     * @returns The corresponding MLKEMPublicKey
-     */
-    publicKey(): MLKEMPublicKey;
     /**
      * Compare with another MLKEMPrivateKey.
      */

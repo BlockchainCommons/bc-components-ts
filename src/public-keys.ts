@@ -18,7 +18,14 @@
  * UR type: `crypto-pubkeys`
  */
 
-import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
+import {
+  type Cbor,
+  type Tag,
+  cbor,
+  type ToCbor,
+  asArray,
+  CborError,
+} from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { TAG_PUBLIC_KEYS } from "@blockchaincommons/tags";
@@ -32,7 +39,6 @@ import type { Verifier } from "./signing/signer.js";
 import type { Encrypter } from "./encrypter.js";
 import { Reference, type ReferenceProvider } from "./reference.js";
 import { Digest } from "./digest.js";
-import { ComponentsError } from "./error.js";
 import type { RngOptions } from "@blockchaincommons/rand";
 
 /**
@@ -174,13 +180,9 @@ export class PublicKeys implements Verifier, Encrypter, ReferenceProvider, ToCbo
     return (PUBLIC_KEYS_CODEC ??= defineCodec({
       tags: [TAG_PUBLIC_KEYS],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-
-        if (elements.length !== 2) {
-          throw ComponentsError.invalidData(
-            `PublicKeys must have 2 elements, got ${elements.length}`,
-          );
-        }
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("PublicKeys must be an array");
+        if (elements.length !== 2) throw CborError.custom("PublicKeys must have two elements");
 
         const signingPublicKey = SigningPublicKey.fromCbor(elements[0]);
         const encapsulationPublicKey = EncapsulationPublicKey.fromCbor(elements[1]);

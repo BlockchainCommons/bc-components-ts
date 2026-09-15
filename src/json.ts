@@ -76,7 +76,7 @@ export class CborJson implements ToCbor {
    * Create a new CborJson instance from a hexadecimal string.
    */
   static fromHex(hex: string): CborJson {
-    return new CborJson(bytesFromHex(hex, "CborJson"));
+    return new CborJson(bytesFromHex(hex));
   }
 
   // ============================================================================
@@ -107,9 +107,9 @@ export class CborJson implements ToCbor {
    */
   asStr(): string {
     try {
-      return new TextDecoder("utf-8", { fatal: true }).decode(this._data);
+      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(this._data);
     } catch (e) {
-      throw ComponentsError.utf8("CborJson bytes are not valid UTF-8", e);
+      throw ComponentsError.utf8("invalid UTF-8 sequence in JSON data", e);
     }
   }
 
@@ -135,7 +135,7 @@ export class CborJson implements ToCbor {
    * Get string representation.
    */
   toString(): string {
-    return `CborJson(${this.asStr()})`;
+    return `JSON(${this.asStr()})`;
   }
 
   // ============================================================================

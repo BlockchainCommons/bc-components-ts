@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 /**
- * FROZEN: the adapter over the pre-redesign bundle. Never edited by the
- * mechanical API passes; `redesigned-adapter.ts` is the working-tree twin.
+ * FROZEN: the adapter over the baseline bundle; `working-tree-adapter.ts` is
+ * the working-tree twin.
  */
 import {
   type VectorApi,
@@ -18,10 +18,10 @@ import {
 } from "./recipes";
 
 /**
- * The pre-redesign (Rust-shaped) surface: `X.fromData`, `taggedCborData()`,
+ * The bundle's Rust-shaped surface: `X.fromData`, `taggedCborData()`,
  * `urString()`, `sskrGenerateSharesUsing`, … `rand` is whichever rand module
  * pairs with `m` (the frozen rand baseline for the frozen bundle, the
- * redesigned rand for the working tree).
+ * the rand package for the working tree).
  */
 export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean }): VectorApi {
   // A generator object that satisfies both rand interfaces.
@@ -196,8 +196,8 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
       // dcbor errors: the compat class carries no code, the canonical one
       // does; both sides report the class.
       if (name === "CborError") return "CborError";
-      // uniform-resources: nine classes before the redesign, one `URError`
-      // with a code after it; both sides report the code name.
+      // uniform-resources: the bundle's nine error classes against the
+      // package's one `URError` with a code; both sides report the code name.
       const UR: Record<string, string> = {
         InvalidSchemeError: "InvalidScheme",
         TypeUnspecifiedError: "TypeUnspecified",
@@ -210,6 +210,8 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
       };
       if (name in UR) return UR[name] as string;
       if (name === "URError" && typeof x?.code === "string") return x.code as string;
+      if (name === "SskrError" || name === "SSKRError")
+        return `SskrError:${String(x?.code ?? x?.errorKind ?? x?.type)}`;
       return String(x?.errorKind ?? x?.code ?? x?.type ?? name);
     },
     run(r) {
@@ -379,9 +381,10 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
             tagged(ec),
             hex(x.data()),
             hex(x.publicKey().data()),
-            tagged(pkb.ed25519PublicKeys()),
+            tagged(pkb.schnorrPrivateKeys()),
             tagged(pkb.schnorrPublicKeys()),
             tagged(pkb.ecdsaPrivateKeys()),
+            tagged(pkb.ecdsaPublicKeys()),
           ].join("|");
         }
         case "keypair": {
@@ -391,6 +394,8 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
             mlkem768: m.EncapsulationScheme.MLKEM768,
             mlkem1024: m.EncapsulationScheme.MLKEM1024,
           }[r.encScheme];
+          if (r.sigScheme !== "schnorr" && r.sigScheme !== "ecdsa" && r.sigScheme !== "ed25519")
+            throw new Error("baseline: unsupported keypair scheme");
           const [priv, pub] = m.keypairOptUsing(
             m.SignatureScheme[schemeEnum(r.sigScheme)],
             encEnum,
@@ -417,7 +422,9 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
           const back = sealed.decrypt(priv);
           const bytes = sealed.taggedCborData();
           const re = m.SealedMessage.fromTaggedCborData(bytes);
-          return `${sealed.encapsulationScheme()}|len=${bytes.length}|${hex(back) === hex(pt) ? "roundtrip" : "MISMATCH"}|${hex(re.decrypt(priv)) === hex(pt) ? "cbor-roundtrip" : "CBOR-MISMATCH"}|${"x25519" in r.recipient ? tagged(pub) : `pubLen=${pub.taggedCborData().length}`}`;
+          if (hex(back) !== hex(pt) || hex(re.decrypt(priv)) !== hex(pt)) return "SEAL-MISMATCH";
+          const aad = r.aad ? B(r.aad) : new Uint8Array(0);
+          return `${sealed.encapsulationScheme()}|priv=${tagged(priv)}|pub=${tagged(pub)}|sealed=${hex(bytes)}|pt=${hex(pt)}|aad=${hex(aad)}`;
         }
         case "params": {
           const kdp = paramsOf(r);
@@ -427,27 +434,13 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
           return `${hex(m.keyDerivationParamsToCborData(kdp))}|${m.keyDerivationParamsToString(kdp)}|${methodName}`;
         }
         case "encryptedKey": {
-          if (r.method === "sshAgent") {
-            try {
-              m.EncryptedKey.lockOpt(paramsOf(r), B(r.secret), m.SymmetricKey.fromData(B(r.key)));
-              return "locked";
-            } catch (e) {
-              return `unsupported:${this.errorCode(e)}`;
-            }
-          }
           const key = m.SymmetricKey.fromData(B(r.key));
-          const ek = m.EncryptedKey.lockOpt(paramsOf(r), B(r.secret), key);
+          const secret = B(r.secret);
+          const ek = m.EncryptedKey.lockOpt(paramsOf(r), secret, key);
           const bytes = ek.taggedCborData();
           const re = m.EncryptedKey.fromTaggedCborData(bytes);
-          const back = re.unlock(B(r.secret));
-          let wrong = "wrong-secret-rejected";
-          try {
-            re.unlock(new Uint8Array([1, 2, 3]));
-            wrong = "WRONG-SECRET-ACCEPTED";
-          } catch {
-            /* expected */
-          }
-          return `${m.keyDerivationParamsToString(re.params())}|len=${bytes.length}|${back.equals(key) ? "unlocked" : "MISMATCH"}|${wrong}|aad=${hex(ek.encryptedMessage().aad())}`;
+          if (!re.unlock(secret).equals(key)) return "UNLOCK-MISMATCH";
+          return `${m.keyDerivationParamsToString(re.params())}|ek=${hex(bytes)}|key=${hex(B(r.key))}|secret=${hex(secret)}`;
         }
         case "hkdfRng": {
           const g = r.pageLen
@@ -464,10 +457,8 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
           const parts = [codable(priv), codable(pub)];
           if (r.message) {
             const sig = priv.sign(B(r.message));
-            parts.push(
-              `sigLen=${sig.taggedCborData().length}`,
-              pub.verify(sig, B(r.message)) ? "verified" : "INVALID",
-            );
+            if (!pub.verify(sig, B(r.message))) return "SIGN-MISMATCH";
+            parts.push(`sig=${tagged(sig)}`, `msg=${hex(B(r.message))}`);
           }
           return parts.join("|");
         }
@@ -476,7 +467,8 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
           const pub = priv.publicKey();
           const { sharedSecret, ciphertext } = pub.encapsulate();
           const back = priv.decapsulate(ciphertext);
-          return `${codable(priv)}|${codable(pub)}|ctLen=${ciphertext.taggedCborData().length}|${back.equals(sharedSecret) ? "decapsulated" : "MISMATCH"}`;
+          if (!back.equals(sharedSecret)) return "DECAPSULATE-MISMATCH";
+          return `${codable(priv)}|${codable(pub)}|ct=${tagged(ciphertext)}|ss=${hex(sharedSecret.data())}`;
         }
         case "sskr": {
           const spec = m.SSKRSpec.new
@@ -505,7 +497,9 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
           );
         }
         case "decode": {
-          const v = decoder(r.type).fromTaggedCborData(Uint8Array.from(Buffer.from(r.hex, "hex")));
+          const cls = decoder(r.type);
+          if (cls === undefined) throw new Error("baseline: unsupported decode type");
+          const v = cls.fromTaggedCborData(Uint8Array.from(Buffer.from(r.hex, "hex")));
           return describe(v);
         }
         case "verifyStrict": {
@@ -516,7 +510,9 @@ export function rustShapedAdapterFor(m: any, rand: any, opts: { newRand: boolean
         }
         case "decodeUntagged": {
           // the strict twin of the tree's `fromCbor`: Rust's `from_tagged_cbor`
-          const v = decoder(r.type).fromTaggedCborData(Uint8Array.from(Buffer.from(r.hex, "hex")));
+          const cls = decoder(r.type);
+          if (cls === undefined) throw new Error("baseline: unsupported decode type");
+          const v = cls.fromTaggedCborData(Uint8Array.from(Buffer.from(r.hex, "hex")));
           return describe(v);
         }
         case "signingDefault":

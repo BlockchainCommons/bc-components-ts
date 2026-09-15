@@ -86,7 +86,7 @@ export class Salt implements ToCbor, ToUR {
    * Create a new salt from the given hexadecimal string.
    */
   static fromHex(hex: string): Salt {
-    return Salt.from(bytesFromHex(hex, "Salt"));
+    return Salt.from(bytesFromHex(hex));
   }
 
   /** A random salt of `length` bytes (16 by default); pass `rng` to make it deterministic. */

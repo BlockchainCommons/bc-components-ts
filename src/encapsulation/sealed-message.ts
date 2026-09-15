@@ -37,7 +37,14 @@
  * represented with the type "crypto-sealed".
  */
 
-import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
+import {
+  type Cbor,
+  type Tag,
+  cbor,
+  type ToCbor,
+  asArray,
+  CborError,
+} from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { TAG_SEALED_MESSAGE } from "@blockchaincommons/tags";
@@ -48,7 +55,6 @@ import { EncapsulationCiphertext } from "./encapsulation-ciphertext.js";
 import { type EncapsulationPublicKey } from "./encapsulation-public-key.js";
 import { type EncapsulationPrivateKey } from "./encapsulation-private-key.js";
 import { bytesToHex } from "../utils.js";
-import { ComponentsError } from "../error.js";
 import type { RngOptions } from "@blockchaincommons/rand";
 
 // The codec is built on first use so that an unused class tree-shakes away.
@@ -160,13 +166,9 @@ export class SealedMessage implements ToCbor, ToUR {
     return (SEALED_MESSAGE_CODEC ??= defineCodec({
       tags: [TAG_SEALED_MESSAGE],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-
-        if (elements.length !== 2) {
-          throw ComponentsError.invalidData(
-            `SealedMessage must have 2 elements, got ${elements.length}`,
-          );
-        }
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("SealedMessage must be an array");
+        if (elements.length !== 2) throw CborError.custom("SealedMessage must have two elements");
 
         // Decode the encrypted message (tagged)
         const message = EncryptedMessage.fromCbor(elements[0]);

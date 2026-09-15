@@ -35,6 +35,10 @@ import { Salt } from "../src/salt.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 // Test helper functions (matching Rust tests)
 function testSecret(): Uint8Array {
   return new TextEncoder().encode("correct horse battery staple");
@@ -304,7 +308,7 @@ describe("SSHAgentParams", () => {
   describe("toString", () => {
     it("should return correct string", () => {
       const params = SSHAgentParams.from({ id: "my-ssh-key" });
-      expect(params.toString()).toBe('SSHAgent(id: "my-ssh-key")');
+      expect(params.toString()).toBe('SSHAgent("my-ssh-key")');
     });
   });
 
@@ -334,13 +338,28 @@ describe("SSHAgentParams", () => {
     });
   });
 
-  describe("lock/unlock (not implemented)", () => {
-    it("should throw error on lock attempt", () => {
+  describe("lock/unlock without an agent", () => {
+    const needsAgent =
+      "SSH agent error: SSH agent key derivation needs an agent; use lockWithAgent and unlockWithAgent with an SshAgent";
+
+    it("should throw SshAgent on a lock attempt", () => {
       const params = SSHAgentParams.from({ id: "test-key" });
       const contentKey = SymmetricKey.random();
       const secret = new Uint8Array(32);
 
-      expect(() => params.lock(contentKey, secret)).toThrow("SSH agent");
+      expect(() => params.lock(contentKey, secret)).toThrow(needsAgent);
+      expect(() => EncryptedKey.lockOpt(sshAgentParams(params), secret, contentKey)).toThrow(
+        needsAgent,
+      );
+    });
+
+    it("should throw SshAgent on an unlock attempt", () => {
+      const params = SSHAgentParams.from({ id: "test-key" });
+      const message = SymmetricKey.random().encrypt(new Uint8Array(32), {
+        aad: params.toCborData(),
+      });
+
+      expect(() => params.unlock(message, new Uint8Array(0))).toThrow(needsAgent);
     });
   });
 });

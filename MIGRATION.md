@@ -1,6 +1,6 @@
 # Migrating from `@bcts/components` to `@blockchaincommons/components`
 
-`@blockchaincommons/components` is the redesigned successor to `@bcts/components`.
+`@blockchaincommons/components` is the successor to `@bcts/components`.
 
 ## TL;DR checklist
 
@@ -26,8 +26,8 @@
 
 ## 2. Version numbering restarts
 
-`@bcts/components` versions moved in lockstep with every other package in the
-monorepo, which is why it reached `1.0.0-beta.6`. Each extracted package now
+`@bcts/components` versions moved in lockstep with every other `@bcts`
+package, which is why it reached `1.0.0-beta.6`. Each extracted package now
 versions independently and starts again at `1.0.0-beta.1`. A lower version
 number here does **not** mean older code.
 
@@ -61,15 +61,69 @@ shared type is resolved:
 
 - The public API: every exported name, signature and type is identical.
 - The wire format. Encodings produced by `@bcts/components` decode here, and the reverse.
-- Parity with the Rust reference implementation. See [`RUST_DIVERGENCES.md`](./RUST_DIVERGENCES.md).
+- Parity with the Rust reference implementation, replayed against the published crate by [`tests/rust-validation`](./tests/rust-validation/README.md).
 
 ---
 
-# Migrating to the redesigned API
+# Migrating to 1.0.0-beta.3
 
-`1.0.0-beta.1` also redesigns the TypeScript surface; **every wire byte is
+`1.0.0-beta.3` aligns the package with `bc-components-rust` 0.31.1 point by
+point (see the CHANGELOG for the full list). What a caller has to change:
+
+- **Register the tags before `toUR()`.** Call `registerTags()` from
+  `@blockchaincommons/components/tags` once at start-up, as the reference
+  calls `register_tags()`; `toUR()` throws `URError` `TagUnnamed` until then,
+  and `codec.tags` / `cborTags()` names follow the process-wide store.
+- **Catch `Cbor` for every decode failure.** `fromCbor`, `codec.decode` and
+  `decodeWith` throw `ComponentsError` with code `Cbor` and the reference's
+  message; the leaf codes (`InvalidSize`, `InvalidData`, `PostQuantum`, …)
+  no longer surface from a decoder (the `cause` chain keeps the leaf error).
+  `HashType`, `AuthenticationTag`, the ML-KEM/ML-DSA levels and
+  `KeyDerivationMethod` keep their own codes.
+- **Removed:** `toUR()` on the three encapsulation enums; `fromCbor`/`codec`
+  on `ECPrivateKey`, `ECPublicKey`, `ECUncompressedPublicKey`,
+  `SchnorrPublicKey` (encode only, as the reference); `MLKEMPrivateKey.publicKey()`,
+  `MLDSAPrivateKey.publicKey()`, `mlkemExtractPublicKey`; `HKDFRng.randomData`,
+  `tryFillBytes`, `fillRandomData` (use `fillBytes`); `ComponentsError.invalidSizeForType`
+  (use `invalidSize(dataType, expected, actual)`); `bytesFromHex(hex, what)`
+  is `bytesFromHex(hex)`.
+- **Post-quantum keys:** `EncapsulationPrivateKey.publicKey()` throws for
+  ML-KEM and `SigningPrivateKey.publicKey()` for ML-DSA; keep the public key
+  the keypair factory hands out. `generateKeypair` / `createKeypair` with a
+  post-quantum scheme and an `rng` throw `General`; use
+  `MLKEMPrivateKey.keypair(level, { rng })` / `MLDSAPrivateKey.keypair(level, { rng })`
+  for seeded post-quantum keys.
+- **EC keys are validated at first use**, not at construction: `ECPrivateKey.from`
+  accepts any 32 bytes and `publicKey()` / `sign` throw `InvalidData` for a
+  zero or out-of-range scalar; the same for the public-key classes.
+- **`verify` can throw.** An undecodable Ed25519, Schnorr or ECDSA public key,
+  or an ECDSA signature with `r` or `s` ≥ n, throws `InvalidData` (the
+  reference panics there); wrap `verify` where untrusted keys reach it.
+- `X25519PrivateKey.sharedKeyWith` a low-order point returns the reference's
+  fixed key instead of throwing; PBKDF2 `iterations: 0` and scrypt `logN: 0`
+  derive.
+- `Compressed.decompressedSize` is a `number | bigint` (exact `usize`);
+  `Compressed.equals` compares digests; `SskrShare.from` never throws and the
+  header accessors throw `InvalidData` on a short share; `Seed.creationDate`
+  round-trips through `CborDate` (`creationCborDate` keeps the precision).
+- `X.fromHex` is strict (no whitespace); `UUID.fromString` trims and drops
+  `-` only; `URI.from` rejects with `InvalidData`; `CborJson.asStr` keeps a
+  leading BOM.
+- `pako` is gone: DEFLATE is a port of `miniz_oxide`, so `Compressed` bytes
+  are the reference's.
+- **New:** SSH-agent lock/unlock (`SSHAgentParams.lock`/`unlock`,
+  `EncryptedKey.lockWithAgent`/`unlockWithAgent`, `MemorySshAgent`, and the
+  Node transport `@blockchaincommons/components/ssh-agent-node`); SSH DSA,
+  RSA and ECDSA P-521 keys; `HKDFRng` page length 0; error codes `Env` and
+  `SshAgentClient`.
+
+---
+
+# Migrating to the 1.0.0-beta.1 API
+
+`1.0.0-beta.1` also reshapes the TypeScript surface; **every wire byte is
 unchanged** (tagged CBOR, URs, derivations, signatures, encryption are
-verified against a frozen pre-redesign baseline and against
+verified against a frozen `@bcts/components` baseline and against
 `bc-components-rust` 0.31.1 by `tests/rust-validation`). What changed is
 how you spell things.
 

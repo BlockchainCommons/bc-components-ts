@@ -1,7 +1,7 @@
 /**
  *
- * SSH public-key parser/serializer covering Ed25519, DSA, ECDSA P-256,
- * and ECDSA P-384.
+ * SSH public-key parser/serializer covering Ed25519, DSA, RSA and ECDSA
+ * P-256 / P-384 / P-521.
  *
  * Mirrors `ssh_key::PublicKey` (crate `ssh-key` v0.6.7) — same OpenSSH
  * single-line text format, same SSH wire-format blob layout (RFC 4253 §6.6),
@@ -24,29 +24,31 @@
  *     mpint   g   (generator)
  *     mpint   y   (public)
  *
- *   ecdsa-sha2-nistp256:
- *     string  "ecdsa-sha2-nistp256"
- *     string  "nistp256"
- *     string  <0x04 || X (32 bytes) || Y (32 bytes)>   (SEC1 uncompressed)
+ *   ssh-rsa:
+ *     string  "ssh-rsa"
+ *     mpint   e   (public exponent)
+ *     mpint   n   (modulus)
  *
- *   ecdsa-sha2-nistp384:
- *     string  "ecdsa-sha2-nistp384"
- *     string  "nistp384"
- *     string  <0x04 || X (48 bytes) || Y (48 bytes)>   (SEC1 uncompressed)
+ *   ecdsa-sha2-nistp{256,384,521}:
+ *     string  "ecdsa-sha2-nistp{256,384,521}"
+ *     string  "nistp{256,384,521}"
+ *     string  <0x04 || X || Y>   (SEC1 uncompressed: 65 / 97 / 133 bytes)
  */
 
-import { base64 } from "@scure/base";
 import { sha256, sha512 } from "@noble/hashes/sha2.js";
 import { sha1 } from "@noble/hashes/legacy.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { p256, p384 } from "@noble/curves/nist.js";
+import { p256, p384, p521 } from "@noble/curves/nist.js";
 import { SshBufferReader, SshBufferWriter } from "./internal/ssh-buffer.js";
 import { dsaVerify } from "./internal/dsa.js";
+import { rsaPkcs1v15Verify } from "./internal/rsa-pkcs1v15.js";
+import { decodeBase64Strict, decodeSshFormat, encodeBase64 } from "./internal/ssh-pem.js";
 import {
   parseSshAlgorithm,
   sshAlgorithmName,
   sshCurveName,
   sshEcdsaPointLen,
+  sshRsaSignatureHash,
   type SshAlgorithm,
   type SshEcdsaCurve,
 } from "./ssh-algorithm.js";
@@ -58,9 +60,10 @@ const ED25519_PUBLIC_KEY_LEN = 32;
  * Internal discriminated union for the algorithm-specific public-key data.
  *
  *   - ed25519: the 32-byte raw public key.
- *   - ecdsa:   curve + 65/97-byte SEC1 uncompressed point.
+ *   - ecdsa:   curve + 65/97/133-byte SEC1 uncompressed point.
  *   - dsa:     four canonical-positive mpint bytes (p, q, g, y) — sign
  *              byte already stripped on parse, re-added by the writer.
+ *   - rsa:     canonical-positive e and n.
  */
 export type SshPublicKeyData =
   | {
@@ -70,11 +73,11 @@ export type SshPublicKeyData =
       pubBytes: Uint8Array;
     }
   | {
-      /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384`. */
+      /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
       kind: "ecdsa";
       /** The NIST curve. */
       curve: SshEcdsaCurve;
-      /** The SEC1 uncompressed point (65 or 97 bytes). */
+      /** The SEC1 uncompressed point (65, 97 or 133 bytes). */
       point: Uint8Array;
     }
   | {
@@ -88,7 +91,29 @@ export type SshPublicKeyData =
       g: Uint8Array;
       /** The public value, canonical positive bytes. */
       y: Uint8Array;
+    }
+  | {
+      /** `ssh-rsa`. */
+      kind: "rsa";
+      /** The public exponent, canonical positive bytes. */
+      e: Uint8Array;
+      /** The modulus, canonical positive bytes. */
+      n: Uint8Array;
     };
+
+/** The parts of an `sshsig` signature `verifySshSignature` needs. */
+export interface SshSignatureParts {
+  /** The key embedded in the signature. */
+  publicKey: SSHPublicKey;
+  /** The namespace the signature was made in. */
+  namespace: string;
+  /** The hash the message was digested with. */
+  hashAlgorithm: "sha256" | "sha512";
+  /** The algorithm name inside the signature blob (`rsa-sha2-256`, `ssh-ed25519`, …). */
+  signatureAlgorithm: string;
+  /** The raw algorithm-specific signature bytes. */
+  signatureBytes: Uint8Array;
+}
 
 export class SSHPublicKey {
   /** The parsed key material by algorithm. */
@@ -109,6 +134,8 @@ export class SSHPublicKey {
         return { kind: "ed25519" };
       case "dsa":
         return { kind: "dsa" };
+      case "rsa":
+        return { kind: "rsa" };
       case "ecdsa":
         return { kind: "ecdsa", curve: data.curve };
       default: {
@@ -140,6 +167,11 @@ export class SSHPublicKey {
   /** A P-384 key from its 97-byte SEC1 uncompressed point. */
   static ecdsaP384(uncompressedPoint: Uint8Array, comment = ""): SSHPublicKey {
     return SSHPublicKey.ecdsa("nistp384", uncompressedPoint, comment);
+  }
+
+  /** A P-521 key from its 133-byte SEC1 uncompressed point. */
+  static ecdsaP521(uncompressedPoint: Uint8Array, comment = ""): SSHPublicKey {
+    return SSHPublicKey.ecdsa("nistp521", uncompressedPoint, comment);
   }
 
   /** An ECDSA key on `curve` from its SEC1 uncompressed point. */
@@ -176,6 +208,11 @@ export class SSHPublicKey {
     );
   }
 
+  /** RSA public key. `e` and `n` must already be canonical positive bytes (no sign byte). */
+  static rsa(e: Uint8Array, n: Uint8Array, comment = ""): SSHPublicKey {
+    return new SSHPublicKey({ kind: "rsa", e: new Uint8Array(e), n: new Uint8Array(n) }, comment);
+  }
+
   /**
    * Returns a copy of this SSH public key with the comment replaced,
    * leaving this instance untouched.
@@ -188,39 +225,19 @@ export class SSHPublicKey {
   // OpenSSH text format
   // --------------------------------------------------------------------------
 
-  /** Parses the single-line OpenSSH text form (`<algorithm> <base64 blob> [comment]`). */
+  /**
+   * Parses the single-line OpenSSH text form (`<algorithm> <base64 blob> [comment]`)
+   * as `ssh-key` 0.6.7 `PublicKey::from_openssh`: trailing whitespace is
+   * removed, the algorithm and Base64 segments end at a single space, the
+   * Base64 is strict, and the text's algorithm name must equal the blob's
+   * (`unknown algorithm` otherwise).
+   */
   static fromOpenssh(text: string): SSHPublicKey {
-    const trimmed = text.trim();
-    if (trimmed.length === 0) {
-      throw ComponentsError.ssh("SSHPublicKey.fromOpenssh: empty input");
-    }
-    const firstSpace = trimmed.indexOf(" ");
-    if (firstSpace < 0) {
-      throw ComponentsError.ssh(
-        `SSHPublicKey.fromOpenssh: expected '<algo> <base64> [comment]', got '${trimmed}'`,
-      );
-    }
-    const algoName = trimmed.slice(0, firstSpace);
-    const rest = trimmed.slice(firstSpace + 1);
-
-    const secondSpace = rest.indexOf(" ");
-    let blobB64: string;
-    let comment: string;
-    if (secondSpace < 0) {
-      blobB64 = rest;
-      comment = "";
-    } else {
-      blobB64 = rest.slice(0, secondSpace);
-      comment = rest.slice(secondSpace + 1);
-    }
-
-    parseSshAlgorithm(algoName); // validate early — throws on unsupported
-    const blob = base64.decode(blobB64);
+    const { algorithmId, base64Data, comment } = decodeSshFormat(text);
+    const blob = decodeBase64Strict(base64Data);
     const parsed = SSHPublicKey.fromBlob(blob, comment);
-    if (sshAlgorithmName(parsed.algorithm) !== algoName) {
-      throw ComponentsError.ssh(
-        `SSHPublicKey.fromOpenssh: outer algorithm '${algoName}' does not match inner '${sshAlgorithmName(parsed.algorithm)}'`,
-      );
+    if (algorithmId !== sshAlgorithmName(parsed.algorithm)) {
+      throw ComponentsError.ssh("unknown algorithm");
     }
     return parsed;
   }
@@ -228,7 +245,7 @@ export class SSHPublicKey {
   /** The single-line OpenSSH text form. */
   toOpenssh(): string {
     const algoName = sshAlgorithmName(this.algorithm);
-    const blobB64 = base64.encode(this.toBlob());
+    const blobB64 = encodeBase64(this.toBlob());
     return this.comment.length === 0
       ? `${algoName} ${blobB64}`
       : `${algoName} ${blobB64} ${this.comment}`;
@@ -243,42 +260,40 @@ export class SSHPublicKey {
     const reader = new SshBufferReader(blob);
     const algoName = decodeUtf8(reader.readString());
     const algorithm = parseSshAlgorithm(algoName);
+    let key: SSHPublicKey;
     switch (algorithm.kind) {
-      case "ed25519": {
-        const pub = reader.readString();
-        if (!reader.isAtEnd()) {
-          throw ComponentsError.ssh(
-            "SSHPublicKey.fromBlob ed25519: trailing bytes after public key",
-          );
-        }
-        return SSHPublicKey.ed25519(pub, comment);
-      }
+      case "ed25519":
+        key = SSHPublicKey.ed25519(reader.readString(), comment);
+        break;
       case "dsa": {
-        const p = stripDsaMpint(reader.readMpint());
-        const q = stripDsaMpint(reader.readMpint());
-        const g = stripDsaMpint(reader.readMpint());
-        const y = stripDsaMpint(reader.readMpint());
-        if (!reader.isAtEnd()) {
-          throw ComponentsError.ssh("SSHPublicKey.fromBlob dsa: trailing bytes after y");
-        }
-        return SSHPublicKey.dsa(p, q, g, y, comment);
+        const p = stripPositiveMpint(reader.readMpint());
+        const q = stripPositiveMpint(reader.readMpint());
+        const g = stripPositiveMpint(reader.readMpint());
+        const y = stripPositiveMpint(reader.readMpint());
+        key = SSHPublicKey.dsa(p, q, g, y, comment);
+        break;
+      }
+      case "rsa": {
+        const e = stripPositiveMpint(reader.readMpint());
+        const n = stripPositiveMpint(reader.readMpint());
+        key = SSHPublicKey.rsa(e, n, comment);
+        break;
       }
       case "ecdsa": {
         const curveName = decodeUtf8(reader.readString());
         if (curveName !== sshCurveName(algorithm.curve)) {
-          throw ComponentsError.ssh(
-            `SSHPublicKey.fromBlob ecdsa: blob curve '${curveName}' does not match algorithm '${sshCurveName(algorithm.curve)}'`,
-          );
+          throw ComponentsError.ssh("unknown algorithm");
         }
-        const point = reader.readString();
-        if (!reader.isAtEnd()) {
-          throw ComponentsError.ssh(
-            "SSHPublicKey.fromBlob ecdsa: trailing bytes after public point",
-          );
-        }
-        return SSHPublicKey.ecdsa(algorithm.curve, point, comment);
+        key = SSHPublicKey.ecdsa(algorithm.curve, reader.readString(), comment);
+        break;
       }
     }
+    if (!reader.isAtEnd()) {
+      throw ComponentsError.ssh(
+        `unexpected trailing data at end of message (${reader.remaining()} bytes)`,
+      );
+    }
+    return key;
   }
 
   /** The binary key blob, byte for byte as OpenSSH writes it. */
@@ -294,6 +309,10 @@ export class SSHPublicKey {
         writer.writeMpintUnsigned(this.data.q);
         writer.writeMpintUnsigned(this.data.g);
         writer.writeMpintUnsigned(this.data.y);
+        break;
+      case "rsa":
+        writer.writeMpintUnsigned(this.data.e);
+        writer.writeMpintUnsigned(this.data.n);
         break;
       case "ecdsa":
         writer.writeStringUtf8(sshCurveName(this.data.curve));
@@ -344,8 +363,8 @@ export class SSHPublicKey {
   // --------------------------------------------------------------------------
 
   /**
-   * Algorithm-specific raw payload bytes. Throws for DSA — DSA needs structured
-   * access via `data.p/q/g/y`.
+   * Algorithm-specific raw payload bytes. Throws for DSA and RSA, whose
+   * keys are several integers — use `data.p/q/g/y` or `data.e/n` instead.
    */
   get keyBytes(): Uint8Array {
     const data = this.data;
@@ -358,6 +377,10 @@ export class SSHPublicKey {
         throw ComponentsError.ssh(
           "SSHPublicKey.keyBytes is not defined for DSA — use `data.p/q/g/y` instead",
         );
+      case "rsa":
+        throw ComponentsError.ssh(
+          "SSHPublicKey.keyBytes is not defined for RSA — use `data.e/n` instead",
+        );
       default: {
         const _exhaustive: never = data;
         throw ComponentsError.ssh(`SSHPublicKey: unreachable kind ${String(_exhaustive)}`);
@@ -369,16 +392,16 @@ export class SSHPublicKey {
   // SSHSIG verify (PROTOCOL.sshsig §3.1)
   // --------------------------------------------------------------------------
 
-  /** Verifies an `sshsig` signature made over `message` in `namespace`. */
+  /**
+   * Verifies an `sshsig` signature made over `message` in `namespace`, as
+   * `ssh_key::PublicKey::verify`: the embedded key must be this key, the
+   * namespace must match, and the algorithm-specific signature must verify
+   * over the signed-data blob. Never throws on malformed input.
+   */
   verifySshSignature(
     namespace: string,
     message: Uint8Array,
-    signature: {
-      publicKey: SSHPublicKey;
-      namespace: string;
-      hashAlgorithm: "sha256" | "sha512";
-      signatureBytes: Uint8Array;
-    },
+    signature: SshSignatureParts,
   ): boolean {
     if (!this.keyEquals(signature.publicKey)) return false;
     if (signature.namespace !== namespace) return false;
@@ -391,7 +414,8 @@ export class SSHPublicKey {
         case "ecdsa":
           // `lowS: false`: SSH has no low-s rule. The reference's signatures
           // (RustCrypto `ecdsa`, no normalisation) and OpenSSH's are high-s
-          // half the time; noble's default would reject them.
+          // half the time; noble's default would reject them. Each curve
+          // prehashes with its RFC 5656 hash (SHA-256 / SHA-384 / SHA-512).
           switch (this.data.curve) {
             case "nistp256":
               return p256.verify(signature.signatureBytes, signedData, this.data.point, {
@@ -400,6 +424,11 @@ export class SSHPublicKey {
               });
             case "nistp384":
               return p384.verify(signature.signatureBytes, signedData, this.data.point, {
+                format: "compact",
+                lowS: false,
+              });
+            case "nistp521":
+              return p521.verify(signature.signatureBytes, signedData, this.data.point, {
                 format: "compact",
                 lowS: false,
               });
@@ -417,6 +446,20 @@ export class SSHPublicKey {
             signature: signature.signatureBytes,
           });
         }
+        case "rsa": {
+          // RFC 8332: the signature blob names its own hash
+          // (`rsa-sha2-256` / `rsa-sha2-512`); `ssh-rsa` (SHA-1) is never
+          // accepted, as `ssh-key` 0.6.7 `Signature::new` rejects it.
+          const hash = sshRsaSignatureHash(signature.signatureAlgorithm);
+          if (hash === undefined) return false;
+          return rsaPkcs1v15Verify({
+            n: this.data.n,
+            e: this.data.e,
+            hash,
+            message: signedData,
+            signature: signature.signatureBytes,
+          });
+        }
       }
     } catch {
       return false;
@@ -429,7 +472,7 @@ export class SSHPublicKey {
 // ----------------------------------------------------------------------------
 
 function decodeUtf8(bytes: Uint8Array): string {
-  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
 }
 
 function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
@@ -442,9 +485,9 @@ function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 
 /**
  * Strip the optional 0x00 sign byte from a positive `mpint` and return the
- * canonical (unsigned) bytes. Used for DSA p/q/g/y components.
+ * canonical (unsigned) bytes. Used for the DSA and RSA integer components.
  */
-function stripDsaMpint(mpint: Uint8Array): Uint8Array {
+function stripPositiveMpint(mpint: Uint8Array): Uint8Array {
   if (mpint.length > 0 && mpint[0] === 0x00) {
     return new Uint8Array(mpint.subarray(1));
   }

@@ -16,7 +16,14 @@
  * UR type: `crypto-prvkeys`
  */
 
-import { type Cbor, type Tag, cbor, expectArray, type ToCbor } from "@blockchaincommons/dcbor";
+import {
+  type Cbor,
+  type Tag,
+  cbor,
+  type ToCbor,
+  asArray,
+  CborError,
+} from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "./codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { TAG_PRIVATE_KEYS } from "@blockchaincommons/tags";
@@ -32,7 +39,6 @@ import type { SigningOptions } from "./signing/signature-scheme.js";
 import type { Decrypter } from "./encrypter.js";
 import { Reference, type ReferenceProvider } from "./reference.js";
 import { Digest } from "./digest.js";
-import { ComponentsError } from "./error.js";
 import { secureRng, type RngOptions } from "@blockchaincommons/rand";
 
 /**
@@ -122,6 +128,9 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
 
   /**
    * Derive the corresponding public keys.
+   *
+   * Throws where a key cannot derive its public key: `General` for an
+   * ML-DSA signing key, `Crypto` for an ML-KEM encapsulation key.
    */
   publicKeys(): PublicKeys {
     const signingPublicKey = this._signingPrivateKey.publicKey();
@@ -210,13 +219,9 @@ export class PrivateKeys implements Signer, Decrypter, ReferenceProvider, ToCbor
     return (PRIVATE_KEYS_CODEC ??= defineCodec({
       tags: [TAG_PRIVATE_KEYS],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-
-        if (elements.length !== 2) {
-          throw ComponentsError.invalidData(
-            `PrivateKeys must have 2 elements, got ${elements.length}`,
-          );
-        }
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("PrivateKeys must be an array");
+        if (elements.length !== 2) throw CborError.custom("PrivateKeys must have two elements");
 
         const signingPrivateKey = SigningPrivateKey.fromCbor(elements[0]);
         const encapsulationPrivateKey = EncapsulationPrivateKey.fromCbor(elements[1]);

@@ -30,7 +30,10 @@ export interface KeypairOptions {
 
 /**
  * A fresh `PrivateKeys`/`PublicKeys` pair: a signing key and an
- * encapsulation key in the chosen schemes.
+ * encapsulation key in the chosen schemes (`keypair_opt`, or
+ * `keypair_opt_using` with `rng`). The signing pair is made first, then the
+ * encapsulation pair, drawing from `rng` in that order; a post-quantum
+ * scheme with `rng` throws `General` at its turn, as the reference does.
  */
 export function generateKeypair({
   signing = defaultSignatureScheme(),

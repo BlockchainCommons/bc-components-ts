@@ -2,7 +2,8 @@
  * Encrypted key for secure symmetric key storage
  *
  * `EncryptedKey` provides symmetric encryption and decryption of content keys
- * using various key derivation methods (HKDF, PBKDF2, Scrypt, Argon2id).
+ * using various key derivation methods (HKDF, PBKDF2, Scrypt, Argon2id, and
+ * an SSH agent's signature).
  *
  * The form of an `EncryptedKey` is an `EncryptedMessage` that contains the
  * encrypted content key, with its Additional Authenticated Data (AAD) being
@@ -15,7 +16,7 @@
  * EncryptedMessage =
  *     #6.40002([ ciphertext: bstr, nonce: bstr, auth: bstr, aad: bstr .cbor KeyDerivation ])
  *
- * KeyDerivation = HKDFParams / PBKDF2Params / ScryptParams / Argon2idParams
+ * KeyDerivation = HKDFParams / PBKDF2Params / ScryptParams / Argon2idParams / SSHAgentParams
  * ```
  */
 
@@ -28,6 +29,7 @@ import { type SymmetricKey } from "../symmetric/symmetric-key.js";
 import { EncryptedMessage } from "../symmetric/encrypted-message.js";
 import { ComponentsError } from "../error.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
+import type { SshAgentLockOptions, SshAgentUnlockOptions } from "./ssh-agent-params.js";
 import {
   type KeyDerivationParams,
   hkdfParams,
@@ -50,7 +52,8 @@ let ENCRYPTED_KEY_CODEC: ComponentCodec<EncryptedKey> | undefined;
  * Encrypted key providing secure storage of symmetric keys.
  *
  * Use `lock()` to encrypt a content key with a password or secret,
- * and `unlock()` to decrypt it.
+ * and `unlock()` to decrypt it. SSH-agent parameters need an `SshAgent`:
+ * `lockWithAgent()` and `unlockWithAgent()`.
  */
 export class EncryptedKey implements ToCbor, ToUR {
   private readonly _params: KeyDerivationParams;
@@ -119,6 +122,38 @@ export class EncryptedKey implements ToCbor, ToUR {
     return EncryptedKey.lockOpt(params, secret, contentKey);
   }
 
+  /**
+   * Lock (encrypt) a content key with an SSH agent, the asynchronous route
+   * for SSH-agent parameters: `SSHAgentParams.lock` with `options`, so the
+   * secret is the comment of the agent identity to use (empty for the only
+   * one) and `options.agent` signs the salt.
+   *
+   * The other methods need no agent and take no nonce, so they have no
+   * asynchronous route: use `lockOpt()` for them.
+   *
+   * @param params - SSH-agent parameters; `id` is set from the secret
+   * @param secret - The identity's comment as UTF-8
+   * @param contentKey - The symmetric key to encrypt
+   * @param options - The agent, and the nonce to use instead of a random one
+   * @returns The encrypted key
+   * @throws `InvalidData` when `params` are not SSH-agent parameters; the
+   * `SshAgent` failures of `SSHAgentParams.lock`
+   */
+  static async lockWithAgent(
+    params: KeyDerivationParams,
+    secret: Uint8Array,
+    contentKey: SymmetricKey,
+    options: SshAgentLockOptions,
+  ): Promise<EncryptedKey> {
+    if (params.type !== "sshagent") {
+      throw ComponentsError.invalidData(
+        "lockWithAgent() needs SSH Agent key derivation - use lockOpt() for HKDF, PBKDF2, Scrypt and Argon2id",
+      );
+    }
+    const encryptedMessage = await params.params.lock(contentKey, secret, options);
+    return new EncryptedKey(params, encryptedMessage);
+  }
+
   // ============================================================================
   // Instance Methods
   // ============================================================================
@@ -154,9 +189,7 @@ export class EncryptedKey implements ToCbor, ToUR {
   /**
    * Check if this uses SSH Agent for key derivation.
    *
-   * Note: SSH Agent key derivation is not yet functional in TypeScript.
-   * This method is useful for detecting envelopes locked by other
-   * implementations (the reference included).
+   * Such a key is unlocked with `unlockWithAgent()`, which needs an `SshAgent`.
    */
   isSshAgent(): boolean {
     return isSshAgent(this._params);
@@ -170,15 +203,7 @@ export class EncryptedKey implements ToCbor, ToUR {
    * @throws ComponentsError if decryption fails (wrong password, tampered data, etc.)
    */
   unlock(secret: Uint8Array): SymmetricKey {
-    // Get the AAD from the encrypted message, which contains the derivation params
-    const aad = this._encryptedMessage.aad;
-    if (aad.length === 0) {
-      throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
-    }
-
-    // Parse the derivation parameters from AAD
-    const paramsCbor = guarded("EncryptedKey", () => decodeCbor(aad));
-    const params = keyDerivationParamsFromCbor(paramsCbor);
+    const params = this._paramsFromAad();
 
     // Unlock using the parsed parameters
     switch (params.type) {
@@ -193,6 +218,40 @@ export class EncryptedKey implements ToCbor, ToUR {
       case "sshagent":
         return params.params.unlock(this._encryptedMessage, secret);
     }
+  }
+
+  /**
+   * Unlock (decrypt) the content key with an SSH agent: for SSH-agent
+   * parameters `SSHAgentParams.unlock` with `options`, where the secret is
+   * the comment of the agent identity to use, or empty for the stored id or
+   * else the first identity; for every other method the same as
+   * `unlock(secret)`, the agent unused.
+   *
+   * @param secret - The identity's comment as UTF-8, or the secret used to lock
+   * @param options - The agent that signs the salt
+   * @returns The decrypted symmetric key
+   * @throws as `unlock`; the `SshAgent` and `Crypto` failures of
+   * `SSHAgentParams.unlock`
+   */
+  async unlockWithAgent(secret: Uint8Array, options: SshAgentUnlockOptions): Promise<SymmetricKey> {
+    const params = this._paramsFromAad();
+    if (params.type === "sshagent") {
+      return await params.params.unlock(this._encryptedMessage, secret, options);
+    }
+    return this.unlock(secret);
+  }
+
+  /** The derivation parameters, from the encrypted message's AAD. */
+  private _paramsFromAad(): KeyDerivationParams {
+    // Get the AAD from the encrypted message, which contains the derivation params
+    const aad = this._encryptedMessage.aad;
+    if (aad.length === 0) {
+      throw ComponentsError.invalidData("Missing AAD in EncryptedKey");
+    }
+
+    // Parse the derivation parameters from AAD
+    const paramsCbor = guarded("EncryptedKey", () => decodeCbor(aad));
+    return keyDerivationParamsFromCbor(paramsCbor);
   }
 
   /**

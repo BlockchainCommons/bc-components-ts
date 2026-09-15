@@ -2,7 +2,7 @@ import { ed25519 } from "@blockchaincommons/crypto";
 import { Digest } from "../digest.js";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
-import { bytesFromHex } from "../domain.js";
+import { bytesFromHex, guarded } from "../domain.js";
 import { Reference } from "../reference.js";
 
 /**
@@ -13,7 +13,7 @@ export class Ed25519PublicKey {
 
   private constructor(data: Uint8Array) {
     if (data.length !== ed25519.PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ed25519.PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize("Ed25519 public key", ed25519.PUBLIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -29,7 +29,7 @@ export class Ed25519PublicKey {
    * Create an Ed25519PublicKey from hex string.
    */
   static fromHex(hex: string): Ed25519PublicKey {
-    return new Ed25519PublicKey(bytesFromHex(hex, "Ed25519PublicKey"));
+    return new Ed25519PublicKey(bytesFromHex(hex));
   }
 
   /** Returns the 32 raw public key bytes (copy). */
@@ -57,15 +57,20 @@ export class Ed25519PublicKey {
   /**
    * Verify a signature using Ed25519
    */
+  /**
+   * Verify a signature (`verify_strict`). A key that does not decode is an
+   * `InvalidData` failure (the reference `unwrap`s the decode); a wrong-size
+   * signature is `InvalidSize`.
+   */
   verify(message: Uint8Array, signature: Uint8Array): boolean {
-    try {
-      if (signature.length !== ed25519.SIGNATURE_SIZE) {
-        throw ComponentsError.invalidSize(ed25519.SIGNATURE_SIZE, signature.length);
-      }
-      return ed25519.verify(this._data, signature, message);
-    } catch (e) {
-      throw ComponentsError.crypto(`Ed25519 verification failed: ${String(e)}`);
+    if (signature.length !== ed25519.SIGNATURE_SIZE) {
+      throw ComponentsError.invalidSize(
+        "Ed25519 signature",
+        ed25519.SIGNATURE_SIZE,
+        signature.length,
+      );
     }
+    return guarded("Ed25519PublicKey", () => ed25519.verify(this._data, signature, message));
   }
 
   /**

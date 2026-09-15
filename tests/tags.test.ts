@@ -62,7 +62,7 @@ describe("component tag summarisers", () => {
     expect(summarize(c.SealedMessage.seal(msg, pub.encapsulationPublicKey(), { rng: rng() }))).toBe(
       "SealedMessage",
     );
-    const [, mlkemPub] = c.createEncapsulationKeypair(c.EncapsulationScheme.MLKEM768, {
+    const [, mlkemPub] = c.EncapsulationPrivateKey.mlkemKeypair(c.MLKEMLevel.MLKEM768, {
       rng: rng(),
     });
     expect(summarize(c.SealedMessage.seal(msg, mlkemPub, { rng: rng() }))).toBe(

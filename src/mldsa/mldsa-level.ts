@@ -18,7 +18,10 @@
 
 import { ml_dsa44, ml_dsa65, ml_dsa87 } from "@noble/post-quantum/ml-dsa.js";
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
+import { type Cbor, expectUnsigned } from "@blockchaincommons/dcbor";
 import { ComponentsError } from "../error.js";
+import { decodeComponent } from "../codable.js";
+import { U32_FIELD } from "../domain.js";
 
 /**
  * ML-DSA security levels.
@@ -86,7 +89,7 @@ export const MLDSA_KEY_SIZES: Readonly<Record<MLDSALevel, MLDSASizes>> =
 function sizesFor(level: MLDSALevel): (typeof MLDSA_KEY_SIZES)[MLDSALevel] {
   const sizes = (MLDSA_KEY_SIZES as Partial<typeof MLDSA_KEY_SIZES>)[level];
   if (sizes === undefined) {
-    throw ComponentsError.postQuantum(`Invalid MLDSA level value: ${String(level)}`);
+    throw ComponentsError.postQuantum(`Invalid MLDSA level: ${String(level)}`);
   }
   return sizes;
 }
@@ -135,8 +138,18 @@ export function mldsaLevelFromValue(value: number): MLDSALevel {
     case 5:
       return MLDSALevel.MLDSA87;
     default:
-      throw ComponentsError.postQuantum(`Invalid MLDSA level value: ${value}`);
+      throw ComponentsError.postQuantum(`Invalid MLDSA level: ${value}`);
   }
+}
+
+/**
+ * The level from its CBOR encoding, as the reference's `TryFrom<CBOR>`
+ * (error type `Error`): a `u32` with dcbor's negative wrap, so `-1` reads
+ * as 4294967295; a non-integer or an out-of-width head is `Cbor`
+ * (`CBOR error: …`), an unknown level `PostQuantum` naming the value read.
+ */
+export function mldsaLevelFromCbor(cborValue: Cbor): MLDSALevel {
+  return decodeComponent(() => mldsaLevelFromValue(Number(expectUnsigned(cborValue, U32_FIELD))));
 }
 
 /**

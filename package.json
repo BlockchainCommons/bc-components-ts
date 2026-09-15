@@ -1,6 +1,6 @@
 {
   "name": "@blockchaincommons/components",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "type": "module",
   "sideEffects": false,
   "description": "A TypeScript implementation of Blockchain Commons cryptographic components. Supports key generation, signing, verification, encryption, and post-quantum cryptography.",
@@ -91,6 +91,17 @@
       },
       "default": "./dist/tags.mjs"
     },
+    "./ssh-agent-node": {
+      "import": {
+        "types": "./dist/ssh-agent-node.d.mts",
+        "default": "./dist/ssh-agent-node.mjs"
+      },
+      "require": {
+        "types": "./dist/ssh-agent-node.d.cts",
+        "default": "./dist/ssh-agent-node.cjs"
+      },
+      "default": "./dist/ssh-agent-node.mjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -119,9 +130,10 @@
     "prepublishOnly": "npm run build",
     "lint:pkg": "publint && attw --pack . --profile node16",
     "check:deps": "bun scripts/check-deps.ts",
-    "test:golden": "vitest run tests/golden-vectors.test.ts",
+    "test:golden": "vitest run tests/golden-vectors.test.ts tests/golden-vectors-noreg.test.ts",
     "test:differential": "vitest run tests/differential.test.ts",
     "vectors:generate": "bun scripts/generate-vectors.ts",
+    "vectors:full": "bun scripts/generate-vectors.ts --full tests/rust-validation/target/corpus.json",
     "baseline:build": "bun scripts/build-baseline.ts"
   },
   "keywords": [
@@ -138,13 +150,25 @@
   "engines": {
     "node": ">=22.12"
   },
+  "dependencies": {
+    "@blockchaincommons/crypto": "^1.0.0-beta.3",
+    "@blockchaincommons/dcbor": "^1.0.0-beta.3",
+    "@blockchaincommons/rand": "^1.0.0-beta.3",
+    "@blockchaincommons/sskr": "^1.0.0-beta.3",
+    "@blockchaincommons/tags": "^1.0.0-beta.3",
+    "@blockchaincommons/uniform-resources": "^1.0.0-beta.3",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@noble/post-quantum": "^0.7.1",
+    "@scure/base": "^2.4.0"
+  },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
     "@microsoft/api-extractor": "^7.59.1",
+    "ajv": "^8.20.0",
     "@size-limit/preset-small-lib": "^13.1.1",
     "@types/node": "^26.1.1",
-    "@types/pako": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.70.0",
     "@vitest/coverage-v8": "^5.0.0",
@@ -158,18 +182,5 @@
     "typescript": "^7.0.2",
     "typescript6": "npm:typescript@^6.0.3",
     "vitest": "^5.0.0"
-  },
-  "dependencies": {
-    "@blockchaincommons/crypto": "^1.0.0-beta.2",
-    "@blockchaincommons/dcbor": "^1.0.0-beta.1",
-    "@blockchaincommons/rand": "^1.0.0-beta.2",
-    "@blockchaincommons/sskr": "^1.0.0-beta.2",
-    "@blockchaincommons/tags": "^1.0.0-beta.2",
-    "@blockchaincommons/uniform-resources": "^1.0.0-beta.2",
-    "@noble/curves": "^2.4.0",
-    "@noble/hashes": "^2.4.0",
-    "@noble/post-quantum": "^0.7.1",
-    "@scure/base": "^2.4.0",
-    "pako": "^3.0.2"
   }
 }

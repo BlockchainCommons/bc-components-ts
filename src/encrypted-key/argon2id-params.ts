@@ -15,7 +15,7 @@
  * Only the salt is configurable in the CBOR encoding for simplicity.
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { type Cbor, cbor, expectArray, expectUnsigned, CborError } from "@blockchaincommons/dcbor";
 import { argon2id } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
@@ -25,8 +25,8 @@ import { type EncryptedMessage } from "../symmetric/encrypted-message.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import { SALT_LEN } from "./hkdf-params.js";
 import type { KeyDerivation } from "./key-derivation.js";
-import { ComponentsError } from "../error.js";
-import { guarded } from "../domain.js";
+import { decodeWith } from "../codable.js";
+import { guarded, USIZE_FIELD } from "../domain.js";
 
 /**
  * Argon2id parameters for password-based key derivation.
@@ -130,24 +130,19 @@ export class Argon2idParams implements KeyDerivation {
   /**
    * Parse from CBOR.
    */
+  /**
+   * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+   * every failure is `Cbor` with the bare message. The index element is
+   * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+   * the fixed-width fields wrap the same way.
+   */
   static fromCbor(cborValue: Cbor): Argon2idParams {
-    const array = expectArray(cborValue);
-
-    if (array.length !== 2) {
-      throw ComponentsError.invalidData(
-        `Invalid Argon2idParams: expected 2 elements, got ${array.length}`,
-      );
-    }
-
-    const index = expectNumber(array[0]);
-    if (index !== Argon2idParams.INDEX) {
-      throw ComponentsError.invalidData(
-        `Invalid Argon2idParams index: expected ${Argon2idParams.INDEX}, got ${index}`,
-      );
-    }
-
-    const salt = Salt.fromCbor(array[1]);
-
-    return new Argon2idParams(salt);
+    return decodeWith(() => {
+      const array = expectArray(cborValue);
+      if (array.length !== 2) throw CborError.custom("Invalid Argon2idParams");
+      expectUnsigned(array[0], USIZE_FIELD);
+      const salt = Salt.fromCbor(array[1]);
+      return new Argon2idParams(salt);
+    });
   }
 }

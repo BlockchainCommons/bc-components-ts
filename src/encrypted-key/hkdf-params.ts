@@ -11,7 +11,7 @@
  * ```
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { type Cbor, cbor, expectArray, expectUnsigned, CborError } from "@blockchaincommons/dcbor";
 import { hkdfSha256, hkdfSha512 } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
@@ -22,7 +22,8 @@ import { HashType, hashTypeToCbor, hashTypeFromCbor, hashTypeToString } from "./
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import type { KeyDerivation } from "./key-derivation.js";
 import { ComponentsError } from "../error.js";
-import { guarded } from "../domain.js";
+import { decodeWith } from "../codable.js";
+import { guarded, USIZE_FIELD } from "../domain.js";
 
 /** Default salt length for key derivation */
 export const SALT_LEN = 16;
@@ -145,25 +146,20 @@ export class HKDFParams implements KeyDerivation {
   /**
    * Parse from CBOR.
    */
+  /**
+   * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+   * every failure is `Cbor` with the bare message. The index element is
+   * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+   * the fixed-width fields wrap the same way.
+   */
   static fromCbor(cborValue: Cbor): HKDFParams {
-    const array = expectArray(cborValue);
-
-    if (array.length !== 3) {
-      throw ComponentsError.invalidData(
-        `Invalid HKDFParams: expected 3 elements, got ${array.length}`,
-      );
-    }
-
-    const index = expectNumber(array[0]);
-    if (index !== HKDFParams.INDEX) {
-      throw ComponentsError.invalidData(
-        `Invalid HKDFParams index: expected ${HKDFParams.INDEX}, got ${index}`,
-      );
-    }
-
-    const salt = Salt.fromCbor(array[1]);
-    const hashType = hashTypeFromCbor(array[2]);
-
-    return new HKDFParams(salt, hashType);
+    return decodeWith(() => {
+      const array = expectArray(cborValue);
+      if (array.length !== 3) throw CborError.custom("Invalid HKDFParams");
+      expectUnsigned(array[0], USIZE_FIELD);
+      const salt = Salt.fromCbor(array[1]);
+      const hashType = hashTypeFromCbor(array[2]);
+      return new HKDFParams(salt, hashType);
+    });
   }
 }

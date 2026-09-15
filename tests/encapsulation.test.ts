@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { SeededRng } from "@blockchaincommons/rand";
 import {
+  ComponentsError,
   EncapsulationScheme,
   EncapsulationPrivateKey,
   EncapsulationPublicKey,
   EncapsulationCiphertext,
+  MLKEMLevel,
   SealedMessage,
   defaultEncapsulationScheme,
   createEncapsulationKeypair,
@@ -14,6 +16,10 @@ import {
 } from "../src/index.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
+
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
 
 describe("EncapsulationScheme", () => {
   it("should have X25519 as default scheme", () => {
@@ -68,6 +74,30 @@ describe("EncapsulationPrivateKey", () => {
       const [privateKey, publicKey] = EncapsulationPrivateKey.keypair();
       expect(privateKey).toBeInstanceOf(EncapsulationPrivateKey);
       expect(publicKey).toBeInstanceOf(EncapsulationPublicKey);
+    });
+
+    it("has no UR of its own, as the reference: use the inner key's", () => {
+      const [privateKey, publicKey] = EncapsulationPrivateKey.keypair();
+      expect("toUR" in privateKey).toBe(false);
+      expect("toUR" in publicKey).toBe(false);
+      expect(privateKey.x25519PrivateKey().toUR().type.name).toBe("agreement-private-key");
+      expect(publicKey.x25519PublicKey().toUR().type.name).toBe("agreement-public-key");
+    });
+
+    it("does not derive an ML-KEM public key (Crypto, as the reference)", () => {
+      const [privateKey, publicKey] = EncapsulationPrivateKey.mlkemKeypair(MLKEMLevel.MLKEM512);
+      expect(publicKey.isMlkem()).toBe(true);
+      let thrown: unknown;
+      try {
+        privateKey.publicKey();
+      } catch (e) {
+        thrown = e;
+      }
+      expect(ComponentsError.isComponentsError(thrown)).toBe(true);
+      expect((thrown as ComponentsError).code).toBe("Crypto");
+      expect((thrown as ComponentsError).message).toBe(
+        "cryptographic operation failed: Deriving ML-KEM public key not supported",
+      );
     });
 
     it("should generate matching keypair", () => {
@@ -181,28 +211,6 @@ describe("EncapsulationPrivateKey", () => {
     });
   });
 
-  describe("UR serialization", () => {
-    it("should serialize to UR", () => {
-      const key = EncapsulationPrivateKey.random();
-      const ur = key.toUR();
-      expect(ur).toBeDefined();
-      expect(ur.type.name).toBe("agreement-private-key");
-    });
-
-    it("should serialize to UR string", () => {
-      const key = EncapsulationPrivateKey.random();
-      const urString = key.toUR().toString();
-      expect(urString).toMatch(/^ur:agreement-private-key\//);
-    });
-
-    it("should roundtrip through UR", () => {
-      const original = EncapsulationPrivateKey.random();
-      const urString = original.toUR().toString();
-      const restored = decodeURWith(UR.parse(urString), EncapsulationPrivateKey.codec);
-      expect(restored.equals(original)).toBe(true);
-    });
-  });
-
   describe("string representation", () => {
     it("should return a string representation", () => {
       const key = EncapsulationPrivateKey.random();
@@ -286,21 +294,6 @@ describe("EncapsulationPublicKey", () => {
       const [, original] = EncapsulationPrivateKey.keypair();
       const cborData = original.toCbor().toData();
       const restored = EncapsulationPublicKey.fromCbor(decodeCbor(cborData));
-      expect(restored.equals(original)).toBe(true);
-    });
-  });
-
-  describe("UR serialization", () => {
-    it("should serialize to UR", () => {
-      const [, publicKey] = EncapsulationPrivateKey.keypair();
-      const ur = publicKey.toUR();
-      expect(ur.type.name).toBe("agreement-public-key");
-    });
-
-    it("should roundtrip through UR", () => {
-      const [, original] = EncapsulationPrivateKey.keypair();
-      const urString = original.toUR().toString();
-      const restored = decodeURWith(UR.parse(urString), EncapsulationPublicKey.codec);
       expect(restored.equals(original)).toBe(true);
     });
   });

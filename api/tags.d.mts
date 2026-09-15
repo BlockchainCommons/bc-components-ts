@@ -6,8 +6,8 @@ import { TagsStore } from '@blockchaincommons/dcbor';
  *
  * - `Digest(…)`, `ARID(…)`, `XID(…)` over the short description; `URI(…)`,
  *   `UUID(…)`, `JSON(…)` over the text
- * - `Nonce`, `Salt`, `Seed`, `SSKRShare`, `SSHSignature`, `SSHCertificate`
- *   as fixed words once the content parses
+ * - `Nonce`, `Salt`, `Seed`, `SSKRShare`, `SSHSignature` as fixed words
+ *   once the content parses; `SSHCertificate` for any content
  * - `Signature` for the default scheme, `Signature(Ed25519)` and so on
  *   otherwise; `SealedMessage` for X25519, `SealedMessage(MLKEM768)` …
  * - `toString()` of `PrivateKeys`, `PublicKeys`, `Reference`,

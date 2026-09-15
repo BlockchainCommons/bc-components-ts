@@ -1,7 +1,8 @@
 /**
- * SSH-DSA digital signature algorithm (FIPS 186-4 §4) with RFC 6979
- * deterministic k generation, so signatures are byte-identical given the
- * same key + message + hash.
+ * SSH-DSA digital signature algorithm (FIPS 186-4 §4) with the `dsa`
+ * crate's deterministic k generation (RFC 6979 with the DRBG seeded by the
+ * minimal encoding of the private key), so signatures are byte-identical to
+ * the reference given the same key + message + hash.
  *
  * Used only for SSH-DSA (`ssh-dss`):
  *   - q is 160 bits
@@ -36,8 +37,8 @@ function modpow(base: bigint, exp: bigint, mod: bigint): bigint {
   return result;
 }
 
-function modinv(a: bigint, m: bigint): bigint {
-  // Extended Euclidean. Assumes gcd(a, m) = 1.
+/** The inverse of `a` modulo `m`, or `undefined` when `gcd(a, m) != 1` (`ModInverse`). */
+function tryModinv(a: bigint, m: bigint): bigint | undefined {
   let oldR = ((a % m) + m) % m;
   let r = m;
   let oldS = 1n;
@@ -47,10 +48,14 @@ function modinv(a: bigint, m: bigint): bigint {
     [oldR, r] = [r, oldR - q * r];
     [oldS, s] = [s, oldS - q * s];
   }
-  if (oldR !== 1n) {
-    throw ComponentsError.ssh("dsa: modular inverse does not exist");
-  }
+  if (oldR !== 1n) return undefined;
   return ((oldS % m) + m) % m;
+}
+
+function modinv(a: bigint, m: bigint): bigint {
+  const inverse = tryModinv(a, m);
+  if (inverse === undefined) throw ComponentsError.ssh("dsa: modular inverse does not exist");
+  return inverse;
 }
 
 function bytesToBigint(bytes: Uint8Array): bigint {
@@ -85,7 +90,7 @@ function concatBytes(...arrs: Uint8Array[]): Uint8Array {
 }
 
 // ----------------------------------------------------------------------------
-// RFC 6979 §3.2 — deterministic k generation
+// Deterministic k generation (the `dsa` crate's RFC 6979 variant)
 // ----------------------------------------------------------------------------
 
 /**
@@ -102,60 +107,74 @@ function bits2int(input: Uint8Array, qlenBits: number): bigint {
 }
 
 /**
- * `int2octets` per RFC 6979 §2.3.3: integer → fixed-length bytes (qlen/8).
+ * The per-signature nonce `k` and its inverse, as the `dsa` crate 0.6.3
+ * computes them (`generate/secret_number.rs`, `secret_number_rfc6979`)
+ * over `rfc6979` 0.4.0's `HmacDrbg` with HMAC-SHA-1:
+ *
+ * - the DRBG entropy is the **minimal** big-endian encoding of `x` (no
+ *   leading zero bytes; `x = 1` seeds with the single byte `01`), which is
+ *   where the crate departs from RFC 6979 §2.3.3's fixed-width `int2octets`;
+ * - the DRBG nonce is `reduce_hash`: the first `floor(bits(q) / 8)` bytes of
+ *   the digest, reduced modulo `q`, left-padded to that width;
+ * - each candidate is `floor(bits(q) / 8)` DRBG bytes; it is accepted when it
+ *   has an inverse modulo `q` and `0 < k < q`.
+ *
+ * Signatures over a private key whose top byte is zero therefore match the
+ * reference only with this seeding.
  */
-function int2octets(v: bigint, rolen: number): Uint8Array {
-  return bigintToBytesFixed(v, rolen);
-}
-
-/**
- * `bits2octets` per RFC 6979 §2.3.4: bits2int reduced mod q, then int2octets.
- */
-function bits2octets(input: Uint8Array, q: bigint, qlenBits: number, rolen: number): Uint8Array {
-  const z1 = bits2int(input, qlenBits);
-  let z2 = z1 - q;
-  if (z2 < 0n) z2 = z1;
-  return int2octets(z2 % q, rolen);
-}
-
-/**
- * Derive a deterministic per-signature nonce `k` per RFC 6979 §3.2 using
- * HMAC-SHA-1 (the hash paired with DSA-1024/q-160).
- */
-function rfc6979Nonce(q: bigint, x: Uint8Array, hashedMessage: Uint8Array): bigint {
-  const qlenBits = q.toString(2).length;
-  const rolen = Math.ceil(qlenBits / 8);
-  const hlen = 20; // SHA-1 output length
-
-  const xOct = int2octets(bytesToBigint(x), rolen);
-  const h1Oct = bits2octets(hashedMessage, q, qlenBits, rolen);
-
-  // Step a-b: V = 0x01..., K = 0x00...
-  let V = new Uint8Array(hlen).fill(0x01);
-  let K = new Uint8Array(hlen).fill(0x00);
-
-  // Step c: K = HMAC_K(V || 0x00 || int2octets(x) || bits2octets(h1))
-  K = hmac(sha1, K, concatBytes(V, new Uint8Array([0x00]), xOct, h1Oct));
-  // Step d: V = HMAC_K(V)
-  V = hmac(sha1, K, V);
-  // Step e: K = HMAC_K(V || 0x01 || int2octets(x) || bits2octets(h1))
-  K = hmac(sha1, K, concatBytes(V, new Uint8Array([0x01]), xOct, h1Oct));
-  // Step f: V = HMAC_K(V)
-  V = hmac(sha1, K, V);
-
-  // Step g: loop until a valid k is found
+function rfc6979Nonce(q: bigint, x: bigint, hashedMessage: Uint8Array): [bigint, bigint] {
+  const kSize = Math.floor(q.toString(2).length / 8);
+  const entropy = minimalBigEndian(x);
+  const nonce = reduceHash(q, hashedMessage, kSize);
+  const drbg = new HmacDrbgSha1(entropy, nonce);
+  const buffer = new Uint8Array(kSize);
   for (let iter = 0; iter < 1024; iter++) {
-    let T: Uint8Array = new Uint8Array(0);
-    while (T.length < rolen) {
-      V = hmac(sha1, K, V);
-      T = concatBytes(T, V);
-    }
-    const k = bits2int(T, qlenBits);
-    if (k >= 1n && k < q) return k;
-    K = hmac(sha1, K, concatBytes(V, new Uint8Array([0x00])));
-    V = hmac(sha1, K, V);
+    drbg.fillBytes(buffer);
+    const k = bytesToBigint(buffer);
+    const inverse = tryModinv(k, q);
+    if (inverse !== undefined && k > 0n && k < q) return [k, inverse];
   }
   throw ComponentsError.ssh("dsa: RFC 6979 failed to produce a valid k after 1024 iterations");
+}
+
+/** `dsa` 0.6.3 `reduce_hash`: the leading `qByteLen` digest bytes modulo `q`, left-padded. */
+function reduceHash(q: bigint, hash: Uint8Array, qByteLen: number): Uint8Array {
+  const head = hash.subarray(0, Math.min(hash.length, qByteLen));
+  return bigintToBytesFixed(bytesToBigint(head) % q, qByteLen);
+}
+
+/** The shortest big-endian encoding of `v` (`BigUint::to_bytes_be`; zero is one `00` byte). */
+function minimalBigEndian(v: bigint): Uint8Array {
+  let hex = v.toString(16);
+  if (hex.length % 2 === 1) hex = `0${hex}`;
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+/** `rfc6979` 0.4.0 `HmacDrbg<Sha1>`: `new(entropy, nonce, [])` and `fill_bytes`. */
+class HmacDrbgSha1 {
+  private k: Uint8Array;
+  private v: Uint8Array;
+
+  constructor(entropy: Uint8Array, nonce: Uint8Array) {
+    this.k = new Uint8Array(20);
+    this.v = new Uint8Array(20).fill(0x01);
+    for (let i = 0; i <= 1; i++) {
+      this.k = hmac(sha1, this.k, concatBytes(this.v, new Uint8Array([i]), entropy, nonce));
+      this.v = hmac(sha1, this.k, this.v);
+    }
+  }
+
+  fillBytes(out: Uint8Array): void {
+    for (let offset = 0; offset < out.length; offset += this.v.length) {
+      this.v = hmac(sha1, this.k, this.v);
+      const take = Math.min(this.v.length, out.length - offset);
+      out.set(this.v.subarray(0, take), offset);
+    }
+    this.k = hmac(sha1, this.k, concatBytes(this.v, new Uint8Array([0x00])));
+    this.v = hmac(sha1, this.k, this.v);
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -201,13 +220,12 @@ export function dsaSign(params: DsaSignParams): Uint8Array {
   // RFC 6979 §3.2 defines the next-k recovery as continuing the HMAC
   // chain — but for q=160 + SHA-1 the probability of this is ~2^-160, so
   // we treat it as fatal here.
-  const k = rfc6979Nonce(q, params.x, params.messageDigest);
+  const [k, kInv] = rfc6979Nonce(q, x, params.messageDigest);
   const r = modpow(g, k, p) % q;
   if (r === 0n) {
     throw ComponentsError.ssh("dsa: degenerate signature with r=0");
   }
   const z = bits2int(params.messageDigest, qlenBits);
-  const kInv = modinv(k, q);
   const s = (kInv * (z + x * r)) % q;
   if (s === 0n) {
     throw ComponentsError.ssh("dsa: degenerate signature with s=0");

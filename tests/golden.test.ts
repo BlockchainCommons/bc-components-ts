@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion -- fixtures are indexed by position; a miss fails the test */
 /**
  * Golden snapshots: one block per class over fixed inputs and the seeded
- * generator, plus the rejection table, plus freeze entries for every
- * behavioural finding (B1–B10).
+ * generator, plus the rejection table, plus freeze entries for the
+ * behaviours the reference pins.
  */
 import { cbor, taggedValue } from "@blockchaincommons/dcbor";
 import * as root from "../src/index.js";
@@ -14,11 +14,11 @@ import * as tagsMod from "../src/tags.js";
 
 const src = { ...root, ...ssh, ...pq, ...kdf, ...sskr, ...tagsMod };
 import * as rand from "@blockchaincommons/rand";
-import { materialize, redesignedAdapterFor, type Recipe } from "./vectors/recipes";
+import { materialize, workingTreeAdapterFor, type Recipe } from "./vectors/recipes";
 import { categories, SEEDS, FAKE } from "./corpus/corpus";
 
-const api = redesignedAdapterFor(src, rand);
-const run = (r: Recipe) => materialize(api, r);
+const api = workingTreeAdapterFor(src, rand);
+const run = (r: Recipe) => materialize(api, r, { messages: true });
 
 describe("golden: value types over fixed bytes", () => {
   const byType = new Map<string, Recipe[]>();
@@ -53,16 +53,47 @@ describe("golden: seeded constructors", () => {
     });
   }
 });
+/**
+ * The artefacts drawn from the secure generator (a sealed message, a locked
+ * key, an encapsulation, an ML-DSA signature) differ per run; the Rust
+ * harness verifies them, the snapshot pins the rest of the row.
+ */
+const stable = (r: Recipe, o: string): string => {
+  const drop = (names: string[]): string =>
+    o
+      .split("|")
+      .filter((f) => !names.some((n) => f.startsWith(`${n}=`)))
+      .join("|");
+  switch (r.k) {
+    case "seal":
+      return drop(["sealed"]);
+    case "encryptedKey":
+      return drop(["ek"]);
+    case "mlkem":
+      return drop(["ct", "ss"]);
+    case "mldsa":
+      return drop(["sig"]);
+    default:
+      return o;
+  }
+};
+// The two mutation corpora and the unregistered rows are pinned by the golden
+// vector file (their sample there, and `golden-vectors-noreg.test.ts`).
 for (const cat of [
   "derives",
   "digests",
   "compresseds",
+  "inflates",
   "seeds",
   "encrypts",
   "signings",
+  "verifies",
   "sshes",
+  "sshTexts",
   "pkbs",
+  "seals",
   "kdfs",
+  "pqs",
   "sskrs",
   "decodes",
   "strictness",
@@ -71,24 +102,24 @@ for (const cat of [
   "kdfDomain",
   "domain",
   "summaries",
+  "uris",
+  "uuids",
+  "hexes",
+  "apis",
 ]) {
   describe(`golden: ${cat}`, () => {
     it("matches the snapshot", () => {
       const out: string[] = [];
-      for (const r of categories[cat]!()) {
-        const o = run(r);
-        // outcomes that involve the secure generator are pinned by their stable tail
-        out.push(r.k === "encryptedKey" ? o.replace(/\|aad=.*$/, "") : o);
-      }
+      for (const r of categories[cat]!()) out.push(stable(r, run(r)));
       expect(out).toMatchSnapshot();
     });
   });
 }
 
 /**
- * Freeze additions: every B-row's behavior, recorded verbatim so a
- * regression is a visible diff. `pageLength: 0` (B8) is not executed: it
- * loops forever on both sides.
+ * Freeze additions: each pinned behaviour recorded verbatim so a regression
+ * is a visible diff. A page length of 0 is not drawn from: it loops forever
+ * in the reference.
  */
 describe("golden: freeze additions", () => {
   const outcome = (f: () => unknown): string => {
@@ -107,7 +138,7 @@ describe("golden: freeze additions", () => {
   const key = () => src.SymmetricKey.from(new Uint8Array(32).fill(7));
   const pw = new TextEncoder().encode("pw");
 
-  it("B1: Ed25519 verification of a small-order key and a degenerate signature", () => {
+  it("Ed25519 verification of a small-order key and a degenerate signature", () => {
     const identity = new Uint8Array(32);
     identity[0] = 1;
     const degenerate = new Uint8Array(64);
@@ -125,7 +156,7 @@ describe("golden: freeze additions", () => {
     ]).toMatchSnapshot();
   });
 
-  it("B2: untagged CBOR through fromCbor", () => {
+  it("untagged CBOR through fromCbor", () => {
     expect([
       `ARID.fromCbor(bytes32): ${outcome(() =>
         src.ARID.fromCbor(cbor(new Uint8Array(32)))
@@ -145,7 +176,7 @@ describe("golden: freeze additions", () => {
     ]).toMatchSnapshot();
   });
 
-  it("B3: the default signature scheme", () => {
+  it("the default signature scheme", () => {
     expect([
       `SigningPrivateKey.random({ rng }).scheme: ${outcome(() => src.SigningPrivateKey.random({ rng: rng() }).scheme)}`,
       `defaultSignatureScheme(): ${outcome(() => src.defaultSignatureScheme())}`,
@@ -153,7 +184,7 @@ describe("golden: freeze additions", () => {
     ]).toMatchSnapshot();
   });
 
-  it("B4: KDF parameter domains", () => {
+  it("KDF parameter domains", () => {
     expect([
       `PBKDF2Params.from({ iterations: 0 }): ${outcome(() => `iterations=${src.PBKDF2Params.from({ salt: salt16(), iterations: 0 }).iterations}`)}`,
       `PBKDF2Params.from({ iterations: 1.5 }): ${outcome(() => `iterations=${src.PBKDF2Params.from({ salt: salt16(), iterations: 1.5 }).iterations}`)}`,
@@ -170,16 +201,23 @@ describe("golden: freeze additions", () => {
             .toData(),
         ).slice(0, 24),
       )}`,
-      `lockOpt pbkdf2 iterations 0: ${outcome(() =>
-        hexOf(
-          src.EncryptedKey.lockOpt(
-            src.pbkdf2Params(src.PBKDF2Params.from({ salt: salt16(), iterations: 0 })),
-            pw,
-            key(),
-          )
-            .toCbor()
-            .toData(),
-        ).slice(0, 24),
+      `lockOpt pbkdf2 iterations 0, then unlock: ${outcome(() =>
+        src.EncryptedKey.lockOpt(
+          src.pbkdf2Params(src.PBKDF2Params.from({ salt: salt16(), iterations: 0 })),
+          pw,
+          key(),
+        )
+          .unlock(pw)
+          .equals(key()),
+      )}`,
+      `lockOpt scrypt logN 0, then unlock: ${outcome(() =>
+        src.EncryptedKey.lockOpt(
+          src.scryptParams(src.ScryptParams.from({ salt: salt16(), logN: 0 })),
+          pw,
+          key(),
+        )
+          .unlock(pw)
+          .equals(key()),
       )}`,
       `lockOpt scrypt logN 100: ${outcome(() =>
         hexOf(
@@ -196,7 +234,7 @@ describe("golden: freeze additions", () => {
     ]).toMatchSnapshot();
   });
 
-  it("B5: value objects alias their bytes", () => {
+  it("value objects alias their bytes", () => {
     const d = src.Digest.fromImage(new Uint8Array(3));
     const before = d.toHex();
     d.bytes[0] ^= 1;
@@ -215,7 +253,7 @@ describe("golden: freeze additions", () => {
     ]).toMatchSnapshot();
   });
 
-  it("B6/B7: foreign error classes past ComponentsError", () => {
+  it("foreign error classes past ComponentsError", () => {
     expect([
       `Digest.fromHex("zz"): ${outcome(() => src.Digest.fromHex("zz"))}`,
       `ECPublicKey.fromHex("zz"): ${outcome(() => src.ECPublicKey.fromHex("zz"))}`,
@@ -241,7 +279,7 @@ describe("golden: freeze additions", () => {
     ]).toMatchSnapshot();
   });
 
-  it("B10: Seed metadata domain", () => {
+  it("Seed metadata domain", () => {
     expect([
       `Seed.from(data, { name: 42 }).toCbor(): ${outcome(() =>
         hexOf(

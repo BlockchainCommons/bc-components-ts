@@ -26,8 +26,8 @@
  *     string  algorithm "ssh-ed25519"
  *     string  raw 64-byte signature
  *
- *   ecdsa-sha2-nistp256 / ecdsa-sha2-nistp384 signature blob:
- *     string  algorithm "ecdsa-sha2-nistp256" | "ecdsa-sha2-nistp384"
+ *   ecdsa-sha2-nistp{256,384,521} signature blob:
+ *     string  algorithm "ecdsa-sha2-nistp{256,384,521}"
  *     string  inner-blob:
  *         mpint r
  *         mpint s
@@ -35,23 +35,27 @@
  *   ssh-dss signature blob:
  *     string  algorithm "ssh-dss"
  *     string  raw 40-byte signature  (r || s, 20 bytes each, q = 160 bits)
+ *
+ *   ssh-rsa key, signature blob (RFC 8332):
+ *     string  algorithm "rsa-sha2-256" | "rsa-sha2-512"
+ *     string  RSASSA-PKCS1-v1_5 signature (modulus-sized)
  */
 
 import { sha256 } from "@noble/hashes/sha2.js";
 import { SshBufferReader, SshBufferWriter } from "./internal/ssh-buffer.js";
-import { encodePem, parsePem } from "./internal/ssh-pem.js";
+import { decodePem, encodePem, SSH_PEM_LINE_WIDTH } from "./internal/ssh-pem.js";
 import {
   parseSshAlgorithm,
   sshAlgorithmName,
   sshEcdsaScalarLen,
+  sshRsaSignatureAlgorithmName,
+  sshRsaSignatureHash,
   type SshAlgorithm,
 } from "./ssh-algorithm.js";
 import { SSHPublicKey } from "./ssh-public-key.js";
 import { ComponentsError } from "../error.js";
 
 const PEM_LABEL = "SSH SIGNATURE";
-// OpenSSH (`sshbuf_dtob64`, wrap = 1) and the reference wrap at 70 columns.
-const PEM_LINE_WIDTH = 70;
 const MAGIC = new TextEncoder().encode("SSHSIG");
 const SUPPORTED_VERSION = 1;
 /** The hash an `sshsig` signature is made over. */
@@ -71,11 +75,18 @@ export class SSHSignature {
   /** The hash the message was digested with. */
   readonly hashAlgorithm: SshHashAlgorithm;
   /**
+   * The algorithm name inside the signature blob: the key's wire name for
+   * Ed25519, DSA and ECDSA keys, and `rsa-sha2-256` / `rsa-sha2-512` (the
+   * hash the RSA signature was made with) for RSA keys.
+   */
+  readonly signatureAlgorithm: string;
+  /**
    * Raw signature bytes specific to the algorithm:
    *   ed25519 → 64-byte concatenation `r || s`
-   *   ecdsa-p256 → 64-byte concatenation `r || s` (we strip the SSH
-   *     mpint sign bytes on parse and re-add them on serialize, so this
-   *     stays a fixed 64-byte canonical form internally)
+   *   ecdsa   → fixed-width `r || s` (64 / 96 / 132 bytes; the SSH mpint
+   *     sign bytes are stripped on parse and re-added on serialize)
+   *   dsa     → 40-byte `r || s`
+   *   rsa     → the RSASSA-PKCS1-v1_5 signature as stored
    */
   readonly signatureBytes: Uint8Array;
 
@@ -84,19 +95,20 @@ export class SSHSignature {
     namespace: string,
     reserved: Uint8Array,
     hashAlgorithm: SshHashAlgorithm,
+    signatureAlgorithm: string,
     signatureBytes: Uint8Array,
   ) {
     this.publicKey = publicKey;
     this.namespace = namespace;
     this.reserved = reserved;
     this.hashAlgorithm = hashAlgorithm;
+    this.signatureAlgorithm = signatureAlgorithm;
     this.signatureBytes = signatureBytes;
   }
 
-  /** Parses the PEM-armoured `sshsig` text. */
+  /** Parses the PEM-armoured `sshsig` text, as `ssh_key::SshSig::from_pem`. */
   static fromPem(text: string): SSHSignature {
-    const { data } = parsePem(text, PEM_LABEL);
-    return SSHSignature.fromBlob(data);
+    return SSHSignature.fromBlob(decodePem(text, PEM_LABEL));
   }
 
   /** Parses the binary `sshsig` blob (the base64 payload of the text form). */
@@ -121,15 +133,27 @@ export class SSHSignature {
     }
     const sigBlob = reader.readString();
     if (!reader.isAtEnd()) {
-      throw ComponentsError.ssh("SSHSignature: trailing bytes after signature blob");
+      throw ComponentsError.ssh(
+        `unexpected trailing data at end of message (${reader.remaining()} bytes)`,
+      );
     }
-    const signatureBytes = decodeAlgorithmSignature(publicKey.algorithm, sigBlob);
-    return new SSHSignature(publicKey, namespace, reserved, hashAlgRaw, signatureBytes);
+    const { algorithmName, signatureBytes } = decodeAlgorithmSignature(
+      publicKey.algorithm,
+      sigBlob,
+    );
+    return new SSHSignature(
+      publicKey,
+      namespace,
+      reserved,
+      hashAlgRaw,
+      algorithmName,
+      signatureBytes,
+    );
   }
 
   /** The PEM-armoured text, wrapped at 70 columns like OpenSSH. */
   toPem(): string {
-    return encodePem(PEM_LABEL, this.toBlob(), PEM_LINE_WIDTH);
+    return encodePem(PEM_LABEL, this.toBlob(), SSH_PEM_LINE_WIDTH);
   }
 
   /** The binary `sshsig` blob, byte for byte as OpenSSH writes it. */
@@ -141,7 +165,13 @@ export class SSHSignature {
     writer.writeStringUtf8(this.namespace);
     writer.writeString(this.reserved);
     writer.writeStringUtf8(this.hashAlgorithm);
-    writer.writeString(encodeAlgorithmSignature(this.publicKey.algorithm, this.signatureBytes));
+    writer.writeString(
+      encodeAlgorithmSignature(
+        this.publicKey.algorithm,
+        this.signatureAlgorithm,
+        this.signatureBytes,
+      ),
+    );
     return writer.bytes();
   }
 
@@ -169,18 +199,30 @@ export class SSHSignature {
     return w.bytes();
   }
 
-  /** Construct from already-decoded parts (used by the sign path). */
+  /**
+   * Construct from already-decoded parts (used by the sign path).
+   *
+   * `signatureAlgorithm` defaults to the key's wire name; for an RSA key it
+   * defaults to `rsa-sha2-512`, the algorithm `ssh-key`'s RSA signer names.
+   */
   static fromParts(
     publicKey: SSHPublicKey,
     namespace: string,
     hashAlgorithm: SshHashAlgorithm,
     signatureBytes: Uint8Array,
+    signatureAlgorithm?: string,
   ): SSHSignature {
+    const algorithm = publicKey.algorithm;
+    const defaultName =
+      algorithm.kind === "rsa"
+        ? sshRsaSignatureAlgorithmName("sha512")
+        : sshAlgorithmName(algorithm);
     return new SSHSignature(
       publicKey,
       namespace,
       new Uint8Array(0),
       hashAlgorithm,
+      signatureAlgorithm ?? defaultName,
       new Uint8Array(signatureBytes),
     );
   }
@@ -199,7 +241,7 @@ export class SSHSignature {
 // ---- helpers ---------------------------------------------------------------
 
 function decodeUtf8(bytes: Uint8Array): string {
-  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
 }
 
 function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
@@ -211,19 +253,35 @@ function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 /**
- * Strip the algorithm wrapping from a signature blob and return the raw
- * algorithm-specific bytes (concatenation form):
+ * Strip the algorithm wrapping from a signature blob and return the
+ * algorithm name it carries plus the raw algorithm-specific bytes:
  *   ed25519 → 64 bytes raw
- *   ecdsa   → `r || s`, fixed-width per curve (32 for P-256, 48 for P-384)
+ *   ecdsa   → `r || s`, fixed-width per curve (32 / 48 / 66 per component)
  *   dsa     → 40 bytes raw `r || s` (q = 160 bits)
+ *   rsa     → the PKCS#1 v1.5 signature; the name must be `rsa-sha2-256` or
+ *             `rsa-sha2-512` (a plain `ssh-rsa` blob is `length invalid`,
+ *             as `ssh-key` 0.6.7 `Signature::new` rejects it)
  */
-function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array): Uint8Array {
+function decodeAlgorithmSignature(
+  algorithm: SshAlgorithm,
+  sigBlob: Uint8Array,
+): { algorithmName: string; signatureBytes: Uint8Array } {
   const r = new SshBufferReader(sigBlob);
-  const algoName = decodeUtf8(r.readString());
+  const algorithmName = decodeUtf8(r.readString());
+  if (algorithm.kind === "rsa") {
+    if (sshRsaSignatureHash(algorithmName) === undefined) {
+      throw ComponentsError.ssh("length invalid");
+    }
+    const sig = r.readString();
+    if (!r.isAtEnd()) {
+      throw ComponentsError.ssh("SSHSignature rsa: trailing bytes after raw signature");
+    }
+    return { algorithmName, signatureBytes: new Uint8Array(sig) };
+  }
   const expected = sshAlgorithmName(algorithm);
-  if (algoName !== expected) {
+  if (algorithmName !== expected) {
     throw ComponentsError.ssh(
-      `SSHSignature: signature algorithm '${algoName}' does not match key algorithm '${expected}'`,
+      `SSHSignature: signature algorithm '${algorithmName}' does not match key algorithm '${expected}'`,
     );
   }
   switch (algorithm.kind) {
@@ -237,7 +295,7 @@ function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array):
           `SSHSignature ed25519: expected ${ED25519_SIGNATURE_LEN}-byte signature, got ${sig.length}`,
         );
       }
-      return new Uint8Array(sig);
+      return { algorithmName, signatureBytes: new Uint8Array(sig) };
     }
     case "ecdsa": {
       const inner = r.readString();
@@ -254,7 +312,7 @@ function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array):
       const out = new Uint8Array(scalarLen * 2);
       out.set(rBytes, 0);
       out.set(sBytes, scalarLen);
-      return out;
+      return { algorithmName, signatureBytes: out };
     }
     case "dsa": {
       const sig = r.readString();
@@ -266,14 +324,18 @@ function decodeAlgorithmSignature(algorithm: SshAlgorithm, sigBlob: Uint8Array):
           `SSHSignature dsa: expected ${DSA_SIGNATURE_LEN}-byte signature, got ${sig.length}`,
         );
       }
-      return new Uint8Array(sig);
+      return { algorithmName, signatureBytes: new Uint8Array(sig) };
     }
   }
 }
 
-function encodeAlgorithmSignature(algorithm: SshAlgorithm, signatureBytes: Uint8Array): Uint8Array {
+function encodeAlgorithmSignature(
+  algorithm: SshAlgorithm,
+  algorithmName: string,
+  signatureBytes: Uint8Array,
+): Uint8Array {
   const w = new SshBufferWriter();
-  w.writeStringUtf8(sshAlgorithmName(algorithm));
+  w.writeStringUtf8(algorithmName);
   switch (algorithm.kind) {
     case "ed25519": {
       if (signatureBytes.length !== ED25519_SIGNATURE_LEN) {
@@ -302,6 +364,15 @@ function encodeAlgorithmSignature(algorithm: SshAlgorithm, signatureBytes: Uint8
       if (signatureBytes.length !== DSA_SIGNATURE_LEN) {
         throw ComponentsError.ssh(
           `SSHSignature dsa: signatureBytes length ${signatureBytes.length} != ${DSA_SIGNATURE_LEN} (r||s)`,
+        );
+      }
+      w.writeString(signatureBytes);
+      break;
+    }
+    case "rsa": {
+      if (sshRsaSignatureHash(algorithmName) === undefined) {
+        throw ComponentsError.ssh(
+          `SSHSignature rsa: signature algorithm must be rsa-sha2-256 or rsa-sha2-512, got '${algorithmName}'`,
         );
       }
       w.writeString(signatureBytes);

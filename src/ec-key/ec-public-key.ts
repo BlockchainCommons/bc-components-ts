@@ -4,16 +4,10 @@ import {
   type CborInput,
   type Tag,
   cbor,
-  expectMap,
+  tagsForValues,
   type ToCbor,
 } from "@blockchaincommons/dcbor";
-import {
-  taggedCborOf,
-  mapGetBoolean,
-  mapGetBytes,
-  type ComponentCodec,
-  defineCodec,
-} from "../codable.js";
+import { taggedCborOf } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { TAG_EC_KEY, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
@@ -24,9 +18,6 @@ import { bytesFromHex, guarded } from "../domain.js";
 import type { ECPublicKeyBase } from "./ec-key-base.js";
 import { Reference } from "../reference.js";
 import { Digest } from "../digest.js";
-
-// The codec is built on first use so that an unused class tree-shakes away.
-let E_C_PUBLIC_KEY_CODEC: ComponentCodec<ECPublicKey> | undefined;
 
 /**
  * EC compressed public key for ECDSA verification (secp256k1, 33 bytes)
@@ -59,13 +50,11 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
 
   private constructor(data: Uint8Array) {
     if (data.length !== ecdsa.PUBLIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ecdsa.PUBLIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize("ECDSA public key", ecdsa.PUBLIC_KEY_SIZE, data.length);
     }
-    if (data[0] !== 0x02 && data[0] !== 0x03) {
-      throw ComponentsError.invalidDataForType("ECPublicKey", "prefix must be 0x02 or 0x03");
-    }
-    // A point off the curve is rejected here, not at first use.
-    guarded("ECPublicKey", () => ecdsa.decompressPublicKey(data));
+    // Any 33 bytes are accepted, as `ECPublicKey::from_data_ref`; a prefix
+    // other than 02/03 or a point off the curve fails at `uncompressedPublicKey`
+    // and `verify`, where the reference panics.
     this._data = new Uint8Array(data);
   }
 
@@ -84,7 +73,7 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
    * Restore an ECPublicKey from a hex string.
    */
   static fromHex(hex: string): ECPublicKey {
-    return ECPublicKey.from(bytesFromHex(hex, "ECPublicKey"));
+    return ECPublicKey.from(bytesFromHex(hex));
   }
 
   // ============================================================================
@@ -136,12 +125,14 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
    * @param message - The message that was signed
    * @returns true if the signature is valid
    */
+  /**
+   * Verify an ECDSA signature. A key that does not decode, or a signature
+   * whose r or s is not below the curve order, is an `InvalidData` failure
+   * (the reference's `ecdsa_verify` panics on them); any other pair is
+   * `true` or `false`.
+   */
   verify(signature: Uint8Array, message: Uint8Array): boolean {
-    try {
-      return ecdsa.verify(this._data, signature, message);
-    } catch {
-      return false;
-    }
+    return guarded("ECPublicKey", () => ecdsa.verify(this._data, signature, message));
   }
 
   /**
@@ -177,37 +168,12 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
   // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static get codec(): ComponentCodec<ECPublicKey> {
-    return (E_C_PUBLIC_KEY_CODEC ??= defineCodec({
-      tags: [TAG_EC_KEY, TAG_EC_KEY_V1],
-      decodeUntagged: (cborValue) => {
-        const map = expectMap(cborValue);
-
-        // Check that key 2 is not present (would indicate private key)
-        const isPrivate = mapGetBoolean(map, 2);
-        if (isPrivate === true) {
-          throw ComponentsError.invalidData(
-            "Expected ECPublicKey but found private key (key 2 is true)",
-          );
-        }
-
-        // Get key data from key 3
-        // CborMap.extract() returns native types (Uint8Array for byte strings)
-        const keyData = mapGetBytes(map, 3);
-        if (keyData === undefined || keyData.length === 0) {
-          throw ComponentsError.invalidData("ECPublicKey CBOR must have key 3 (data)");
-        }
-
-        return ECPublicKey.from(keyData);
-      },
-      encodeUntagged: (value) => value.untaggedCbor(),
-    }));
-  }
-
-  /** The CBOR tags this type decodes from; the first one is used to encode. */
+  /**
+   * The CBOR tags of this type; the first one is used to encode. As the
+   * reference, this type is only encoded: it has no `fromCbor`.
+   */
   cborTags(): Tag[] {
-    return [...ECPublicKey.codec.tags];
+    return tagsForValues([TAG_EC_KEY.value, TAG_EC_KEY_V1.value]);
   }
 
   /**
@@ -231,15 +197,6 @@ export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
   toUR(): UR {
     return urFor(this);
   }
-
-  /** Decode tagged or untagged CBOR. */
-  static fromCbor(cborValue: Cbor): ECPublicKey {
-    return ECPublicKey.codec.decode(cborValue);
-  }
-
-  // ============================================================================
-  // CBOR Deserialization (CborTaggedDecodable)
-  // ============================================================================
 
   // ============================================================================
   // UR Serialization (ToUR)

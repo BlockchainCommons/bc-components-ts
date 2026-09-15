@@ -20,10 +20,10 @@ import {
   type Cbor,
   type Tag,
   cbor,
-  expectArray,
-  expectInteger,
   expectBytes,
   type ToCbor,
+  asArray,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
@@ -31,10 +31,10 @@ import { TAG_MLKEM_PUBLIC_KEY } from "@blockchaincommons/tags";
 
 import {
   type MLKEMLevel,
-  mlkemLevelFromValue,
   mlkemLevelToString,
   mlkemPublicKeySize,
   mlkemEncapsulate,
+  mlkemLevelFromCbor,
 } from "./mlkem-level.js";
 import { MLKEMCiphertext } from "./mlkem-ciphertext.js";
 import { SymmetricKey } from "../symmetric/symmetric-key.js";
@@ -67,7 +67,7 @@ export class MLKEMPublicKey implements ToCbor, ToUR {
     const expectedSize = mlkemPublicKeySize(level);
     if (data.length !== expectedSize) {
       throw ComponentsError.postQuantum(
-        `MLKEMPublicKey (${mlkemLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
+        `error: PublicKey expected ${expectedSize} bytes, got ${data.length}`,
       );
     }
     this._level = level;
@@ -173,14 +173,10 @@ export class MLKEMPublicKey implements ToCbor, ToUR {
     return (M_L_K_E_M_PUBLIC_KEY_CODEC ??= defineCodec({
       tags: [TAG_MLKEM_PUBLIC_KEY],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-        if (elements.length !== 2) {
-          throw ComponentsError.postQuantum(
-            `MLKEMPublicKey CBOR must have 2 elements, got ${elements.length}`,
-          );
-        }
-        const levelValue = Number(expectInteger(elements[0]));
-        const level = mlkemLevelFromValue(levelValue);
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("MLKEMPublicKey must be an array");
+        if (elements.length !== 2) throw CborError.custom("MLKEMPublicKey must have two elements");
+        const level = mlkemLevelFromCbor(elements[0]);
         const data = expectBytes(elements[1]);
         return MLKEMPublicKey.fromBytes(level, data);
       },

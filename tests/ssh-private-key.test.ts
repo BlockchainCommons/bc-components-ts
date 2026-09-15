@@ -83,13 +83,23 @@ describe("SSHPrivateKey — parse/serialize parity with Rust ssh-key 0.6.7", () 
     w.writeUint32(1);
     w.writeString(new Uint8Array(0)); // dummy publickey blob
     w.writeString(new Uint8Array(0)); // dummy encrypted blob
-    const fakeEncrypted = `-----BEGIN OPENSSH PRIVATE KEY-----\n${base64.encode(w.bytes())}\n-----END OPENSSH PRIVATE KEY-----\n`;
+    // Wrapped at 70 columns, as the PEM grammar requires.
+    const body = base64
+      .encode(w.bytes())
+      .replace(/(.{70})/g, "$1\n")
+      .replace(/\n$/, "");
+    const fakeEncrypted = `-----BEGIN OPENSSH PRIVATE KEY-----\n${body}\n-----END OPENSSH PRIVATE KEY-----\n`;
     expect(() => SSHPrivateKey.fromOpenssh(fakeEncrypted)).toThrow(/encrypted keys/);
   });
 
-  it("rejects truncated PEM input", () => {
+  it("rejects truncated PEM input as pem-rfc7468 does", () => {
+    // Without the post-encapsulation boundary the document no longer ends
+    // in `-----`, which pem-rfc7468 reports against the *pre*-encapsulation
+    // boundary.
     const broken = RUST_ED25519_PRIVATE.replace("-----END OPENSSH PRIVATE KEY-----\n", "");
-    expect(() => SSHPrivateKey.fromOpenssh(broken)).toThrow(/missing.*END/);
+    expect(() => SSHPrivateKey.fromOpenssh(broken)).toThrow(
+      "SSH operation failed: PEM error in pre-encapsulation boundary",
+    );
   });
 
   it("rejects mismatched checkint", () => {

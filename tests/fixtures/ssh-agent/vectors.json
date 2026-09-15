@@ -1,0 +1,15 @@
+{
+  "//": "A MemorySshAgent identity (Ed25519 from PrivateKeyBase.from(seed).sshSigningPrivateKey with the comment) signing the salt as the reference's mock agent does (an sshsig signature, namespace test_namespace, SHA-256; the raw 64 signature bytes), and the key HKDF-SHA256 derives from that signature with the salt. The encrypted key is the lock of contentKey with that nonce, secret = comment.",
+  "seedHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "comment": "your_email@example.com",
+  "publicKeyOpenssh": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht your_email@example.com",
+  "privateKeyOpenssh": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAKBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAAFnlvdXJfZW1haWxAZXhhbXBsZS5jb20BAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+  "saltHex": "101112131415161718191a1b1c1d1e1f",
+  "signatureHex": "0c25944fcadb4db86313fbf461a834d49df242b69c55c04d84d097fe0fbaa112d7164b88305648bf20d738dc7fe3fb73e94ec2f2f604b76aeb04db106cd4f008",
+  "derivedKeyHex": "5696f5492d23f6e3bb5627206358fae9c71d8c7f6c8eb0ba4dae78d919eac0c6",
+  "contentKeyHex": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+  "nonceHex": "404142434445464748494a4b",
+  "aadCborHex": "8304d99c5250101112131415161718191a1b1c1d1e1f76796f75725f656d61696c406578616d706c652e636f6d",
+  "encryptedKeyString": "EncryptedKey(SSHAgent(\"your_email@example.com\"))",
+  "encryptedKeyCborHex": "d99c5bd99c42845820682ebe764c701df8cce07bfe5c1408a25f872e306dbbf2705246e03afd1ee5904c404142434445464748494a4b5006e561608bef5cb9ad6b607627b1e0ca582d8304d99c5250101112131415161718191a1b1c1d1e1f76796f75725f656d61696c406578616d706c652e636f6d"
+}

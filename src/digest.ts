@@ -56,7 +56,7 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
 
   private constructor(data: Uint8Array) {
     if (data.length !== Digest.DIGEST_SIZE) {
-      throw ComponentsError.invalidSize(Digest.DIGEST_SIZE, data.length);
+      throw ComponentsError.invalidSize("digest", Digest.DIGEST_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -84,7 +84,7 @@ export class Digest implements DigestProvider, ToCbor, ToUR {
    * @throws Error if the hex string is not exactly 64 characters.
    */
   static fromHex(hex: string): Digest {
-    return new Digest(bytesFromHex(hex, "Digest"));
+    return new Digest(bytesFromHex(hex));
   }
 
   /**

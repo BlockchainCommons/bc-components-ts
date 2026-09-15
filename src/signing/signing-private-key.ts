@@ -28,9 +28,9 @@ import {
   expectUnsigned,
   isBytes,
   isArray,
-  isTagged,
   asTaggedValue,
   type ToCbor,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import {
@@ -44,6 +44,12 @@ import { MLDSAPrivateKey } from "../mldsa/mldsa-private-key.js";
 import { MLDSALevel } from "../mldsa/mldsa-level.js";
 import { SSHPrivateKey } from "../ssh/ssh-private-key.js";
 import {
+  sshKeyTypeName,
+  sshSchemeUnsupportedError,
+  sshSignatureScheme,
+  type SshAlgorithm,
+} from "../ssh/ssh-algorithm.js";
+import {
   SignatureScheme,
   defaultSignatureScheme,
   isMldsaScheme,
@@ -56,6 +62,7 @@ import { Reference, type ReferenceProvider } from "../reference.js";
 import { Digest } from "../digest.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
+import { USIZE_FIELD } from "../domain.js";
 import { secureRng, type RngOptions } from "@blockchaincommons/rand";
 
 // The codec is built on first use so that an unused class tree-shakes away.
@@ -71,14 +78,14 @@ let SIGNING_PRIVATE_KEY_CODEC: ComponentCodec<SigningPrivateKey> | undefined;
  * - MLDSA private keys (post-quantum) - tagged CBOR delegating to MLDSAPrivateKey
  */
 export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, ToCbor {
-  private readonly _type: SignatureScheme;
+  private readonly _type: SignatureScheme | undefined;
   private readonly _ecKey: ECPrivateKey | undefined;
   private readonly _ed25519Key: Ed25519PrivateKey | undefined;
   private readonly _mldsaKey: MLDSAPrivateKey | undefined;
   private readonly _sshKey: SSHPrivateKey | undefined;
 
   private constructor(
-    type: SignatureScheme,
+    type: SignatureScheme | undefined,
     ecKey?: ECPrivateKey,
     ed25519Key?: Ed25519PrivateKey,
     mldsaKey?: MLDSAPrivateKey,
@@ -158,26 +165,13 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @returns A new SSH signing private key
    */
   static fromSsh(key: SSHPrivateKey): SigningPrivateKey {
-    let scheme: SignatureScheme;
-    switch (key.data.kind) {
-      case "ed25519":
-        scheme = SignatureScheme.SshEd25519;
-        break;
-      case "dsa":
-        scheme = SignatureScheme.SshDsa;
-        break;
-      case "ecdsa":
-        switch (key.data.curve) {
-          case "nistp256":
-            scheme = SignatureScheme.SshEcdsaP256;
-            break;
-          case "nistp384":
-            scheme = SignatureScheme.SshEcdsaP384;
-            break;
-        }
-        break;
-    }
-    return new SigningPrivateKey(scheme, undefined, undefined, undefined, key);
+    return new SigningPrivateKey(
+      sshSignatureScheme(key.algorithm),
+      undefined,
+      undefined,
+      undefined,
+      key,
+    );
   }
 
   /**
@@ -217,9 +211,21 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
 
   /**
    * Returns the signature scheme of this key.
+   *
+   * SSH RSA and P-521 keys have no `SignatureScheme` (the reference defines
+   * none for them) and throw `Ssh` with the reference's text for their
+   * signatures: `Unsupported SSH signature algorithm` / `Unsupported SSH
+   * ECDSA curve`.
    */
   get scheme(): SignatureScheme {
+    if (this._type === undefined) throw sshSchemeUnsupportedError(this.sshAlgorithm());
     return this._type;
+  }
+
+  /** The SSH algorithm of an SSH key; `Ssh` failure for any other key. */
+  private sshAlgorithm(): SshAlgorithm {
+    if (this._sshKey === undefined) throw ComponentsError.ssh("not an SSH key");
+    return this._sshKey.algorithm;
   }
 
   /**
@@ -248,6 +254,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
         return "SSH-ECDSA-P256";
       case SignatureScheme.SshEcdsaP384:
         return "SSH-ECDSA-P384";
+      case undefined:
+        return sshKeyTypeName(this.sshAlgorithm());
       default:
         return this._type;
     }
@@ -310,7 +318,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * @returns The MLDSA private key if this is an MLDSA key, undefined otherwise
    */
   asMldsa(): MLDSAPrivateKey | undefined {
-    if (isMldsaScheme(this._type) && this._mldsaKey !== undefined) {
+    if (this._type !== undefined && isMldsaScheme(this._type) && this._mldsaKey !== undefined) {
       return this._mldsaKey;
     }
     return undefined;
@@ -341,7 +349,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
    * Checks if this is an MLDSA signing key.
    */
   isMldsa(): boolean {
-    return isMldsaScheme(this._type);
+    return this._type !== undefined && isMldsaScheme(this._type);
   }
 
   /**
@@ -371,16 +379,15 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
       }
       case SignatureScheme.MLDSA44:
       case SignatureScheme.MLDSA65:
-      case SignatureScheme.MLDSA87: {
-        if (this._mldsaKey === undefined) {
-          throw ComponentsError.invalidData("MLDSA private key is missing");
-        }
-        return SigningPublicKey.fromMldsa(this._mldsaKey.publicKey());
-      }
+      case SignatureScheme.MLDSA87:
+        // As the reference: an ML-DSA public key is not derived from the
+        // private key; keep the one `createKeypair` hands out.
+        throw ComponentsError.general("Deriving ML-DSA public key not supported");
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
+      case SignatureScheme.SshEcdsaP384:
+      case undefined: {
         if (this._sshKey === undefined) {
           throw ComponentsError.invalidData("SSH private key is missing");
         }
@@ -427,7 +434,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
+      case SignatureScheme.SshEcdsaP384:
+      case undefined: {
         if (this._sshKey === undefined || other._sshKey === undefined) return false;
         return this._sshKey.toOpenssh() === other._sshKey.toOpenssh();
       }
@@ -467,6 +475,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
       case SignatureScheme.SshEcdsaP384:
+      case undefined:
         innerDisplay = this._sshKey?.toString() ?? `SSHPrivateKey(${refShort})`;
         break;
     }
@@ -545,7 +554,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
+      case SignatureScheme.SshEcdsaP384:
+      case undefined: {
         if (this._sshKey === undefined) {
           throw ComponentsError.invalidData("SSH private key is missing");
         }
@@ -614,7 +624,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   schnorrSign(message: Uint8Array, rng: RandomNumberGenerator): Signature {
     const privateKey = this.asSchnorr();
     if (privateKey === undefined) {
-      throw ComponentsError.invalidData("Invalid key type for Schnorr signing");
+      throw ComponentsError.crypto("Invalid key type for Schnorr signing");
     }
     const sigData = privateKey.schnorrSignUsing(message, rng);
     return Signature.schnorrFromData(sigData);
@@ -632,7 +642,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   ecdsaSign(message: Uint8Array): Signature {
     const privateKey = this.asEcdsa();
     if (privateKey === undefined) {
-      throw ComponentsError.invalidData("Invalid key type for ECDSA signing");
+      throw ComponentsError.crypto("Invalid key type for ECDSA signing");
     }
     const sigData = privateKey.ecdsaSign(message);
     return Signature.ecdsaFromData(sigData);
@@ -650,7 +660,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   ed25519Sign(message: Uint8Array): Signature {
     const privateKey = this.asEd25519();
     if (privateKey === undefined) {
-      throw ComponentsError.invalidData("Invalid key type for Ed25519 signing");
+      throw ComponentsError.crypto("Invalid key type for Ed25519 signing");
     }
     const sigData = privateKey.sign(message);
     return Signature.ed25519FromData(sigData);
@@ -668,7 +678,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   mldsaSign(message: Uint8Array): Signature {
     const privateKey = this.asMldsa();
     if (privateKey === undefined) {
-      throw ComponentsError.invalidData("Invalid key type for MLDSA signing");
+      throw ComponentsError.postQuantum("Invalid key type for MLDSA signing");
     }
     const mldsaSig = privateKey.sign(message);
     return Signature.mldsaFromSignature(mldsaSig);
@@ -682,53 +692,56 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   static get codec(): ComponentCodec<SigningPrivateKey> {
     return (SIGNING_PRIVATE_KEY_CODEC ??= defineCodec({
       tags: [TAG_SIGNING_PRIVATE_KEY],
+      // The reference's `from_untagged_cbor`, branch for branch.
       decodeUntagged: (cborValue) => {
-        // Wire format: Schnorr is a bare byte string
+        // A byte string is a Schnorr key.
         if (isBytes(cborValue)) {
-          const keyData = expectBytes(cborValue);
-          return SigningPrivateKey.fromSchnorr(ECPrivateKey.from(keyData));
+          return SigningPrivateKey.fromSchnorr(ECPrivateKey.from(expectBytes(cborValue)));
         }
 
-        // Array format for ECDSA, Ed25519
+        // An array: `elements.remove(0)` twice (the reference panics on a
+        // missing element), the discriminator as a `usize` with dcbor's
+        // negative wrap, and any further element ignored.
         if (isArray(cborValue)) {
           const elements = expectArray(cborValue);
-
-          if (elements.length !== 2) {
-            throw ComponentsError.invalidData("SigningPrivateKey array must have 2 elements");
+          const head = elements[0];
+          if (head === undefined) {
+            throw CborError.custom("SigningPrivateKey array is empty");
           }
-
-          const discriminator = expectUnsigned(elements[0]);
-          const keyData = expectBytes(elements[1]);
-
-          switch (Number(discriminator)) {
-            case 1: // ECDSA
-              return SigningPrivateKey.fromEcdsa(ECPrivateKey.from(keyData));
-            case 2: // Ed25519
-              return SigningPrivateKey.fromEd25519(Ed25519PrivateKey.from(keyData));
-            default:
-              throw ComponentsError.invalidData(
-                `Unknown SigningPrivateKey discriminator: ${discriminator}`,
-              );
+          const discriminator = expectUnsigned(head, USIZE_FIELD);
+          if (discriminator === 1 || discriminator === 2) {
+            const second = elements[1];
+            if (second === undefined) {
+              throw CborError.custom("SigningPrivateKey array has no key data");
+            }
+            const keyData = expectBytes(second);
+            return discriminator === 1
+              ? SigningPrivateKey.fromEcdsa(ECPrivateKey.from(keyData))
+              : SigningPrivateKey.fromEd25519(Ed25519PrivateKey.from(keyData));
           }
+          throw CborError.custom(`Invalid discriminator for SigningPrivateKey: ${discriminator}`);
         }
 
-        // Tagged format for MLDSA / SSH
-        if (isTagged(cborValue)) {
-          const tagged = asTaggedValue(cborValue);
-          if (tagged?.[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
-            const mldsaKey = MLDSAPrivateKey.fromCbor(cborValue);
-            return SigningPrivateKey.fromMldsa(mldsaKey);
-          }
-          if (tagged?.[0].value === TAG_SSH_TEXT_PRIVATE_KEY.value) {
+        // A tagged value: an SSH private key text or an ML-DSA key.
+        const tagged = asTaggedValue(cborValue);
+        if (tagged !== undefined) {
+          if (tagged[0].value === TAG_SSH_TEXT_PRIVATE_KEY.value) {
             const text = expectText(tagged[1]);
-            const sshKey = SSHPrivateKey.fromOpenssh(text);
-            return SigningPrivateKey.fromSsh(sshKey);
+            try {
+              return SigningPrivateKey.fromSsh(SSHPrivateKey.fromOpenssh(text));
+            } catch {
+              throw CborError.custom("Invalid SSH private key");
+            }
           }
+          if (tagged[0].value === TAG_MLDSA_PRIVATE_KEY.value) {
+            return SigningPrivateKey.fromMldsa(MLDSAPrivateKey.codec.decodeUntagged(tagged[1]));
+          }
+          throw CborError.custom(
+            `Invalid CBOR tag for SigningPrivateKey: ${String(tagged[0].value)}`,
+          );
         }
 
-        throw ComponentsError.invalidData(
-          "SigningPrivateKey must be a byte string (Schnorr), array (ECDSA/Ed25519), tagged MLDSA, or tagged SSH",
-        );
+        throw CborError.custom("Invalid CBOR case for SigningPrivateKey");
       },
       encodeUntagged: (value) => value.untaggedCbor(),
     }));
@@ -781,7 +794,8 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
+      case SignatureScheme.SshEcdsaP384:
+      case undefined: {
         if (this._sshKey === undefined) {
           throw ComponentsError.invalidData("SSH private key is missing");
         }
@@ -830,7 +844,7 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
   toSshOpenssh(): string {
     if (this._sshKey === undefined) {
       throw ComponentsError.invalidData(
-        `SigningPrivateKey is not an SSH key (scheme: ${this._type})`,
+        `SigningPrivateKey is not an SSH key (scheme: ${String(this._type)})`,
       );
     }
     return this._sshKey.toOpenssh();

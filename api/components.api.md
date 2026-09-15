@@ -7,11 +7,13 @@
 import { bytesToHex } from '@blockchaincommons/dcbor';
 import { Cbor } from '@blockchaincommons/dcbor';
 import { CborCodec } from '@blockchaincommons/dcbor';
+import { CborDate } from '@blockchaincommons/dcbor';
 import { CborTagged } from '@blockchaincommons/dcbor';
 import { hexToBytes } from '@blockchaincommons/dcbor';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
 import { RngOptions } from '@blockchaincommons/rand';
 import { Tag } from '@blockchaincommons/dcbor';
+import { TagValue } from '@blockchaincommons/dcbor';
 import { ToCbor } from '@blockchaincommons/dcbor';
 import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
@@ -88,6 +90,7 @@ export interface ComponentCodec<T> extends CborCodec<T> {
     encode: (value: T) => Cbor;
     encodeUntagged: (value: T) => Cbor;
     readonly tags: readonly Tag[];
+    readonly tagValues: readonly TagValue[];
 }
 
 // @public
@@ -96,18 +99,19 @@ export const COMPONENTS_ERROR_CODES: readonly ComponentsErrorCode[];
 // @public
 export class ComponentsError extends Error {
     static cbor(message: string, cause?: unknown): ComponentsError;
+    static cborDecode(cause: Error): ComponentsError;
     readonly code: ComponentsErrorCode;
     static compression(message: string, cause?: unknown): ComponentsError;
     static crypto(message: string, cause?: unknown): ComponentsError;
     static dataTooShort(dataType: string, minimum: number, actual: number): ComponentsError;
     readonly details: ComponentsErrorDetails;
+    static env(message: string, cause?: unknown): ComponentsError;
     static general(message: string, cause?: unknown): ComponentsError;
     static hex(message: string, cause?: unknown): ComponentsError;
     static invalidData(reason: string, cause?: unknown): ComponentsError;
     static invalidDataForType(dataType: string, reason: string, cause?: unknown): ComponentsError;
     static invalidFormat(reason: string, cause?: unknown): ComponentsError;
-    static invalidSize(expected: number, actual: number): ComponentsError;
-    static invalidSizeForType(dataType: string, expected: number, actual: number): ComponentsError;
+    static invalidSize(dataType: string, expected: number, actual: number): ComponentsError;
     is(code: ComponentsErrorCode): boolean;
     static isComponentsError(value: unknown): value is ComponentsError;
     static levelMismatch(): ComponentsError;
@@ -115,13 +119,14 @@ export class ComponentsError extends Error {
     static postQuantum(message: string, cause?: unknown): ComponentsError;
     static ssh(message: string, cause?: unknown): ComponentsError;
     static sshAgent(message: string, cause?: unknown): ComponentsError;
+    static sshAgentClient(message: string, cause?: unknown): ComponentsError;
     static sskr(message: string, cause?: unknown): ComponentsError;
     static uri(message: string, cause?: unknown): ComponentsError;
     static utf8(message: string, cause?: unknown): ComponentsError;
 }
 
 // @public
-export type ComponentsErrorCode = "InvalidSize" | "InvalidData" | "DataTooShort" | "Crypto" | "Cbor" | "Sskr" | "Ssh" | "Uri" | "Compression" | "PostQuantum" | "LevelMismatch" | "SshAgent" | "Hex" | "Utf8" | "General";
+export type ComponentsErrorCode = "InvalidSize" | "InvalidData" | "DataTooShort" | "Crypto" | "Cbor" | "Sskr" | "Ssh" | "Uri" | "Compression" | "PostQuantum" | "LevelMismatch" | "SshAgent" | "Hex" | "Utf8" | "Env" | "SshAgentClient" | "General";
 
 // @public
 export type ComponentsErrorDetails = InvalidSizeDetails | InvalidDataDetails | DataTooShortDetails | MessageDetails;
@@ -134,7 +139,7 @@ export class Compressed implements ToCbor, DigestProvider {
     get compressedSize(): number;
     get compressionRatio(): number;
     decompress(): Uint8Array;
-    get decompressedSize(): number;
+    get decompressedSize(): number | bigint;
     digest(): Digest;
     digestOpt(): Digest | undefined;
     equals(other: Compressed): boolean;
@@ -142,7 +147,7 @@ export class Compressed implements ToCbor, DigestProvider {
     static fromDecompressedData(decompressedData: Uint8Array, digest?: Digest): Compressed;
     static fromParts(input: {
         checksum: number;
-        decompressedSize: number;
+        decompressedSize: number | bigint;
         compressedData: Uint8Array;
         digest?: Digest | undefined;
     }): Compressed;
@@ -236,12 +241,10 @@ export interface ECKeyBase {
 export class ECPrivateKey implements ECKey, ToCbor, ToUR {
     get bytes(): Uint8Array;
     cborTags(): Tag[];
-    static get codec(): ComponentCodec<ECPrivateKey>;
     static deriveFromKeyMaterial(keyMaterial: Uint8Array): ECPrivateKey;
     ecdsaSign(message: Uint8Array): Uint8Array;
     equals(other: ECPrivateKey): boolean;
     static from(data: Uint8Array): ECPrivateKey;
-    static fromCbor(cborValue: Cbor): ECPrivateKey;
     static fromHex(hex: string): ECPrivateKey;
     static readonly KEY_SIZE: number;
     static keypair(input?: RngOptions): [ECPrivateKey, ECPublicKey];
@@ -264,10 +267,8 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
 export class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
     get bytes(): Uint8Array;
     cborTags(): Tag[];
-    static get codec(): ComponentCodec<ECPublicKey>;
     equals(other: ECPublicKey): boolean;
     static from(data: Uint8Array): ECPublicKey;
-    static fromCbor(cborValue: Cbor): ECPublicKey;
     static fromHex(hex: string): ECPublicKey;
     static readonly KEY_SIZE: number;
     publicKey(): ECPublicKey;
@@ -292,11 +293,9 @@ export interface ECPublicKeyBase extends ECKey {
 export class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR {
     get bytes(): Uint8Array;
     cborTags(): Tag[];
-    static get codec(): ComponentCodec<ECUncompressedPublicKey>;
     compressedData(): Uint8Array;
     equals(other: ECUncompressedPublicKey): boolean;
     static from(data: Uint8Array): ECUncompressedPublicKey;
-    static fromCbor(cborValue: Cbor): ECUncompressedPublicKey;
     static fromHex(hex: string): ECUncompressedPublicKey;
     static readonly KEY_SIZE: number;
     reference(): Reference;
@@ -360,13 +359,12 @@ export class EncapsulationCiphertext implements ToCbor {
     mlkemCiphertext(): MLKEMCiphertext;
     toCbor(): Cbor;
     toString(): string;
-    toUR(): UR;
     untaggedCbor(): Cbor;
     x25519PublicKey(): X25519PublicKey;
 }
 
 // @public
-export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR {
+export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor {
     asMlkem(): MLKEMPrivateKey | undefined;
     asX25519(): X25519PrivateKey | undefined;
     get bytes(): Uint8Array;
@@ -392,13 +390,12 @@ export class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR 
     reference(): Reference;
     toCbor(): Cbor;
     toString(): string;
-    toUR(): UR;
     untaggedCbor(): Cbor;
     x25519PrivateKey(): X25519PrivateKey;
 }
 
 // @public
-export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
+export class EncapsulationPublicKey implements ReferenceProvider, ToCbor {
     asMlkem(): MLKEMPublicKey | undefined;
     asX25519(): X25519PublicKey | undefined;
     get bytes(): Uint8Array;
@@ -420,7 +417,6 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
     reference(): Reference;
     toCbor(): Cbor;
     toString(): string;
-    toUR(): UR;
     untaggedCbor(): Cbor;
     x25519PublicKey(): X25519PublicKey;
 }
@@ -525,6 +521,20 @@ export interface KeypairOptions {
     encapsulation?: EncapsulationScheme;
     rng?: RandomNumberGenerator;
     signing?: SignatureScheme;
+}
+
+// @public
+export class MemorySshAgent implements SshAgent {
+    constructor(input?: {
+        identities?: Iterable<SSHPrivateKey>;
+        refuseToSign?: boolean;
+    });
+    addIdentity(key: SSHPrivateKey): void;
+    // Warning: (ae-forgotten-export) The symbol "SSHPublicKey" needs to be exported by the entry point index.d.ts
+    listIdentities(): Promise<readonly SSHPublicKey[]>;
+    removeAllIdentities(): void;
+    removeIdentity(key: SSHPrivateKey): void;
+    sign(identity: SSHPublicKey, data: Uint8Array): Promise<Uint8Array>;
 }
 
 // @public
@@ -769,6 +779,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     get bytes(): Uint8Array;
     cborTags(): Tag[];
     static get codec(): ComponentCodec<Seed>;
+    get creationCborDate(): CborDate | undefined;
     get creationDate(): Date | undefined;
     set creationDate(creationDate: Date | undefined);
     equals(other: Seed): boolean;
@@ -888,7 +899,6 @@ export class SigningPrivateKey implements Signer, Verifier, ReferenceProvider, T
     // Warning: (ae-forgotten-export) The symbol "MLDSAPrivateKey" needs to be exported by the entry point index.d.ts
     static fromMldsa(key: MLDSAPrivateKey): SigningPrivateKey;
     static fromSchnorr(key: ECPrivateKey): SigningPrivateKey;
-    // Warning: (ae-forgotten-export) The symbol "SSHPrivateKey" needs to be exported by the entry point index.d.ts
     static fromSsh(key: SSHPrivateKey): SigningPrivateKey;
     isEcdsa(): boolean;
     isEd25519(): boolean;
@@ -930,7 +940,6 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
     // Warning: (ae-forgotten-export) The symbol "MLDSAPublicKey" needs to be exported by the entry point index.d.ts
     static fromMldsa(key: MLDSAPublicKey): SigningPublicKey;
     static fromSchnorr(key: SchnorrPublicKey): SigningPublicKey;
-    // Warning: (ae-forgotten-export) The symbol "SSHPublicKey" needs to be exported by the entry point index.d.ts
     static fromSsh(key: SSHPublicKey): SigningPublicKey;
     isEcdsa(): boolean;
     isEd25519(): boolean;
@@ -950,17 +959,25 @@ export class SigningPublicKey implements Verifier, ReferenceProvider, ToCbor {
 }
 
 // @public
+export interface SshAgent {
+    listIdentities(): Promise<readonly SSHPublicKey[]>;
+    sign(identity: SSHPublicKey, data: Uint8Array): Promise<Uint8Array>;
+}
+
+// @public
 export type SshAlgorithm = {
     kind: "ed25519";
 } | {
     kind: "dsa";
+} | {
+    kind: "rsa";
 } | {
     kind: "ecdsa";
     curve: SshEcdsaCurve;
 };
 
 // @public
-export type SshEcdsaCurve = "nistp256" | "nistp384";
+export type SshEcdsaCurve = "nistp256" | "nistp384" | "nistp521";
 
 // @public
 export type SshHashAlgorithm = "sha256" | "sha512";
@@ -1126,6 +1143,10 @@ export const XID_PREFIX = "🅧";
 export interface XIDProvider {
     xid(): XID;
 }
+
+// Warnings were encountered during analysis:
+//
+// src/ssh-agent/memory-ssh-agent.ts:42:8 - (ae-forgotten-export) The symbol "SSHPrivateKey" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

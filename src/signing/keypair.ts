@@ -55,13 +55,16 @@ export interface CreateKeypairOptions {
 
 /**
  * A fresh signing key pair for `scheme`. Without `rng` every scheme draws
- * from the secure generator; with `rng` the ML-DSA schemes throw, because
- * their key generation cannot be seeded.
+ * from the secure generator (`keypair`). With `rng` (`keypair_using`) the
+ * ML-DSA schemes throw `General` before drawing anything, as the reference
+ * does: their key generation takes no caller-supplied generator. Use
+ * `MLDSAPrivateKey.keypair(level, { rng })` for a seeded ML-DSA pair.
  */
 export function createKeypair(
   scheme: SignatureScheme = defaultSignatureScheme(),
-  { rng = secureRng(), comment = "" }: CreateKeypairOptions = {},
+  { rng: given, comment = "" }: CreateKeypairOptions = {},
 ): [SigningPrivateKey, SigningPublicKey] {
+  const rng = given ?? secureRng();
   switch (scheme) {
     case SignatureScheme.Schnorr: {
       const privateKey = SigningPrivateKey.fromSchnorr(ECPrivateKey.random({ rng }));
@@ -78,12 +81,17 @@ export function createKeypair(
     case SignatureScheme.MLDSA44:
     case SignatureScheme.MLDSA65:
     case SignatureScheme.MLDSA87: {
+      if (given !== undefined) {
+        throw ComponentsError.general(
+          "Deterministic keypair generation not supported for this signature scheme",
+        );
+      }
       const level = {
         MLDSA44: MLDSALevel.MLDSA44,
         MLDSA65: MLDSALevel.MLDSA65,
         MLDSA87: MLDSALevel.MLDSA87,
       }[scheme];
-      const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(level, { rng });
+      const [mldsaKey, mldsaPub] = MLDSAPrivateKey.keypair(level);
       return [SigningPrivateKey.fromMldsa(mldsaKey), SigningPublicKey.fromMldsa(mldsaPub)];
     }
     case SignatureScheme.SshEd25519:

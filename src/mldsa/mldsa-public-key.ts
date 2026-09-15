@@ -20,10 +20,10 @@ import {
   type Cbor,
   type Tag,
   cbor,
-  expectArray,
-  expectInteger,
   expectBytes,
   type ToCbor,
+  asArray,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
@@ -31,10 +31,11 @@ import { TAG_MLDSA_PUBLIC_KEY } from "@blockchaincommons/tags";
 
 import {
   type MLDSALevel,
-  mldsaLevelFromValue,
   mldsaLevelToString,
   mldsaPublicKeySize,
   mldsaVerify,
+  mldsaLevelFromCbor,
+  mldsaSignatureSize,
 } from "./mldsa-level.js";
 import type { MLDSASignature } from "./mldsa-signature.js";
 import { ComponentsError } from "../error.js";
@@ -55,7 +56,7 @@ export class MLDSAPublicKey implements ToCbor, ToUR {
     const expectedSize = mldsaPublicKeySize(level);
     if (data.length !== expectedSize) {
       throw ComponentsError.postQuantum(
-        `MLDSAPublicKey (${mldsaLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
+        `${mldsaLevelToString(level)} public key error: error: PublicKey expected ${expectedSize} bytes, got ${data.length}`,
       );
     }
     this._level = level;
@@ -108,6 +109,9 @@ export class MLDSAPublicKey implements ToCbor, ToUR {
     if (signature.level !== this._level) {
       return false;
     }
+    // A signature shorter than the scheme's (accepted at construction, as
+    // pqcrypto accepts it) never verifies.
+    if (signature.byteLength !== mldsaSignatureSize(this._level)) return false;
     return mldsaVerify(this._level, this._data, message, signature.bytes);
   }
 
@@ -154,14 +158,10 @@ export class MLDSAPublicKey implements ToCbor, ToUR {
     return (M_L_D_S_A_PUBLIC_KEY_CODEC ??= defineCodec({
       tags: [TAG_MLDSA_PUBLIC_KEY],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-        if (elements.length !== 2) {
-          throw ComponentsError.postQuantum(
-            `MLDSAPublicKey CBOR must have 2 elements, got ${elements.length}`,
-          );
-        }
-        const levelValue = Number(expectInteger(elements[0]));
-        const level = mldsaLevelFromValue(levelValue);
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("MLDSAPublicKey must be an array");
+        if (elements.length !== 2) throw CborError.custom("MLDSAPublicKey must have two elements");
+        const level = mldsaLevelFromCbor(elements[0]);
         const data = expectBytes(elements[1]);
         return MLDSAPublicKey.fromBytes(level, data);
       },

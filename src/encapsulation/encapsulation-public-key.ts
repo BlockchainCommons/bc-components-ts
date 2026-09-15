@@ -19,9 +19,17 @@
  * For MLKEM, the public key is serialized with tag 40101.
  */
 
-import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import {
+  type Cbor,
+  type Tag,
+  cbor,
+  expectBytes,
+  type ToCbor,
+  asTaggedValue,
+  CborError,
+  tagsForValues,
+} from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
-import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { TAG_X25519_PUBLIC_KEY, TAG_MLKEM_PUBLIC_KEY } from "@blockchaincommons/tags";
 import { X25519PrivateKey } from "../x25519/x25519-private-key.js";
 import { X25519PublicKey } from "../x25519/x25519-public-key.js";
@@ -68,7 +76,7 @@ let ENCAPSULATION_PUBLIC_KEY_CODEC: ComponentCodec<EncapsulationPublicKey> | und
  *
  * Use this to encapsulate a shared secret for a recipient.
  */
-export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
+export class EncapsulationPublicKey implements ReferenceProvider, ToCbor {
   private readonly _scheme: EncapsulationScheme;
   private readonly _x25519PublicKey: X25519PublicKey | undefined;
   private readonly _mlkemPublicKey: MLKEMPublicKey | undefined;
@@ -300,16 +308,22 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
   // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+  /** Tagged-CBOR codec; the tag value selects the scheme, as the reference's `TryFrom<CBOR>`. */
   static get codec(): ComponentCodec<EncapsulationPublicKey> {
     return (ENCAPSULATION_PUBLIC_KEY_CODEC ??= defineCodec({
       tags: [TAG_X25519_PUBLIC_KEY, TAG_MLKEM_PUBLIC_KEY],
       decodeUntagged: (cborValue) =>
         EncapsulationPublicKey.fromX25519PublicKey(X25519PublicKey.from(expectBytes(cborValue))),
-      decodeTagged: (tag, content, whole) =>
-        tag.value === TAG_MLKEM_PUBLIC_KEY.value
-          ? EncapsulationPublicKey.fromMlkem(MLKEMPublicKey.fromCbor(whole))
-          : EncapsulationPublicKey.codec.decodeUntagged(content),
+      // The reference's `TryFrom<CBOR>`: the tag value selects the inner
+      // decoder; anything else, an untagged value included, is its own text.
+      decodeAny: (whole) => {
+        const tag = asTaggedValue(whole)?.[0].value;
+        if (tag === TAG_X25519_PUBLIC_KEY.value)
+          return EncapsulationPublicKey.fromX25519PublicKey(X25519PublicKey.fromCbor(whole));
+        if (tag === TAG_MLKEM_PUBLIC_KEY.value)
+          return EncapsulationPublicKey.fromMlkem(MLKEMPublicKey.fromCbor(whole));
+        throw CborError.custom("Invalid encapsulation public key");
+      },
       encodeUntagged: (value) => value.untaggedCbor(),
       encode: (value) => value.toCbor(),
     }));
@@ -320,9 +334,9 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
    */
   cborTags(): Tag[] {
     if (this._scheme === EncapsulationScheme.X25519) {
-      return [TAG_X25519_PUBLIC_KEY];
+      return tagsForValues([TAG_X25519_PUBLIC_KEY.value]);
     } else if (isMlkemScheme(this._scheme)) {
-      return [TAG_MLKEM_PUBLIC_KEY];
+      return tagsForValues([TAG_MLKEM_PUBLIC_KEY.value]);
     }
     throw ComponentsError.general(`Unsupported scheme: ${String(this._scheme)}`);
   }
@@ -348,11 +362,6 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
     return taggedCborOf(this);
   }
 
-  /** As a UR, typed by the scheme's tag name. */
-  toUR(): UR {
-    return urFor(this);
-  }
-
   /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
   static fromCbor(cborValue: Cbor): EncapsulationPublicKey {
     return EncapsulationPublicKey.codec.decode(cborValue);
@@ -360,9 +369,5 @@ export class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
 
   // ============================================================================
   // CBOR Deserialization (CborTaggedDecodable)
-  // ============================================================================
-
-  // ============================================================================
-  // UR Serialization (ToUR)
   // ============================================================================
 }

@@ -7,12 +7,14 @@ import {
   CborDate,
   expectMap,
   type ToCbor,
+  expectBytes,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import {
   taggedCborOf,
   forgetTaggedCbor,
   mapGetText,
-  mapGetBytes,
+  mapGetDate,
   type ComponentCodec,
   defineCodec,
 } from "./codable.js";
@@ -82,9 +84,15 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
   private readonly _data: Uint8Array;
   private _name: string;
   private _note: string;
-  private _creationDate: Date | undefined;
+  /** The creation date as decoded or set (a `CborDate` keeps sub-millisecond precision on the wire). */
+  private _creationDate: CborDate | undefined;
 
-  private constructor(data: Uint8Array, name?: string, note?: string, creationDate?: Date) {
+  private constructor(
+    data: Uint8Array,
+    name?: string,
+    note?: string,
+    creationDate?: Date | CborDate,
+  ) {
     if (data.length < Seed.MIN_SEED_LENGTH) {
       throw ComponentsError.dataTooShort("seed", Seed.MIN_SEED_LENGTH, data.length);
     }
@@ -92,8 +100,13 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     this._data = new Uint8Array(data);
     this._name = name === undefined ? "" : expectString(name, "name");
     this._note = note === undefined ? "" : expectString(note, "note");
-    this._creationDate =
-      creationDate === undefined ? undefined : expectDate(creationDate, "creationDate");
+    this._creationDate = Seed.cborDateOf(creationDate);
+  }
+
+  private static cborDateOf(creationDate: Date | CborDate | undefined): CborDate | undefined {
+    if (creationDate === undefined) return undefined;
+    if (creationDate instanceof CborDate) return creationDate;
+    return CborDate.fromDate(expectDate(creationDate, "creationDate"));
   }
 
   // ============================================================================
@@ -136,7 +149,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
    * @param metadata - Optional metadata object
    */
   static fromHex(hex: string, metadata?: SeedMetadata): Seed {
-    return Seed.from(bytesFromHex(hex, "Seed"), metadata);
+    return Seed.from(bytesFromHex(hex), metadata);
   }
 
   // ============================================================================
@@ -179,7 +192,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
    */
   /** The optional metadata as one object. */
   get metadata(): SeedMetadata {
-    return { name: this._name, note: this._note, creationDate: this._creationDate };
+    return { name: this._name, note: this._note, creationDate: this.creationDate };
   }
 
   /** The label, empty when none was given; set it to a string (`InvalidData` otherwise). */
@@ -213,13 +226,17 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
    * Setting it requires a valid `Date` or `undefined` (`InvalidData` otherwise).
    */
   get creationDate(): Date | undefined {
-    return this._creationDate;
+    return this._creationDate?.toDate();
   }
 
   set creationDate(creationDate: Date | undefined) {
-    this._creationDate =
-      creationDate === undefined ? undefined : expectDate(creationDate, "creationDate");
+    this._creationDate = Seed.cborDateOf(creationDate);
     forgetTaggedCbor(this);
+  }
+
+  /** The creation date as decoded, with the precision the wire carried. */
+  get creationCborDate(): CborDate | undefined {
+    return this._creationDate;
   }
 
   // ============================================================================
@@ -273,32 +290,19 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
 
         // Key 1: seed data (required)
         // CborMap.extract() returns native types (Uint8Array for byte strings)
-        const data = mapGetBytes(map, 1);
-        if (data === undefined || data.length === 0) {
-          throw ComponentsError.invalidDataForType("Seed", "data must be a non-empty byte string");
-        }
+        // `map.extract::<i32, CBOR>(1)?.try_into_byte_string()?`
+        const dataValue = map.get(1);
+        if (dataValue === undefined) throw CborError.missingMapKey();
+        const data = expectBytes(dataValue);
+        if (data.length === 0) throw CborError.custom("Seed data is empty");
 
-        // Key 2: creation date (optional)
-        // For tagged values (like dates), the extract returns the tagged Cbor object
-        let creationDate: Date | undefined;
-        const dateValue = map.get(2);
-        if (dateValue !== undefined) {
-          // The date is stored as a tagged CBOR value (tag 1)
-          const cborDate = CborDate.fromTaggedCbor(dateValue);
-          creationDate = cborDate.toDate();
-        }
-
-        // Key 3: name (optional)
+        // Keys 2, 3 and 4, as the reference's `map.get::<i32, Date | String>`:
+        // a value that does not convert is absent, not an error.
+        const creationDate = mapGetDate(map, 2);
         const name = mapGetText(map, 3);
-
-        // Key 4: note (optional)
         const note = mapGetText(map, 4);
 
-        return Seed.from(new Uint8Array(data), {
-          name: name,
-          note: note,
-          creationDate: creationDate,
-        });
+        return new Seed(new Uint8Array(data), name, note, creationDate);
       },
       encodeUntagged: (value) => value.untaggedCbor(),
     }));
@@ -321,8 +325,7 @@ export class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     const map = new CborMap();
     map.set(1, cbor(this._data));
     if (this._creationDate !== undefined) {
-      const cborDate = CborDate.fromDate(this._creationDate);
-      map.set(2, cborDate.toCbor());
+      map.set(2, this._creationDate.toCbor());
     }
     if (this._name.length > 0) {
       map.set(3, this._name);

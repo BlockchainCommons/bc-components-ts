@@ -20,10 +20,10 @@ import {
   type Cbor,
   type Tag,
   cbor,
-  expectArray,
-  expectInteger,
   expectBytes,
   type ToCbor,
+  asArray,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
@@ -32,12 +32,11 @@ import { secureRng, type RngOptions } from "@blockchaincommons/rand";
 
 import {
   MLKEMLevel,
-  mlkemLevelFromValue,
   mlkemLevelToString,
   mlkemPrivateKeySize,
   mlkemGenerateKeypairUsing,
   mlkemDecapsulate,
-  mlkemExtractPublicKey,
+  mlkemLevelFromCbor,
 } from "./mlkem-level.js";
 import { MLKEMPublicKey } from "./mlkem-public-key.js";
 import type { MLKEMCiphertext } from "./mlkem-ciphertext.js";
@@ -60,7 +59,7 @@ export class MLKEMPrivateKey implements ToCbor, ToUR {
     const expectedSize = mlkemPrivateKeySize(level);
     if (data.length !== expectedSize) {
       throw ComponentsError.postQuantum(
-        `MLKEMPrivateKey (${mlkemLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
+        `error: SecretKey expected ${expectedSize} bytes, got ${data.length}`,
       );
     }
     this._level = level;
@@ -138,19 +137,6 @@ export class MLKEMPrivateKey implements ToCbor, ToUR {
     return SymmetricKey.from(sharedSecret);
   }
 
-  /**
-   * Derives and returns the corresponding public key.
-   *
-   * In ML-KEM (FIPS 203), the decapsulation key contains the encapsulation key (public key)
-   * embedded within it. This method extracts that public key.
-   *
-   * @returns The corresponding MLKEMPublicKey
-   */
-  publicKey(): MLKEMPublicKey {
-    const publicKeyData = mlkemExtractPublicKey(this._level, this._data);
-    return MLKEMPublicKey.fromBytes(this._level, publicKeyData);
-  }
-
   // ============================================================================
   // Equality and String Representation
   // ============================================================================
@@ -194,14 +180,10 @@ export class MLKEMPrivateKey implements ToCbor, ToUR {
     return (M_L_K_E_M_PRIVATE_KEY_CODEC ??= defineCodec({
       tags: [TAG_MLKEM_PRIVATE_KEY],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-        if (elements.length !== 2) {
-          throw ComponentsError.postQuantum(
-            `MLKEMPrivateKey CBOR must have 2 elements, got ${elements.length}`,
-          );
-        }
-        const levelValue = Number(expectInteger(elements[0]));
-        const level = mlkemLevelFromValue(levelValue);
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("MLKEMPrivateKey must be an array");
+        if (elements.length !== 2) throw CborError.custom("MLKEMPrivateKey must have two elements");
+        const level = mlkemLevelFromCbor(elements[0]);
         const data = expectBytes(elements[1]);
         return MLKEMPrivateKey.fromBytes(level, data);
       },

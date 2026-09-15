@@ -4,12 +4,18 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+[features]
+# Compares the SSH-agent key-derivation rows too (bc-components/ssh-agent).
+agent = ["bc-components/ssh-agent"]
+
 [dependencies]
 bc-components = { version = "=0.31.1", features = ["ssh", "pqcrypto"] }
-bc-ur = "0.19"
+bc-ur = "=0.19.2"
 bc-rand = "=0.5.0"
-dcbor = { version = "0.25", features = ["num-bigint"] }
+dcbor = "=0.25.2"
+sskr = "=0.12.0"
 ssh-key = "=0.6.7"
+miniz_oxide = "=0.8.9"
 rand_core = "0.9"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

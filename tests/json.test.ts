@@ -74,7 +74,7 @@ describe("CborJson", () => {
     it("should produce readable toString output", () => {
       const json = CborJson.fromString('{"test":true}');
       const str = json.toString();
-      expect(str).toBe('CborJson({"test":true})');
+      expect(str).toBe('JSON({"test":true})');
     });
   });
 

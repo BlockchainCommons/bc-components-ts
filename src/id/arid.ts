@@ -64,7 +64,7 @@ export class ARID implements ToCbor, ToUR {
 
   private constructor(data: Uint8Array) {
     if (data.length !== ARID.ARID_SIZE) {
-      throw ComponentsError.invalidSize(ARID.ARID_SIZE, data.length);
+      throw ComponentsError.invalidSize("ARID", ARID.ARID_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -91,7 +91,7 @@ export class ARID implements ToCbor, ToUR {
    * @throws Error if the string is not exactly 64 hexadecimal digits.
    */
   static fromHex(hex: string): ARID {
-    return new ARID(bytesFromHex(hex, "ARID"));
+    return new ARID(bytesFromHex(hex));
   }
 
   // ============================================================================

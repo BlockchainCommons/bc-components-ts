@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { base64 } from "@scure/base";
 import { SSHPublicKey } from "../src/ssh/ssh-public-key.js";
+import { SshBufferWriter } from "../src/ssh/internal/ssh-buffer.js";
 
 /**
  * Rust source-of-truth fixtures, copied verbatim from
@@ -50,20 +52,34 @@ describe("SSHPublicKey — parse/serialize parity with Rust ssh-key 0.6.7", () =
     expect(key.toString()).toBe(`SSHPublicKey(${key.refHexShort()})`);
   });
 
-  it("rejects unsupported algorithms with helpful message", () => {
-    expect(() =>
-      SSHPublicKey.fromOpenssh("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDfoo= bob@example.com"),
-    ).toThrow(/Unsupported SSH algorithm 'ssh-rsa'/);
-    expect(() =>
-      SSHPublicKey.fromOpenssh("ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjE= bob"),
-    ).toThrow(/Unsupported SSH algorithm 'ecdsa-sha2-nistp521'/);
+  it("rejects unsupported algorithms as ssh-key's label parser does", () => {
+    // The blob names `ssh-foo`, which is not a `name@domain` identifier
+    // either: `ssh-key` fails to parse the label.
+    const foo = new SshBufferWriter()
+      .writeStringUtf8("ssh-foo")
+      .writeString(new Uint8Array(32))
+      .bytes();
+    expect(() => SSHPublicKey.fromOpenssh(`ssh-foo ${base64.encode(foo)} bob`)).toThrow(
+      "SSH operation failed: invalid label: 'ssh-foo'",
+    );
+    // A `name@domain` identifier is an opaque algorithm in `ssh-key`,
+    // which this package does not implement.
+    const opaque = new SshBufferWriter()
+      .writeStringUtf8("foo@example.com")
+      .writeString(new Uint8Array(32))
+      .bytes();
+    expect(() => SSHPublicKey.fromOpenssh(`foo@example.com ${base64.encode(opaque)}`)).toThrow(
+      "SSH operation failed: unsupported algorithm: foo@example.com",
+    );
   });
 
-  it("rejects mismatched outer/inner algorithm names", () => {
+  it("rejects mismatched outer/inner algorithm names as `unknown algorithm`", () => {
     // Re-encode the ed25519 blob but mislabel it as ECDSA in the prefix.
     const mismatched =
       "ecdsa-sha2-nistp256 AAAAC3NzaC1lZDI1NTE5AAAAIFR7gUMbIYiAd/vnJV0TiFiX2C6PTYV2whp2AsLTjM5t Key comment.";
-    expect(() => SSHPublicKey.fromOpenssh(mismatched)).toThrow(/does not match inner/);
+    expect(() => SSHPublicKey.fromOpenssh(mismatched)).toThrow(
+      "SSH operation failed: unknown algorithm",
+    );
   });
 
   it("blob layout matches RFC 4253 length-prefixed strings", () => {

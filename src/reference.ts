@@ -77,7 +77,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   /** Create a Reference from exactly 32 bytes. */
   static from(data: Uint8Array): Reference {
     if (data.length !== Reference.REFERENCE_SIZE) {
-      throw ComponentsError.invalidSize(Reference.REFERENCE_SIZE, data.length);
+      throw ComponentsError.invalidSize("reference", Reference.REFERENCE_SIZE, data.length);
     }
     return new Reference(new Uint8Array(data));
   }
@@ -91,7 +91,7 @@ export class Reference implements ToCbor, DigestProvider, ReferenceProvider {
   /** Backwards-compatible alias of `fromDigest`. */
   /** Create a Reference from a 64-character hex string. */
   static fromHex(hex: string): Reference {
-    return Reference.from(bytesFromHex(hex, "Reference"));
+    return Reference.from(bytesFromHex(hex));
   }
 
   /**

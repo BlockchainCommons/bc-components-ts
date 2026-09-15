@@ -1,0 +1,101 @@
+{
+ "count": 8,
+ "vectors": [
+  {
+   "name": "digest text:hello world (11B) (match)",
+   "recipe": {
+    "k": "digest",
+    "image": {
+     "text": "hello world"
+    }
+   },
+   "expect": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9|ur:digest/hdcxrhgtdirhmugtfmayondmgmtstnkipyzssslrwsvlkngulawymhloylpsvowssnwlamnlatrs|b94d27b9"
+  },
+  {
+   "name": "hex digest \"zz\" (panic-mapped: the reference unwraps the hex decode)",
+   "recipe": {
+    "k": "hex",
+    "type": "digest",
+    "text": "zz"
+   },
+   "expect": "throw:Hex:hex decoding error: Invalid character 'z' at position 0"
+  },
+  {
+   "name": "value uuid cyc:15 (15B) (panic-mapped: UUID::from_data_ref returns None)",
+   "recipe": {
+    "k": "value",
+    "type": "uuid",
+    "data": {
+     "cycle": 15,
+     "start": 3
+    }
+   },
+   "expect": "throw:InvalidSize:invalid UUID size: expected 16, got 15"
+  },
+  {
+   "name": "hkdfRng text:km \"salt\" 0 page=0 (panic-mapped: the reference never returns)",
+   "recipe": {
+    "k": "hkdfRng",
+    "km": {
+     "text": "km"
+    },
+    "salt": "salt",
+    "draws": [
+     0
+    ],
+    "pageLen": 0
+   },
+   "expect": "throw:InvalidData:invalid HKDFRng: page length is 0; no bytes can be produced"
+  },
+  {
+   "name": "domain salt.random.length.NaN (J1)",
+   "recipe": {
+    "k": "domain",
+    "case": "salt.random.length.NaN"
+   },
+   "expect": "throw:ComponentsError:InvalidData"
+  },
+  {
+   "name": "hex uuid \"2122232425262728292a2b2c2d2e2f30\" (J2)",
+   "recipe": {
+    "k": "hex",
+    "type": "uuid",
+    "text": "2122232425262728292a2b2c2d2e2f30"
+   },
+   "expect": "2122232425262728292a2b2c2d2e2f30"
+  },
+  {
+   "name": "params sshAgent salt=16B my-key (J3 without the agent feature)",
+   "recipe": {
+    "k": "params",
+    "method": "sshAgent",
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "id": "my-key"
+   },
+   "expect": "8304d99c5250505152535455565758595a5b5c5d5e5f666d792d6b6579|SSHAgent(\"my-key\")|sshAgent"
+  },
+  {
+   "name": "encryptedKey sshAgent text:password (J4)",
+   "recipe": {
+    "k": "encryptedKey",
+    "method": "sshAgent",
+    "salt": {
+     "cycle": 16,
+     "start": 80
+    },
+    "secret": {
+     "text": "password"
+    },
+    "key": {
+     "cycle": 32,
+     "start": 16
+    },
+    "id": "my-key"
+   },
+   "expect": "throw:SshAgent:SSH agent error: SSH agent key derivation is not yet implemented in this TypeScript port. Use HKDF, PBKDF2, Scrypt, or Argon2id instead."
+  }
+ ]
+}

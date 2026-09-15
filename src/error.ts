@@ -10,9 +10,9 @@
  */
 
 /**
- * The closed set of failure codes. `Hex` and `Utf8` mirror the reference's
- * `Error::Hex` / `Error::Utf8`; its `Env` and `SshAgentClient` belong to
- * the `ssh-agent` feature, which this package does not port.
+ * The closed set of failure codes, the reference's `Error` variants. `Env`
+ * and `SshAgentClient` are produced by an SSH-agent transport (the
+ * reference's `connect_to_ssh_agent`); the core package never raises them.
  */
 export type ComponentsErrorCode =
   | "InvalidSize"
@@ -29,6 +29,8 @@ export type ComponentsErrorCode =
   | "SshAgent"
   | "Hex"
   | "Utf8"
+  | "Env"
+  | "SshAgentClient"
   | "General";
 
 /** Every code, for exhaustive tables and tests. */
@@ -47,6 +49,8 @@ export const COMPONENTS_ERROR_CODES: readonly ComponentsErrorCode[] = /*#__PURE_
   "SshAgent",
   "Hex",
   "Utf8",
+  "Env",
+  "SshAgentClient",
   "General",
 ]);
 
@@ -54,7 +58,7 @@ export const COMPONENTS_ERROR_CODES: readonly ComponentsErrorCode[] = /*#__PURE_
 export interface InvalidSizeDetails {
   /** The discriminant. */
   code: "InvalidSize";
-  /** What was being constructed (`"data"`, `"Digest"`, …). */
+  /** What was being constructed, in the reference's words (`"digest"`, `"symmetric key"`, …). */
   dataType: string;
   /** The byte length the type requires. */
   expected: number;
@@ -135,13 +139,12 @@ export class ComponentsError extends Error {
 
   // Size and shape ------------------------------------------------------------
 
-  /** `InvalidSize` for unnamed data. */
-  static invalidSize(expected: number, actual: number): ComponentsError {
-    return ComponentsError.invalidSizeForType("data", expected, actual);
-  }
-
-  /** `InvalidSize` naming the type being constructed. */
-  static invalidSizeForType(dataType: string, expected: number, actual: number): ComponentsError {
+  /**
+   * `InvalidSize`: `invalid <dataType> size: expected <expected>, got
+   * <actual>`, with the reference's `data_type` (`"digest"`, `"nonce"`,
+   * `"symmetric key"`, `"ECDSA public key"`, …).
+   */
+  static invalidSize(dataType: string, expected: number, actual: number): ComponentsError {
     return new ComponentsError(`invalid ${dataType} size: expected ${expected}, got ${actual}`, {
       code: "InvalidSize",
       dataType,
@@ -189,9 +192,22 @@ export class ComponentsError extends Error {
     );
   }
 
-  /** `Cbor`: a dcbor failure at the package boundary. */
+  /**
+   * `Cbor` with the `CBOR error: ` prefix: a dcbor failure inside an
+   * operation whose reference error type is the component `Error`
+   * (`Error::Cbor`), or a dcbor failure met outside a decoder.
+   */
   static cbor(message: string, cause?: unknown): ComponentsError {
     return ComponentsError.of("Cbor", `CBOR error: ${message}`, message, cause);
+  }
+
+  /**
+   * `Cbor` as a decoder reports it: the message is the dcbor `Display` of
+   * `cause` with no prefix, as the reference's `from_tagged_cbor` returns a
+   * `dcbor::Error`; `cause` is that `CborError`.
+   */
+  static cborDecode(cause: Error): ComponentsError {
+    return ComponentsError.of("Cbor", cause.message, cause.message, cause);
   }
 
   /** `Sskr`: a failure from the sskr package. */
@@ -235,14 +251,29 @@ export class ComponentsError extends Error {
     return ComponentsError.of("LevelMismatch", message, message);
   }
 
-  /** `Hex`: a malformed hex string. */
+  /** `Hex`: a malformed hex string (`hex decoding error: <reason>`, the `hex` crate's texts). */
   static hex(message: string, cause?: unknown): ComponentsError {
-    return ComponentsError.of("Hex", `invalid hex: ${message}`, message, cause);
+    return ComponentsError.of("Hex", `hex decoding error: ${message}`, message, cause);
   }
 
-  /** `Utf8`: bytes that are not valid UTF-8. */
+  /** `Utf8`: bytes that are not valid UTF-8 (`UTF-8 conversion error: <reason>`). */
   static utf8(message: string, cause?: unknown): ComponentsError {
-    return ComponentsError.of("Utf8", `invalid UTF-8: ${message}`, message, cause);
+    return ComponentsError.of("Utf8", `UTF-8 conversion error: ${message}`, message, cause);
+  }
+
+  /** `Env`: an environment variable an SSH-agent transport needs is missing or unreadable. */
+  static env(message: string, cause?: unknown): ComponentsError {
+    return ComponentsError.of("Env", `environment variable error: ${message}`, message, cause);
+  }
+
+  /** `SshAgentClient`: the SSH-agent transport failed (socket, protocol). */
+  static sshAgentClient(message: string, cause?: unknown): ComponentsError {
+    return ComponentsError.of(
+      "SshAgentClient",
+      `SSH agent client error: ${message}`,
+      message,
+      cause,
+    );
   }
 
   /** `General`: anything the other codes do not name. */

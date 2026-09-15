@@ -9,6 +9,10 @@ import { Salt } from "../src/salt.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 describe("Salt", () => {
   const MIN_SALT_SIZE = 8;
 
