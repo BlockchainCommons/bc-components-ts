@@ -9,7 +9,7 @@
  * - PBKDF2: Password-based, widely compatible
  * - Scrypt: Memory-hard, resistant to GPU attacks
  * - Argon2id: Most secure for passwords (default)
- * - SSHAgent: Uses SSH agent for key derivation (not yet fully implemented)
+ * - SSHAgent: An SSH agent's signature over the salt (needs an `SshAgent`)
  *
  * The main components are:
  * - `EncryptedKey`: Encrypted symmetric key with derivation parameters
@@ -42,7 +42,12 @@ export {
   DEFAULT_SCRYPT_P,
 } from "./scrypt-params.js";
 export { Argon2idParams } from "./argon2id-params.js";
-export { SSHAgentParams, SALT_LEN as SSH_AGENT_SALT_LEN } from "./ssh-agent-params.js";
+export {
+  SSHAgentParams,
+  SALT_LEN as SSH_AGENT_SALT_LEN,
+  type SshAgentLockOptions,
+  type SshAgentUnlockOptions,
+} from "./ssh-agent-params.js";
 
 // Union type and helpers
 export {

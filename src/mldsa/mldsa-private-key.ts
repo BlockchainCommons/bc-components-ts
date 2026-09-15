@@ -20,10 +20,10 @@ import {
   type Cbor,
   type Tag,
   cbor,
-  expectArray,
-  expectInteger,
   expectBytes,
   type ToCbor,
+  asArray,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
@@ -32,11 +32,11 @@ import { secureRng, type RngOptions } from "@blockchaincommons/rand";
 
 import {
   MLDSALevel,
-  mldsaLevelFromValue,
   mldsaLevelToString,
   mldsaPrivateKeySize,
   mldsaGenerateKeypairUsing,
   mldsaSign,
+  mldsaLevelFromCbor,
 } from "./mldsa-level.js";
 import { MLDSAPublicKey } from "./mldsa-public-key.js";
 import { MLDSASignature } from "./mldsa-signature.js";
@@ -59,7 +59,7 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
     const expectedSize = mldsaPrivateKeySize(level);
     if (data.length !== expectedSize) {
       throw ComponentsError.postQuantum(
-        `MLDSAPrivateKey (${mldsaLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
+        `error: SecretKey expected ${expectedSize} bytes, got ${data.length}`,
       );
     }
     this._level = level;
@@ -134,46 +134,6 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
     return MLDSASignature.fromBytes(this._level, sigBytes);
   }
 
-  /**
-   * Derive the public key from this private key.
-   *
-   * Note: ML-DSA doesn't have a direct derivation method, so we need to
-   * regenerate the keypair from seed. For now, we extract from the secret key
-   * structure (the public key is embedded in the secret key for ML-DSA).
-   */
-  publicKey(): MLDSAPublicKey {
-    // In ML-DSA, the public key can be extracted from the secret key
-    // The noble library stores (secretKey, publicKey) concatenated
-    // For MLDSA44: secretKey = 2560 bytes, publicKey = 1312 bytes
-    // For MLDSA65: secretKey = 4032 bytes, publicKey = 1952 bytes
-    // For MLDSA87: secretKey = 4896 bytes, publicKey = 2592 bytes
-
-    // Actually, noble stores them separately in keygen(), and the secret key
-    // doesn't contain the public key. We need to regenerate or cache.
-    // For simplicity, we'll generate a new keypair with the same seed.
-    // But we don't have the seed... This is a limitation.
-
-    // The solution is to either:
-    // 1. Store the public key alongside the private key
-    // 2. Re-generate from seed (but we don't have it)
-    // 3. Use a deterministic derivation
-
-    // For now, we'll throw an error and require users to use generateKeypair() instead.
-    // This matches the reference implementation where public_key() uses the internal
-    // key structure which may have the public key embedded.
-
-    // Actually, looking at the noble implementation, we can't easily extract
-    // the public key. The keypair generation is what produces both.
-    // So we need to either:
-    // a) Store both keys together
-    // b) Require users to keep track of both
-
-    // For MVP, we'll throw an error suggesting to use generateKeypair()
-    throw ComponentsError.general(
-      "MLDSAPrivateKey.publicKey() is not supported. Use MLDSAPrivateKey.keypair() to generate both keys together.",
-    );
-  }
-
   // ============================================================================
   // Equality and String Representation
   // ============================================================================
@@ -217,14 +177,10 @@ export class MLDSAPrivateKey implements ToCbor, ToUR {
     return (M_L_D_S_A_PRIVATE_KEY_CODEC ??= defineCodec({
       tags: [TAG_MLDSA_PRIVATE_KEY],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-        if (elements.length !== 2) {
-          throw ComponentsError.postQuantum(
-            `MLDSAPrivateKey CBOR must have 2 elements, got ${elements.length}`,
-          );
-        }
-        const levelValue = Number(expectInteger(elements[0]));
-        const level = mldsaLevelFromValue(levelValue);
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("MLDSAPrivateKey must be an array");
+        if (elements.length !== 2) throw CborError.custom("MLDSAPrivateKey must have two elements");
+        const level = mldsaLevelFromCbor(elements[0]);
         const data = expectBytes(elements[1]);
         return MLDSAPrivateKey.fromBytes(level, data);
       },

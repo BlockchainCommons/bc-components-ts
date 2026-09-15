@@ -31,6 +31,10 @@ import {
 } from "@blockchaincommons/dcbor";
 import { SeededRng } from "@blockchaincommons/rand";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 // Test vectors from Rust bc-components-rust
 const TEST_PRIVATE_KEY_HEX = "322b5c1dd5a17c3481c2297990c85c232ed3c17b52ce9905c6ec5193ad132c36";
 const TEST_MESSAGE = new TextEncoder().encode("Wolf McNally");

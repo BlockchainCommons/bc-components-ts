@@ -1,0 +1,1814 @@
+{
+ "reference": "ssh-key 0.6.7 PrivateKey::from_openssh / PublicKey::from_openssh / SshSig::from_pem, re-encoded with LineEnding::LF",
+ "cases": [
+  {
+   "id": "ed25519/priv/orig",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment"
+   }
+  },
+  {
+   "id": "ed25519/priv/crlf",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\r\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\r\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\r\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\r\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\r\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\r\n-----END OPENSSH PRIVATE KEY-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment"
+   }
+  },
+  {
+   "id": "ed25519/priv/no-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment"
+   }
+  },
+  {
+   "id": "ed25519/priv/extra-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM error in pre-encapsulation boundary"
+   }
+  },
+  {
+   "id": "ed25519/priv/leading-nl",
+   "kind": "priv",
+   "text": "\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment"
+   }
+  },
+  {
+   "id": "ed25519/priv/leading-space",
+   "kind": "priv",
+   "text": " -----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "ed25519/priv/trailing-space-lines",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY----- \nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW \nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J \nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ \nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f \nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM= \n-----END OPENSSH PRIVATE KEY----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "ed25519/priv/wrap64",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtz\nc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAA\nAJBe/wnJXv8JyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1er\nGjV5XUTjyQzbiS3obQAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEd\nA0LWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQB\nAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "ed25519/priv/wrap76",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZWQyNTUx\nOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8JyQAAAAtzc2gt\nZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAECmBZxUbGGNOWeO\nPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLehtAAAA\nCm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "ed25519/priv/wrap1line",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8JyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "ed25519/priv/blank-line-in-body",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\n\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "ed25519/priv/lower-header",
+   "kind": "priv",
+   "text": "-----begin openssh PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "ed25519/priv/label-rsa",
+   "kind": "priv",
+   "text": "-----BEGIN RSA PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAJBe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAACm15IGNvbW1lbnQBAgM=\n-----END RSA PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "unexpected PEM type label: expecting \"OPENSSH PRIVATE KEY\""
+   }
+  },
+  {
+   "id": "ed25519/pub/orig",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "ed25519/pub/no-comment",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht",
+    "comment": ""
+   }
+  },
+  {
+   "id": "ed25519/pub/two-spaces",
+   "kind": "pub",
+   "text": "ssh-ed25519  AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "ed25519/pub/tab",
+   "kind": "pub",
+   "text": "ssh-ed25519\tAAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht\tmy comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "ed25519/pub/final-nl",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment\n",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "ed25519/pub/crlf",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment\r\n",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "ed25519/pub/leading-space",
+   "kind": "pub",
+   "text": " ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "ed25519/pub/options-prefix",
+   "kind": "pub",
+   "text": "command=\"x\" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "ed25519/pub/upper-alg",
+   "kind": "pub",
+   "text": "SSH-ED25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "ed25519/pub/b64-no-pad",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "ed25519/pub/alg-mismatch",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht x",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht x",
+    "comment": "x"
+   }
+  },
+  {
+   "id": "ed25519/pub/comment-trailing-space",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment ",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "ed25519/sig/orig",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx\no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx\nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/\nKXD8Mc0DwE8rkE1MxSG3IP\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx\no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx\nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/\nKXD8Mc0DwE8rkE1MxSG3IP\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "ed25519/sig/crlf",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\r\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx\r\no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx\r\nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/\r\nKXD8Mc0DwE8rkE1MxSG3IP\r\n-----END SSH SIGNATURE-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx\no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx\nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/\nKXD8Mc0DwE8rkE1MxSG3IP\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "ed25519/sig/no-final-nl",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx\no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx\nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/\nKXD8Mc0DwE8rkE1MxSG3IP\n-----END SSH SIGNATURE-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx\no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx\nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/\nKXD8Mc0DwE8rkE1MxSG3IP\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "ed25519/sig/wrap76",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqxo1eV1E\n48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUxOQAAAEDC2Nqk\nNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/KXD8Mc0DwE8rkE1MxS\nG3IP\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "ed25519/sig/wrap64",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBU\nnh9Xqxo1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtz\nc2gtZWQyNTUxOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKB\nkkhmx7UusClbLMdtB/KXD8Mc0DwE8rkE1MxSG3IP\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "ed25519/sig/blank-line",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\n\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx\no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx\nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/\nKXD8Mc0DwE8rkE1MxSG3IP\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "ed25519/sig/trailing-space-lines",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE----- \nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgQtZmj3YniRahZs/E3BBUnh9Xqx \no1eV1E48kM24kt6G0AAAAEdGVzdAAAAAAAAAAGc2hhMjU2AAAAUwAAAAtzc2gtZWQyNTUx \nOQAAAEDC2NqkNZPorknigRY6u4sTruvqDv1htFCksxgRQvF2oRKBkkhmx7UusClbLMdtB/ \nKXD8Mc0DwE8rkE1MxSG3IP \n-----END SSH SIGNATURE----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "p256/priv/orig",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment"
+   }
+  },
+  {
+   "id": "p256/priv/crlf",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\r\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\r\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\r\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\r\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\r\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\r\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\r\nAwQFBg==\r\n-----END OPENSSH PRIVATE KEY-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment"
+   }
+  },
+  {
+   "id": "p256/priv/no-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment"
+   }
+  },
+  {
+   "id": "p256/priv/extra-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM error in pre-encapsulation boundary"
+   }
+  },
+  {
+   "id": "p256/priv/leading-nl",
+   "kind": "priv",
+   "text": "\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment"
+   }
+  },
+  {
+   "id": "p256/priv/leading-space",
+   "kind": "priv",
+   "text": " -----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "p256/priv/trailing-space-lines",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY----- \nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS \n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t \nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp \n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6 \nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41 \nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC \nAwQFBg== \n-----END OPENSSH PRIVATE KEY----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "p256/priv/wrap64",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNl\nY2RzYS1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n\n57nvLfktOT6tzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCF\nTuNcAAAAqEO+nsZDvp7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAy\nNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a\n5l1TIKxPTnZBuTu0226augDTAIVO41wAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/\nsh337YrIyLrESMMAAAAKbXkgY29tbWVudAECAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/priv/wrap76",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS1zaGEy\nLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6tzdVfjPGgQZrN\nI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp7GAAAAE2VjZHNhLXNo\nYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBB\nms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41wAAAAgKlOivZHbA65IGNENsrYhRGpk\nUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAECAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/priv/wrap1line",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6tzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41wAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAECAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/priv/blank-line-in-body",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\n\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/priv/lower-header",
+   "kind": "priv",
+   "text": "-----begin openssh PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "p256/priv/label-rsa",
+   "kind": "priv",
+   "text": "-----BEGIN RSA PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS\n1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQRpxCJlbi8bESvKup+n57nvLfktOT6t\nzdVfjPGgQZrNI+5S4kfRHNoOGuZdUyCsT052Qbk7tNtumroA0wCFTuNcAAAAqEO+nsZDvp\n7GAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6\nn6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41\nwAAAAgKlOivZHbA65IGNENsrYhRGpkUmA/sh337YrIyLrESMMAAAAKbXkgY29tbWVudAEC\nAwQFBg==\n-----END RSA PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "unexpected PEM type label: expecting \"OPENSSH PRIVATE KEY\""
+   }
+  },
+  {
+   "id": "p256/pub/orig",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p256/pub/no-comment",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w=",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w=",
+    "comment": ""
+   }
+  },
+  {
+   "id": "p256/pub/two-spaces",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256  AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "p256/pub/tab",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256\tAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w=\tmy comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "p256/pub/final-nl",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment\n",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p256/pub/crlf",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment\r\n",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p256/pub/leading-space",
+   "kind": "pub",
+   "text": " ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "p256/pub/options-prefix",
+   "kind": "pub",
+   "text": "command=\"x\" ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "p256/pub/upper-alg",
+   "kind": "pub",
+   "text": "ECDSA-SHA2-NISTP256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "p256/pub/b64-no-pad",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w my comment",
+   "expect": {
+    "ok": false,
+    "error": "Base64 encoding error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/pub/alg-mismatch",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= x",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "p256/pub/comment-trailing-space",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment ",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBGnEImVuLxsRK8q6n6fnue8t+S05Pq3N1V+M8aBBms0j7lLiR9Ec2g4a5l1TIKxPTnZBuTu0226augDTAIVO41w= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p256/sig/orig",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE\nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5\nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT\nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA\nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE\nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5\nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT\nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA\nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p256/sig/crlf",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\r\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE\r\nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5\r\nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT\r\nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA\r\nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3\r\n-----END SSH SIGNATURE-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE\nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5\nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT\nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA\nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p256/sig/no-final-nl",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE\nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5\nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT\nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA\nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3\n-----END SSH SIGNATURE-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE\nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5\nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT\nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA\nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p256/sig/wrap76",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAEEEacQi\nZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5O7Tbbpq6ANMA\nhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAABI\nAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAAICcpjHLxe6JZazAeIkPNYM5N\nHMPTktSDfiDeg9lDU2q3\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/sig/wrap64",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1\nNgAAAEEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrm\nXVMgrE9OdkG5O7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABj\nAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC\n1RGDRT1sTPC90J4hDPLTAAAAICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lD\nU2q3\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/sig/blank-line",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\n\nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE\nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5\nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT\nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA\nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p256/sig/trailing-space-lines",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE----- \nU1NIU0lHAAAAAQAAAGgAAAATZWNkc2Etc2hhMi1uaXN0cDI1NgAAAAhuaXN0cDI1NgAAAE \nEEacQiZW4vGxEryrqfp+e57y35LTk+rc3VX4zxoEGazSPuUuJH0RzaDhrmXVMgrE9OdkG5 \nO7Tbbpq6ANMAhU7jXAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAABjAAAAE2VjZHNhLXNoYT \nItbmlzdHAyNTYAAABIAAAAIGUgBB00qOYq5EHC35SfZMIC1RGDRT1sTPC90J4hDPLTAAAA \nICcpjHLxe6JZazAeIkPNYM5NHMPTktSDfiDeg9lDU2q3 \n-----END SSH SIGNATURE----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "p384/priv/orig",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment"
+   }
+  },
+  {
+   "id": "p384/priv/crlf",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\r\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\r\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\r\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\r\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\r\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\r\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\r\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\r\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\r\n-----END OPENSSH PRIVATE KEY-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment"
+   }
+  },
+  {
+   "id": "p384/priv/no-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment"
+   }
+  },
+  {
+   "id": "p384/priv/extra-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM error in pre-encapsulation boundary"
+   }
+  },
+  {
+   "id": "p384/priv/leading-nl",
+   "kind": "priv",
+   "text": "\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment"
+   }
+  },
+  {
+   "id": "p384/priv/leading-space",
+   "kind": "priv",
+   "text": " -----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "p384/priv/trailing-space-lines",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY----- \nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS \n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3 \n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz \nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0 \ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6 \nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE \nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l \nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG \n-----END OPENSSH PRIVATE KEY----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "p384/priv/wrap64",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNl\nY2RzYS1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0Qci\nicDtYWZK4dO32/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+\nU1a8QSP+E8efs19PDzUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgA\nAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAu\nwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0Q\nQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAAMA3Dk4dR\ny8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9lvGFt+f+zL/S8BUBAAAAApt\neSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/priv/wrap76",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS1zaGEy\nLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO32/JRaLmniGP7\nqZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDzUAvhSopcz3g8Q1d4xT\nNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAA\nAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKTKXGE\nqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc\n9mES5SMX4UfTsqlGOKCPggtCceAYAHos9lvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/priv/wrap1line",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO32/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDzUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9lvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/priv/blank-line-in-body",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\n\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/priv/lower-header",
+   "kind": "priv",
+   "text": "-----begin openssh PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "p384/priv/label-rsa",
+   "kind": "priv",
+   "text": "-----BEGIN RSA PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAiAAAABNlY2RzYS\n1zaGEyLW5pc3RwMzg0AAAACG5pc3RwMzg0AAAAYQRz5vGJitJ98C7B0QciicDtYWZK4dO3\n2/JRaLmniGP7qZnBfrDyoX9bTKhi7DQqD8gaApMpcYSrDRBDCSj+U1a8QSP+E8efs19PDz\nUAvhSopcz3g8Q1d4xTNg3z3FyA8IkAAADYfefdGH3n3RgAAAATZWNkc2Etc2hhMi1uaXN0\ncDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6\nmZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PE\nNXeMUzYN89xcgPCJAAAAMA3Dk4dRy8hgiMxc9mES5SMX4UfTsqlGOKCPggtCceAYAHos9l\nvGFt+f+zL/S8BUBAAAAApteSBjb21tZW50AQIDBAUG\n-----END RSA PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "unexpected PEM type label: expecting \"OPENSSH PRIVATE KEY\""
+   }
+  },
+  {
+   "id": "p384/pub/orig",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p384/pub/no-comment",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ==",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ==",
+    "comment": ""
+   }
+  },
+  {
+   "id": "p384/pub/two-spaces",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384  AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "p384/pub/tab",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384\tAAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ==\tmy comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "p384/pub/final-nl",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment\n",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p384/pub/crlf",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment\r\n",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p384/pub/leading-space",
+   "kind": "pub",
+   "text": " ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "p384/pub/options-prefix",
+   "kind": "pub",
+   "text": "command=\"x\" ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "p384/pub/upper-alg",
+   "kind": "pub",
+   "text": "ECDSA-SHA2-NISTP384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "p384/pub/b64-no-pad",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ my comment",
+   "expect": {
+    "ok": false,
+    "error": "Base64 encoding error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/pub/alg-mismatch",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== x",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "p384/pub/comment-trailing-space",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment ",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBHPm8YmK0n3wLsHRByKJwO1hZkrh07fb8lFouaeIY/upmcF+sPKhf1tMqGLsNCoPyBoCkylxhKsNEEMJKP5TVrxBI/4Tx5+zX08PNQC+FKilzPeDxDV3jFM2DfPcXIDwiQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p384/sig/orig",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG\nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT\nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3\nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo\n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR\nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG\nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT\nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3\nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo\n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR\nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p384/sig/crlf",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\r\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG\r\nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT\r\nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3\r\nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo\r\n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR\r\nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\r\n-----END SSH SIGNATURE-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG\nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT\nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3\nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo\n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR\nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p384/sig/no-final-nl",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG\nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT\nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3\nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo\n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR\nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG\nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT\nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3\nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo\n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR\nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p384/sig/wrap76",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAGEEc+bx\niYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKTKXGEqw0QQwko\n/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3QAAAAAAAAABnNoYTI1\nNgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo3GikO9Q/4t6l9DvyfZEWbylG\neSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxRJPGiKegk1PkwlXR8CERlCvH+yhCegX\n7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/sig/wrap64",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4\nNAAAAGEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yo\nYuw0Kg/IGgKTKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN\n89xcgPCJAAAABHRlc3QAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1u\naXN0cDM4NAAAAGkAAAAxALYo3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd4\n5xs19f395vbooVP+qTZF7QAAADAPxRJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3\nbjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/sig/blank-line",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\n\nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG\nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT\nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3\nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo\n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR\nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg=\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p384/sig/trailing-space-lines",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE----- \nU1NIU0lHAAAAAQAAAIgAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAAhuaXN0cDM4NAAAAG \nEEc+bxiYrSffAuwdEHIonA7WFmSuHTt9vyUWi5p4hj+6mZwX6w8qF/W0yoYuw0Kg/IGgKT \nKXGEqw0QQwko/lNWvEEj/hPHn7NfTw81AL4UqKXM94PENXeMUzYN89xcgPCJAAAABHRlc3 \nQAAAAAAAAABnNoYTI1NgAAAIQAAAATZWNkc2Etc2hhMi1uaXN0cDM4NAAAAGkAAAAxALYo \n3GikO9Q/4t6l9DvyfZEWbylGeSOwnyd/MuOlGPd45xs19f395vbooVP+qTZF7QAAADAPxR \nJPGiKegk1PkwlXR8CERlCvH+yhCegX7It3bjBRLLoklCKApUAKi1/xbDVGRtg= \n-----END SSH SIGNATURE----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "p521/priv/orig",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment"
+   }
+  },
+  {
+   "id": "p521/priv/crlf",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\r\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\r\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\r\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\r\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\r\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\r\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\r\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\r\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\r\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\r\npteSBjb21tZW50\r\n-----END OPENSSH PRIVATE KEY-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment"
+   }
+  },
+  {
+   "id": "p521/priv/no-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment"
+   }
+  },
+  {
+   "id": "p521/priv/extra-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM error in pre-encapsulation boundary"
+   }
+  },
+  {
+   "id": "p521/priv/leading-nl",
+   "kind": "priv",
+   "text": "\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment"
+   }
+  },
+  {
+   "id": "p521/priv/leading-space",
+   "kind": "priv",
+   "text": " -----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "p521/priv/trailing-space-lines",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY----- \nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS \n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q \nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY \nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ \ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ \nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl \nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx \nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh \nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA \npteSBjb21tZW50 \n-----END OPENSSH PRIVATE KEY----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "p521/priv/wrap64",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNl\nY2RzYS1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4\nkSBqyoZ0bU+quw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47\nZoCC0dgA1ymI9KkvlYKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gL\nznvejiBKBnyfw8KbioWhQ2gJgcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hh\nMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1P\nqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeEfHRNRz21GCzuO2aAgtHYANcp\niPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrFpoGWOYC8573o4gSgZ8\nn8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qhHYOR1wzaLxCVYHxJ\nyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAApteSBjb21t\nZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/priv/wrap76",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS1zaGEy\nLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+quw0C+IxU29jg\nJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlYKGMKUjhV1WjGYeTLwh\nxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJgcwymZkAAAEI7lW5qe5VuakA\nAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAIUEAWim7V6lEfzB8BLTuJEgasqG\ndG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WC\nhjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZ\nAAAAQgCrlHyt4MbvW7dLPAS9V8qhHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7\nAV7srGCYru+j8eU4cQAAAApteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/priv/wrap1line",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+quw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlYKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJgcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qhHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAApteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/priv/blank-line-in-body",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\n\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/priv/lower-header",
+   "kind": "priv",
+   "text": "-----begin openssh PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "p521/priv/label-rsa",
+   "kind": "priv",
+   "text": "-----BEGIN RSA PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAArAAAABNlY2RzYS\n1zaGEyLW5pc3RwNTIxAAAACG5pc3RwNTIxAAAAhQQBaKbtXqUR/MHwEtO4kSBqyoZ0bU+q\nuw0C+IxU29jgJTFos8jE2LktBHpIxCODxWUOp4R8dE1HPbUYLO47ZoCC0dgA1ymI9KkvlY\nKGMKUjhV1WjGYeTLwhxdjQgn8S1Ct1ul03G9KsWmgZY5gLznvejiBKBnyfw8KbioWhQ2gJ\ngcwymZkAAAEI7lW5qe5VuakAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQ\nAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8Vl\nDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNx\nvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAAQgCrlHyt4MbvW7dLPAS9V8qh\nHYOR1wzaLxCVYHxJyVuCbP4J7CT5saEBrAoCGdsWjJvrBui7AV7srGCYru+j8eU4cQAAAA\npteSBjb21tZW50\n-----END RSA PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "unexpected PEM type label: expecting \"OPENSSH PRIVATE KEY\""
+   }
+  },
+  {
+   "id": "p521/pub/orig",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p521/pub/no-comment",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ==",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ==",
+    "comment": ""
+   }
+  },
+  {
+   "id": "p521/pub/two-spaces",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521  AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "p521/pub/tab",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521\tAAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ==\tmy comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "p521/pub/final-nl",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment\n",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p521/pub/crlf",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment\r\n",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p521/pub/leading-space",
+   "kind": "pub",
+   "text": " ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "p521/pub/options-prefix",
+   "kind": "pub",
+   "text": "command=\"x\" ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "p521/pub/upper-alg",
+   "kind": "pub",
+   "text": "ECDSA-SHA2-NISTP521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "p521/pub/b64-no-pad",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ my comment",
+   "expect": {
+    "ok": false,
+    "error": "Base64 encoding error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/pub/alg-mismatch",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== x",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "p521/pub/comment-trailing-space",
+   "kind": "pub",
+   "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment ",
+   "expect": {
+    "ok": true,
+    "text": "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAFopu1epRH8wfAS07iRIGrKhnRtT6q7DQL4jFTb2OAlMWizyMTYuS0EekjEI4PFZQ6nhHx0TUc9tRgs7jtmgILR2ADXKYj0qS+VgoYwpSOFXVaMZh5MvCHF2NCCfxLUK3W6XTcb0qxaaBljmAvOe96OIEoGfJ/DwpuKhaFDaAmBzDKZmQ== my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "p521/sig/orig",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI\nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE\nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF\npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA\nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q\nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR\n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41\nIyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI\nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE\nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF\npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA\nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q\nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR\n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41\nIyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p521/sig/crlf",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\r\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI\r\nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE\r\nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF\r\npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA\r\nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q\r\nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR\r\n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41\r\nIyeo7Wz9nZWPsSSQ==\r\n-----END SSH SIGNATURE-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI\nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE\nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF\npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA\nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q\nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR\n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41\nIyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p521/sig/no-final-nl",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI\nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE\nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF\npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA\nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q\nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR\n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41\nIyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI\nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE\nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF\npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA\nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q\nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR\n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41\nIyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "p521/sig/wrap76",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAIUEAWim\n7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeEfHRNRz21GCzu\nO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrFpoGWOYC8573o4gSgZ8\nn8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAAAKcAAAATZWNkc2Etc2hhMi1u\naXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7QAHUoRD42E06GfGzrdOHLQqk9qJjFI9\n4z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR1bydW8KP276iuE62SARVkNetAAs9NTbzofjz\nVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41Iyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/sig/wrap64",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUy\nMQAAAIUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6\nSMQjg8VlDqeEfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY\n0IJ/EtQrdbpdNxvSrFpoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRl\nc3QAAAAAAAAABnNoYTI1NgAAAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwA\nAABCAZkRB95m6WWpOr64yHH4amYr7QAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8P\nxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR1bydW8KP276iuE62SARVkNetAAs9\nNTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41Iyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/sig/blank-line",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\n\nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI\nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE\nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF\npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA\nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q\nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR\n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41\nIyeo7Wz9nZWPsSSQ==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "p521/sig/trailing-space-lines",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE----- \nU1NIU0lHAAAAAQAAAKwAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAAhuaXN0cDUyMQAAAI \nUEAWim7V6lEfzB8BLTuJEgasqGdG1PqrsNAviMVNvY4CUxaLPIxNi5LQR6SMQjg8VlDqeE \nfHRNRz21GCzuO2aAgtHYANcpiPSpL5WChjClI4VdVoxmHky8IcXY0IJ/EtQrdbpdNxvSrF \npoGWOYC8573o4gSgZ8n8PCm4qFoUNoCYHMMpmZAAAABHRlc3QAAAAAAAAABnNoYTI1NgAA \nAKcAAAATZWNkc2Etc2hhMi1uaXN0cDUyMQAAAIwAAABCAZkRB95m6WWpOr64yHH4amYr7Q \nAHUoRD42E06GfGzrdOHLQqk9qJjFI94z8PxeVxqEGBmRkXVi5JFSbrgQQkRQKAAAAAQgCR \n1bydW8KP276iuE62SARVkNetAAs9NTbzofjzVa4qj1Y+KXfyDKYtctB5rZV0NaeEGO5+41 \nIyeo7Wz9nZWPsSSQ== \n-----END SSH SIGNATURE----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "dsa/priv/orig",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment"
+   }
+  },
+  {
+   "id": "dsa/priv/crlf",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\r\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\r\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\r\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\r\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\r\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\r\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\r\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\r\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\r\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\r\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\r\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\r\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\r\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\r\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\r\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\r\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\r\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\r\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\r\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\r\n-----END OPENSSH PRIVATE KEY-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment"
+   }
+  },
+  {
+   "id": "dsa/priv/no-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment"
+   }
+  },
+  {
+   "id": "dsa/priv/extra-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM error in pre-encapsulation boundary"
+   }
+  },
+  {
+   "id": "dsa/priv/leading-nl",
+   "kind": "priv",
+   "text": "\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment"
+   }
+  },
+  {
+   "id": "dsa/priv/leading-space",
+   "kind": "priv",
+   "text": " -----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "dsa/priv/trailing-space-lines",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY----- \nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH \nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi \nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6 \nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L \nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ \nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD \nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V \nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl \niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E \nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1 \n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G \nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k \n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+ \nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq \nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+ \nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS \n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J \noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa \nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH \n-----END OPENSSH PRIVATE KEY----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "dsa/priv/wrap64",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdz\nc2gtZHNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erC\newaXFTKlktFiHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijd\nIp1MKT1IPBOG5H92e6QtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA\n7HRZpN9l40oGFwrHS5+0QY4Lb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixm\niAd2af+7aZDhZW8iGPsi5LPpUMF3tJbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73x\naiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGDyS4vVKcit7OZRSJE2WnXtU24y0LO\n/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07VDdE2x6t5Sw8+jIvpIoKNAw\n4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIliCCgGmVOfwK8hbsN\nVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1EagovZQAAAB\n6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq\n5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q\n4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQ\nDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DF\nR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVy\nnbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3\ns5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0T\nbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5Do\nciWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7\nWSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBaqi7aAAAACm15IGNvbW1l\nbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/priv/wrap76",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZHNzAAAA\ngQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFiHmkp2wAKJP0t\n8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6QtDVoaFBt4AXQWv2oL\nrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4Lb7UAAACBAK8LqBwsvKuAxUfZ\ni+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJbe7nE65Kv+eXxFcp25FdpEG/MjKzhl\nz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGDyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp\n7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07VDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuH\nXp+3uH8WJDrZgFWEeLSRjqOQ6HIliCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR\n0zAuCg0LC/e4+1ksfzkj1EagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw\n+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELEr\nFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5Z\nZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bC\nLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk\n5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVIt\nfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmA\nVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7\nWSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBaqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/priv/wrap1line",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZHNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFiHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6QtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4Lb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGDyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07VDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIliCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1EagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBaqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/priv/blank-line-in-body",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\n\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/priv/lower-header",
+   "kind": "priv",
+   "text": "-----begin openssh PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "dsa/priv/label-rsa",
+   "kind": "priv",
+   "text": "-----BEGIN RSA PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABsgAAAAdzc2gtZH\nNzAAAAgQDR+7MD0p9icPj/A4aVcuY+UXpINdWT6uS0Fv+RS1u7b1mi/erCewaXFTKlktFi\nHmkp2wAKJP0t8fNLWbU2cBCxKxZaZFWN6uBifpJbkAIyfgRb6ijdIp1MKT1IPBOG5H92e6\nQtDVoaFBt4AXQWv2oLrOgQV6gkEA3uWWUuJOD0OQAAABUA7HRZpN9l40oGFwrHS5+0QY4L\nb7UAAACBAK8LqBwsvKuAxUfZi+I1jY4zDjvmwixmiAd2af+7aZDhZW8iGPsi5LPpUMF3tJ\nbe7nE65Kv+eXxFcp25FdpEG/MjKzhlz73xaiL2Ju27JOWzgingRxtfDqscPwnd4LCrirGD\nyS4vVKcit7OZRSJE2WnXtU24y0LO/uRUIYfp7IdFAAAAgH1SLXzqAe3avR6J2RFej5g07V\nDdE2x6t5Sw8+jIvpIoKNAw4IlUfEie54NIEvHF4nuHXp+3uH8WJDrZgFWEeLSRjqOQ6HIl\niCCgGmVOfwK8hbsNVLwBHYrnp/ScD8YsaNiaF+fuaq07BPbR0zAuCg0LC/e4+1ksfzkj1E\nagovZQAAAB6Ez4e7VM+Hu1AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg1\n1ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4G\nJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k\n4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+\nbCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFq\nIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+\nnsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS\n8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2J\noX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lAAAAAVAJpVzVLtGn0XD47N2doQ5tBa\nqi7aAAAACm15IGNvbW1lbnQBAgMEBQYH\n-----END RSA PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "unexpected PEM type label: expecting \"OPENSSH PRIVATE KEY\""
+   }
+  },
+  {
+   "id": "dsa/pub/orig",
+   "kind": "pub",
+   "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+   "expect": {
+    "ok": true,
+    "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "dsa/pub/no-comment",
+   "kind": "pub",
+   "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA=",
+   "expect": {
+    "ok": true,
+    "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA=",
+    "comment": ""
+   }
+  },
+  {
+   "id": "dsa/pub/two-spaces",
+   "kind": "pub",
+   "text": "ssh-dss  AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "dsa/pub/tab",
+   "kind": "pub",
+   "text": "ssh-dss\tAAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA=\tmy comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "dsa/pub/final-nl",
+   "kind": "pub",
+   "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment\n",
+   "expect": {
+    "ok": true,
+    "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "dsa/pub/crlf",
+   "kind": "pub",
+   "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment\r\n",
+   "expect": {
+    "ok": true,
+    "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "dsa/pub/leading-space",
+   "kind": "pub",
+   "text": " ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "dsa/pub/options-prefix",
+   "kind": "pub",
+   "text": "command=\"x\" ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "dsa/pub/upper-alg",
+   "kind": "pub",
+   "text": "SSH-DSS AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "dsa/pub/b64-no-pad",
+   "kind": "pub",
+   "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA my comment",
+   "expect": {
+    "ok": false,
+    "error": "Base64 encoding error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/pub/alg-mismatch",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= x",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "dsa/pub/comment-trailing-space",
+   "kind": "pub",
+   "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment ",
+   "expect": {
+    "ok": true,
+    "text": "ssh-dss AAAAB3NzaC1kc3MAAACBANH7swPSn2Jw+P8DhpVy5j5Rekg11ZPq5LQW/5FLW7tvWaL96sJ7BpcVMqWS0WIeaSnbAAok/S3x80tZtTZwELErFlpkVY3q4GJ+kluQAjJ+BFvqKN0inUwpPUg8E4bkf3Z7pC0NWhoUG3gBdBa/agus6BBXqCQQDe5ZZS4k4PQ5AAAAFQDsdFmk32XjSgYXCsdLn7RBjgtvtQAAAIEArwuoHCy8q4DFR9mL4jWNjjMOO+bCLGaIB3Zp/7tpkOFlbyIY+yLks+lQwXe0lt7ucTrkq/55fEVynbkV2kQb8yMrOGXPvfFqIvYm7bsk5bOCKeBHG18Oqxw/Cd3gsKuKsYPJLi9UpyK3s5lFIkTZade1TbjLQs7+5FQhh+nsh0UAAACAfVItfOoB7dq9HonZEV6PmDTtUN0TbHq3lLDz6Mi+kigo0DDgiVR8SJ7ng0gS8cXie4den7e4fxYkOtmAVYR4tJGOo5DociWIIKAaZU5/AryFuw1UvAEdiuen9JwPxixo2JoX5+5qrTsE9tHTMC4KDQsL97j7WSx/OSPURqCi9lA= my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "dsa/sig/orig",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+\nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S\nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D\nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs\nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i\nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH\nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe\nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn\n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA\nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR\n3fO0IA==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+\nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S\nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D\nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs\nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i\nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH\nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe\nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn\n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA\nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR\n3fO0IA==\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "dsa/sig/crlf",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\r\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+\r\nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S\r\nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D\r\nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs\r\nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i\r\nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH\r\nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe\r\nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn\r\n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA\r\nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR\r\n3fO0IA==\r\n-----END SSH SIGNATURE-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+\nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S\nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D\nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs\nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i\nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH\nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe\nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn\n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA\nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR\n3fO0IA==\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "dsa/sig/no-final-nl",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+\nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S\nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D\nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs\nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i\nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH\nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe\nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn\n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA\nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR\n3fO0IA==\n-----END SSH SIGNATURE-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+\nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S\nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D\nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs\nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i\nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH\nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe\nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn\n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA\nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR\n3fO0IA==\n-----END SSH SIGNATURE-----\n"
+   }
+  },
+  {
+   "id": "dsa/sig/wrap76",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+rktBb/\nkUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6SW5ACMn4EW+oo\n3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9DkAAAAVAOx0WaTfZeNK\nBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIsZogHdmn/u2mQ4WVvIhj7IuSz\n6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9ibtuyTls4Ip4EcbXw6rHD8J3eCwq4qx\ng8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyHRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNs\nereUsPPoyL6SKCjQMOCJVHxInueDSBLxxeJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8C\nvIW7DVS8AR2K56f0nA/GLGjYmhfn7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0\nAAAAAAAAAAZzaGEyNTYAAAA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJ\nfCDFSOIXLGYWqkdR3fO0IA==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/sig/wrap64",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6\nSDXVk+rktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsW\nWmRVjergYn6SW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zo\nEFeoJBAN7lllLiTg9DkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gc\nLLyrgMVH2YviNY2OMw475sIsZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr\n/nl8RXKduRXaRBvzIys4Zc+98Woi9ibtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8ku\nL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyHRQAAAIB9Ui186gHt2r0eidkRXo+Y\nNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxeJ7h16ft7h/FiQ62YBVhHi0\nkY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn7mqtOwT20dMwLgoN\nCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAAA3AAAAB3Nz\naC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR3fO0\nIA==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/sig/blank-line",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE-----\n\nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+\nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S\nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D\nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs\nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i\nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH\nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe\nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn\n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA\nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR\n3fO0IA==\n-----END SSH SIGNATURE-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "dsa/sig/trailing-space-lines",
+   "kind": "sig",
+   "text": "-----BEGIN SSH SIGNATURE----- \nU1NIU0lHAAAAAQAAAbIAAAAHc3NoLWRzcwAAAIEA0fuzA9KfYnD4/wOGlXLmPlF6SDXVk+ \nrktBb/kUtbu29Zov3qwnsGlxUypZLRYh5pKdsACiT9LfHzS1m1NnAQsSsWWmRVjergYn6S \nW5ACMn4EW+oo3SKdTCk9SDwThuR/dnukLQ1aGhQbeAF0Fr9qC6zoEFeoJBAN7lllLiTg9D \nkAAAAVAOx0WaTfZeNKBhcKx0uftEGOC2+1AAAAgQCvC6gcLLyrgMVH2YviNY2OMw475sIs \nZogHdmn/u2mQ4WVvIhj7IuSz6VDBd7SW3u5xOuSr/nl8RXKduRXaRBvzIys4Zc+98Woi9i \nbtuyTls4Ip4EcbXw6rHD8J3eCwq4qxg8kuL1SnIrezmUUiRNlp17VNuMtCzv7kVCGH6eyH \nRQAAAIB9Ui186gHt2r0eidkRXo+YNO1Q3RNsereUsPPoyL6SKCjQMOCJVHxInueDSBLxxe \nJ7h16ft7h/FiQ62YBVhHi0kY6jkOhyJYggoBplTn8CvIW7DVS8AR2K56f0nA/GLGjYmhfn \n7mqtOwT20dMwLgoNCwv3uPtZLH85I9RGoKL2UAAAAAR0ZXN0AAAAAAAAAAZzaGEyNTYAAA \nA3AAAAB3NzaC1kc3MAAAAoeQFYZtWu9dgr0OVBFuKeruEnHKTePHBJfCDFSOIXLGYWqkdR \n3fO0IA== \n-----END SSH SIGNATURE----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "rsa/priv/orig",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment"
+   }
+  },
+  {
+   "id": "rsa/priv/crlf",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\r\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\r\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\r\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\r\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\r\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\r\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\r\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\r\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\r\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\r\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\r\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\r\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\r\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\r\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\r\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\r\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\r\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\r\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\r\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\r\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\r\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\r\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\r\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\r\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\r\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\r\n-----END OPENSSH PRIVATE KEY-----\r\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment"
+   }
+  },
+  {
+   "id": "rsa/priv/no-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment"
+   }
+  },
+  {
+   "id": "rsa/priv/extra-final-nl",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM error in pre-encapsulation boundary"
+   }
+  },
+  {
+   "id": "rsa/priv/leading-nl",
+   "kind": "priv",
+   "text": "\n-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "my comment",
+    "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment"
+   }
+  },
+  {
+   "id": "rsa/priv/leading-space",
+   "kind": "priv",
+   "text": " -----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "rsa/priv/trailing-space-lines",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY----- \nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn \nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A \nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf \nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG \n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo \ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn \nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS \nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc \n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH \ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN \nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa \nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg \nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV \n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl \npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH \npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw \nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD \nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM \n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8 \nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8 \nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0 \n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw \nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP \n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj \nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ= \n-----END OPENSSH PRIVATE KEY----- \n",
+   "expect": {
+    "ok": false,
+    "error": "PEM type label invalid"
+   }
+  },
+  {
+   "id": "rsa/priv/wrap64",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdz\nc2gtcnNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FN\naI3nXnSm0V0AWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+3\n3yeeZDtIl51p+oFGJfsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN\n3Aphj9J+iLs3FZUuGeFHJ7ZG0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YL\nzYdENgsEUEu9wq+bkcLmNCaZkYLBwotl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2Y\nY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41znQR4Wa8mHzQAAA8BEkORHRJDkRwAA\nAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojede\ndKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55k\nO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP\n0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2\nCwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8K\nVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/f\nIWZvGHOgNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH\n2mmV3M7+Quj0nV0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3f\nQdJ8Ay2tl40OksVhHRDlpwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85Q\ngmFAwh0B8QHhxSRaG9X2j64iyHpM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhw\nrNbHffrQHNBYFHnZDkLtL+Jnah+we6DwJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPA\njJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DDuO/Ojsg6tIxhwTRxxhN/YC/UVW\neHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM7XQQm47VDsKC1tM0kPWP\nsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8OYzYvsNp0YpwAA\nAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8xubfDyxE\nsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW08e\n15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8od\nusWwTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxR\nr1aY9MLgrP8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lY\nDeL/sB10G1aBbMfjJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "rsa/priv/wrap76",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcnNhAAAA\nAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0AWZ40iUs6wQnE\nYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJfsmAkJr3nlELfnq3ocK\nJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG0lsBK66x1nkY+I/SOXiM8d/G\nRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwotl3tIIsUAuDIzjMLfAFqW+kghYsCVS\n0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41znQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gt\ncnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh\n3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwon\nisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZE\nL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLR\nvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZv\nGHOgNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV0c\nd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDlpwQJYrxM\nAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyHpM+yiHRmBwgdSH\nTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6DwJtbAZIG4Jy8U1UC6ApDc\nh6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DDuO/Ojsg6tIxhwTRxxhN/YC/UVW\neHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAa\nNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8OYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHn\ngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8xubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwP\nTftA/IuMKzaE/nRxwn5gNPVSW08e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cA\nAACBAPjEg9H+k8odusWwTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU\n/oxRr1aY9MLgrP8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10\nG1aBbMfjJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "rsa/priv/wrap1line",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcnNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0AWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJfsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwotl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41znQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOgNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDlpwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyHpM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6DwJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DDuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8OYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8xubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW08e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWwTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfjJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "rsa/priv/blank-line-in-body",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\n\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM Base64 error: invalid Base64 encoding"
+   }
+  },
+  {
+   "id": "rsa/priv/lower-header",
+   "kind": "priv",
+   "text": "-----begin openssh PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "PEM preamble contains invalid data (NUL byte)"
+   }
+  },
+  {
+   "id": "rsa/priv/label-rsa",
+   "kind": "priv",
+   "text": "-----BEGIN RSA PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn\nNhAAAAAwEAAQAAAQEAu8v36gqiBN7fGO5A1IHlH2UrrQgTVGPNn/W348FNaI3nXnSm0V0A\nWZ40iUs6wQnEYd5DZIj+Eqsr5fMqX8xFdXbLxUqa3NCngSDPOw+33yeeZDtIl51p+oFGJf\nsmAkJr3nlELfnq3ocKJ4rDQRsmx90SvwqhmeAXqaR4vSiN3Aphj9J+iLs3FZUuGeFHJ7ZG\n0lsBK66x1nkY+I/SOXiM8d/GRC9VBItrfvQUZ5YLzYdENgsEUEu9wq+bkcLmNCaZkYLBwo\ntl3tIIsUAuDIzjMLfAFqW+kghYsCVS0b2YY+pvClWpnpq8TQ739+RLTTjZouXUFPNn41zn\nQR4Wa8mHzQAAA8BEkORHRJDkRwAAAAdzc2gtcnNhAAABAQC7y/fqCqIE3t8Y7kDUgeUfZS\nutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc\n0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppH\ni9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvN\nh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVa\nmemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfNAAAAAwEAAQAAAQBD94svSk/fIWZvGHOg\nNa7eEPigtCaCyWg3N3ApXuGMMKeHOQLTDSy+QpLTCcYm7UkE/rM3ZJlH2mmV3M7+Quj0nV\n0cd2ba+i1Vf7Fgt8ydWDJsJkSckt0zS6w+vMnB0ZZGu27gkO3fQdJ8Ay2tl40OksVhHRDl\npwQJYrxMAaxt8TfpiYWNJ6DGyhuo2qIdI/A5GIg6/85QgmFAwh0B8QHhxSRaG9X2j64iyH\npM+yiHRmBwgdSHTQJ8GiuzWpPgE4svTw4binhwrNbHffrQHNBYFHnZDkLtL+Jnah+we6Dw\nJtbAZIG4Jy8U1UC6ApDch6/MaiipvmPAjJvaya891aElAAAAgQCTb5qZQgTDLybOWlw3DD\nuO/Ojsg6tIxhwTRxxhN/YC/UVWeHTCiMtj7NyhrpzL2wfoBBV/GZ/aeIqH+HRX6jmZRtqM\n7XQQm47VDsKC1tM0kPWPsqlNVGpCbjAaNC5ReO2lsshUdaB64Bgp+0iL7CYHYomHK33MQ8\nOYzYvsNp0YpwAAAIEAwUGre3pfZin/tCiKZwHngE17eTmUVmSJ4z98gF/xy2abvOSE6Vl8\nxubfDyxEsBdZFokkf8Mqotp5bGHk3ZtXYEFMkiZDBpwPTftA/IuMKzaE/nRxwn5gNPVSW0\n8e15NW7775QOYa0giL+3O0kw2pIJxfo9Z1KapqpR70597za0cAAACBAPjEg9H+k8odusWw\nTCBFhGAJ7q5R7FJPjRUHg+pKOiNf3eEUoWhZtsTyU6xQUOvIf0fGMkjU/oxRr1aY9MLgrP\n8QndO2TywDjbsKvE4+qXwDK1IdPhOL+saElVkouLS1E/I6Ft5K+9lYDeL/sB10G1aBbMfj\nJq9CMSqkvW9FNxZLAAAACm15IGNvbW1lbnQ=\n-----END RSA PRIVATE KEY-----\n",
+   "expect": {
+    "ok": false,
+    "error": "unexpected PEM type label: expecting \"OPENSSH PRIVATE KEY\""
+   }
+  },
+  {
+   "id": "rsa/pub/orig",
+   "kind": "pub",
+   "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+   "expect": {
+    "ok": true,
+    "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "rsa/pub/no-comment",
+   "kind": "pub",
+   "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN",
+   "expect": {
+    "ok": true,
+    "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN",
+    "comment": ""
+   }
+  },
+  {
+   "id": "rsa/pub/two-spaces",
+   "kind": "pub",
+   "text": "ssh-rsa  AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "rsa/pub/tab",
+   "kind": "pub",
+   "text": "ssh-rsa\tAAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN\tmy comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "rsa/pub/final-nl",
+   "kind": "pub",
+   "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment\n",
+   "expect": {
+    "ok": true,
+    "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "rsa/pub/crlf",
+   "kind": "pub",
+   "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment\r\n",
+   "expect": {
+    "ok": true,
+    "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "rsa/pub/leading-space",
+   "kind": "pub",
+   "text": " ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+   "expect": {
+    "ok": false,
+    "error": "length invalid"
+   }
+  },
+  {
+   "id": "rsa/pub/options-prefix",
+   "kind": "pub",
+   "text": "command=\"x\" ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+   "expect": {
+    "ok": false,
+    "error": "character encoding invalid"
+   }
+  },
+  {
+   "id": "rsa/pub/upper-alg",
+   "kind": "pub",
+   "text": "SSH-RSA AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "rsa/pub/b64-no-pad",
+   "kind": "pub",
+   "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+   "expect": {
+    "ok": true,
+    "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "rsa/pub/alg-mismatch",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN x",
+   "expect": {
+    "ok": false,
+    "error": "unknown algorithm"
+   }
+  },
+  {
+   "id": "rsa/pub/comment-trailing-space",
+   "kind": "pub",
+   "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment ",
+   "expect": {
+    "ok": true,
+    "text": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC7y/fqCqIE3t8Y7kDUgeUfZSutCBNUY82f9bfjwU1ojededKbRXQBZnjSJSzrBCcRh3kNkiP4Sqyvl8ypfzEV1dsvFSprc0KeBIM87D7ffJ55kO0iXnWn6gUYl+yYCQmveeUQt+erehwonisNBGybH3RK/CqGZ4BeppHi9KI3cCmGP0n6IuzcVlS4Z4UcntkbSWwErrrHWeRj4j9I5eIzx38ZEL1UEi2t+9BRnlgvNh0Q2CwRQS73Cr5uRwuY0JpmRgsHCi2Xe0gixQC4MjOMwt8AWpb6SCFiwJVLRvZhj6m8KVamemrxNDvf35EtNONmi5dQU82fjXOdBHhZryYfN my comment",
+    "comment": "my comment"
+   }
+  },
+  {
+   "id": "comment/bom/priv",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAIhe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAABO+7v2MB\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAIhe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAABO+7v2MB\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "﻿c",
+    "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht ﻿c"
+   }
+  },
+  {
+   "id": "comment/bom/pub",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht ﻿c",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht ﻿c",
+    "comment": "﻿c"
+   }
+  },
+  {
+   "id": "comment/plain/priv",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAIhe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAAAWMBAgME\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAIhe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAAAWMBAgME\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "c",
+    "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht c"
+   }
+  },
+  {
+   "id": "comment/plain/pub",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht c",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht c",
+    "comment": "c"
+   }
+  },
+  {
+   "id": "comment/nbsp/priv",
+   "kind": "priv",
+   "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAIhe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAABGHCoGIB\n-----END OPENSSH PRIVATE KEY-----\n",
+   "expect": {
+    "ok": true,
+    "text": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQAAAIhe/wnJXv8J\nyQAAAAtzc2gtZWQyNTUxOQAAACBC1maPdieJFqFmz8TcEFSeH1erGjV5XUTjyQzbiS3obQ\nAAAECmBZxUbGGNOWeOPGw0ilKa1pclOxfRIcLkiG+o4lEdA0LWZo92J4kWoWbPxNwQVJ4f\nV6saNXldROPJDNuJLehtAAAABGHCoGIB\n-----END OPENSSH PRIVATE KEY-----\n",
+    "comment": "a b",
+    "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht a b"
+   }
+  },
+  {
+   "id": "comment/nbsp/pub",
+   "kind": "pub",
+   "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht a b",
+   "expect": {
+    "ok": true,
+    "text": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIELWZo92J4kWoWbPxNwQVJ4fV6saNXldROPJDNuJLeht a b",
+    "comment": "a b"
+   }
+  }
+ ]
+}

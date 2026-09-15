@@ -2,7 +2,7 @@
   {
     "name": "ESM root entry (import *), minified + gzipped",
     "path": "dist/index.mjs",
-    "limit": "89 kB"
+    "limit": "93 kB"
   },
   {
     "name": "root entry, Digest + SymmetricKey + EncryptedMessage only (tree-shaken, siblings external)",
@@ -16,7 +16,7 @@
       "@blockchaincommons/tags",
       "@blockchaincommons/uniform-resources"
     ],
-    "limit": "9 kB"
+    "limit": "6 kB"
   },
   {
     "name": "root entry, package's own code (siblings external)",
@@ -29,32 +29,41 @@
       "@blockchaincommons/tags",
       "@blockchaincommons/uniform-resources"
     ],
-    "limit": "69 kB"
+    "limit": "71 kB"
   },
   {
     "name": "ssh subpath, minified + gzipped",
     "path": "dist/ssh.mjs",
-    "limit": "31 kB"
+    "limit": "33 kB"
   },
   {
     "name": "pq subpath, minified + gzipped",
     "path": "dist/pq.mjs",
-    "limit": "31 kB"
+    "limit": "51 kB"
   },
   {
     "name": "kdf subpath, minified + gzipped",
     "path": "dist/kdf.mjs",
-    "limit": "32 kB"
+    "limit": "53 kB"
   },
   {
     "name": "sskr subpath, minified + gzipped",
     "path": "dist/sskr.mjs",
-    "limit": "19 kB"
+    "limit": "39 kB"
+  },
+  {
+    "name": "ssh-agent-node subpath, minified + gzipped (node: modules external)",
+    "path": "dist/ssh-agent-node.mjs",
+    "ignore": [
+      "node:net",
+      "node:process"
+    ],
+    "limit": "30 kB"
   },
   {
     "name": "tags subpath, package's own code (the package itself and siblings external)",
     "path": "dist/tags.mjs",
-    "limit": "4 kB",
+    "limit": "2 kB",
     "ignore": [
       "@blockchaincommons/components",
       "@blockchaincommons/crypto",

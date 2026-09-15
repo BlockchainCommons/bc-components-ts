@@ -57,3 +57,94 @@ jobs:
 
       - name: Check dependency hygiene
         run: bun run check:deps
+
+  rust-validation:
+    name: Cross-validate vectors against the Rust reference
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # The stored outcomes must first equal the working tree's.
+      - name: Check the golden vectors against the working tree
+        run: bun run test:golden
+
+      # The whole corpus (tests/corpus/corpus.ts `allRecipes()`)
+      - name: Materialise the full corpus
+        run: bun scripts/generate-vectors.ts --full "${{ runner.temp }}/components-full-corpus.json"
+
+      # The runner image ships a stable Rust toolchain
+      - name: Fetch the pinned reference crates
+        working-directory: tests/rust-validation
+        run: cargo fetch --locked
+
+      - name: Validate the golden vectors against bc-components
+        working-directory: tests/rust-validation
+        run: cargo run --release --locked --offline -- ../vectors/vectors.json
+
+      - name: Validate the full corpus against bc-components
+        working-directory: tests/rust-validation
+        run: cargo run --release --locked --offline -- "${{ runner.temp }}/components-full-corpus.json"
+
+      # The same two files against the ssh-agent build, which compares the
+      # SSH-agent key-derivation rows the default build reports as js-only.
+      - name: Validate the golden vectors against bc-components with ssh-agent
+        working-directory: tests/rust-validation
+        run: cargo run --release --locked --offline --features agent -- ../vectors/vectors.json
+
+      - name: Validate the full corpus against bc-components with ssh-agent
+        working-directory: tests/rust-validation
+        run: cargo run --release --locked --offline --features agent -- "${{ runner.temp }}/components-full-corpus.json"
+
+      # The comparison must bite: the committed one-vector fixture with a
+      # flipped digest digit fails with exactly one MISMATCH.
+      - name: Reject the mismatch fixture
+        working-directory: tests/rust-validation
+        run: |
+          set +e
+          output=$(cargo run --release --locked --offline --quiet -- mismatch.json 2>&1)
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          test "$status" -eq 1
+          printf '%s\n' "$output" | grep -q ' 1 MISMATCH$'
+
+      # The harness's own contract: one row per outcome class, a malformed
+      # recipe reported rather than run, a noreg row out of order, and a
+      # mapped panic whose TypeScript code differs.
+      - name: Check the harness fixtures
+        working-directory: tests/rust-validation
+        run: |
+          set +e
+          classes=$(cargo run --release --locked --offline --quiet -- fixtures/classes.json 2>&1)
+          classes_status=$?
+          malformed=$(cargo run --release --locked --offline --quiet -- fixtures/malformed.json 2>&1)
+          malformed_status=$?
+          noreg=$(cargo run --release --locked --offline --quiet -- fixtures/noreg-order.json 2>&1)
+          noreg_status=$?
+          panic=$(cargo run --release --locked --offline --quiet -- fixtures/panic-code.json 2>&1)
+          panic_status=$?
+          set -e
+          printf '%s\n%s\n%s\n%s\n' "$classes" "$malformed" "$noreg" "$panic"
+          test "$classes_status" -eq 0
+          printf '%s\n' "$classes" | grep -q '^8 vectors - 1 match, 3 panic-mapped (hang 1, none 1, panic 1), 4 js-only (J1 1, J2 1, J3 1, J4 1), 0 MISMATCH$'
+          test "$malformed_status" -eq 1
+          printf '%s\n' "$malformed" | grep -q ', 1 unparsable$'
+          test "$noreg_status" -eq 1
+          printf '%s\n' "$noreg" | grep -q ' 1 MISMATCH$'
+          test "$panic_status" -eq 1
+          printf '%s\n' "$panic" | grep -q ' 1 MISMATCH$'

@@ -18,6 +18,10 @@ import { MLKEMLevel, MLDSALevel } from "../src/index.js";
 import { MLKEMPrivateKey, MLDSAPrivateKey } from "../src/pq.js";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 // CBOR major-6 (tag) encoding helper for the 40100-range tags:
 //   tags 40100-40105 are 5-digit decimal numbers, encoded as 0xd9 (major-6
 //   + 2-byte tag length) + 2-byte BE tag value.
@@ -30,8 +34,7 @@ function expectTaggedAt(bytes: Uint8Array, tag: number) {
 describe("ML-KEM CBOR layout (matches Rust pqcrypto-mlkem)", () => {
   for (const level of [MLKEMLevel.MLKEM512, MLKEMLevel.MLKEM768, MLKEMLevel.MLKEM1024]) {
     it(`${String(level)} key generation produces correctly-sized keys`, () => {
-      const priv = MLKEMPrivateKey.random(level);
-      const pub = priv.publicKey();
+      const [priv, pub] = MLKEMPrivateKey.keypair(level);
 
       // Sizes match NIST FIPS-203 (and Rust pqcrypto-mlkem).
       const expectedPriv =
@@ -49,13 +52,13 @@ describe("ML-KEM CBOR layout (matches Rust pqcrypto-mlkem)", () => {
     });
 
     it(`${String(level)} public key tagged CBOR begins with tag 40101`, () => {
-      const priv = MLKEMPrivateKey.random(level);
-      expectTaggedAt(priv.publicKey().toCbor().toData(), 40101);
+      const [, pub] = MLKEMPrivateKey.keypair(level);
+      expectTaggedAt(pub.toCbor().toData(), 40101);
     });
 
     it(`${String(level)} encapsulation: ciphertext tagged with 40102`, () => {
-      const priv = MLKEMPrivateKey.random(level);
-      const { sharedSecret, ciphertext } = priv.publicKey().encapsulate();
+      const [priv, pub] = MLKEMPrivateKey.keypair(level);
+      const { sharedSecret, ciphertext } = pub.encapsulate();
       expect(sharedSecret.bytes.length).toBe(32);
       expectTaggedAt(ciphertext.toCbor().toData(), 40102);
 

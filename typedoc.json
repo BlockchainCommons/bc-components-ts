@@ -6,7 +6,8 @@
     "src/pq.ts",
     "src/kdf.ts",
     "src/sskr.ts",
-    "src/tags.ts"
+    "src/tags.ts",
+    "src/ssh-agent-node.ts"
   ],
   "out": "docs",
   "name": "@blockchaincommons/components",

@@ -5,8 +5,8 @@
  * https://github.com/openssh/openssh-portable.
  *
  * Mirrors `ssh_key::PrivateKey` (crate `ssh-key` v0.6.7) byte-for-byte for
- * unencrypted Ed25519, DSA, ECDSA P-256, and ECDSA P-384 keys. Encrypted
- * keys (bcrypt-pbkdf + AES-256-CTR), RSA, and P-521 are not supported.
+ * unencrypted Ed25519, DSA, RSA and ECDSA P-256 / P-384 / P-521 keys.
+ * Encrypted keys (bcrypt-pbkdf + AES-256-CTR) are not supported.
  *
  * Wire-format summary (after base64-decoding the PEM body):
  *
@@ -28,11 +28,12 @@
  *     string  public_key (32 bytes)
  *     string  private_key (64 bytes — seed (32) || public (32))
  *
- *   ecdsa-sha2-nistp{256,384} keypair fields:
- *     string  algorithm  ("ecdsa-sha2-nistp{256,384}")
- *     string  curve      ("nistp{256,384}")
- *     string  public_point (65 / 97 bytes — 0x04 || X || Y)
- *     mpint   private_scalar (canonical: 32/48 bytes, with 0x00 sign byte if MSB set)
+ *   ecdsa-sha2-nistp{256,384,521} keypair fields:
+ *     string  algorithm  ("ecdsa-sha2-nistp{256,384,521}")
+ *     string  curve      ("nistp{256,384,521}")
+ *     string  public_point (65 / 97 / 133 bytes — 0x04 || X || Y)
+ *     string  private_scalar (the full 32/48/66-byte scalar, 0x00-prefixed only when
+ *                             its top byte is >= 0x80; leading zero bytes are kept)
  *
  *   ssh-dss keypair fields:
  *     string  algorithm  ("ssh-dss")
@@ -41,19 +42,28 @@
  *     mpint   g (re-stated)
  *     mpint   y (re-stated)
  *     mpint   x (private)
+ *
+ *   ssh-rsa keypair fields:
+ *     string  algorithm  ("ssh-rsa")
+ *     mpint   n (re-stated)
+ *     mpint   e (re-stated)
+ *     mpint   d
+ *     mpint   iqmp (q^-1 mod p)
+ *     mpint   p
+ *     mpint   q
  */
 
 import { sha256, sha512 } from "@noble/hashes/sha2.js";
 import { sha1 } from "@noble/hashes/legacy.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { p256, p384 } from "@noble/curves/nist.js";
+import { p256, p384, p521 } from "@noble/curves/nist.js";
 import {
   SshBufferReader,
   SshBufferWriter,
   stripMpintSignByte,
   padLeftToLength,
 } from "./internal/ssh-buffer.js";
-import { encodePem, parsePem } from "./internal/ssh-pem.js";
+import { decodePem, encodePem, SSH_PEM_LINE_WIDTH } from "./internal/ssh-pem.js";
 import { dsaSign } from "./internal/dsa.js";
 import {
   parseSshAlgorithm,
@@ -69,7 +79,6 @@ import { SSHSignature, type SshHashAlgorithm } from "./ssh-signature.js";
 import { ComponentsError } from "../error.js";
 
 const PEM_LABEL = "OPENSSH PRIVATE KEY";
-const PEM_LINE_WIDTH = 70;
 const MAGIC = new TextEncoder().encode("openssh-key-v1\0");
 const CIPHER_NONE = "none";
 const KDF_NONE = "none";
@@ -82,9 +91,10 @@ const ED25519_PUBLIC_LEN = 32;
  * Algorithm-specific private-key data.
  *
  *   - ed25519: 32-byte seed.
- *   - ecdsa:   curve + canonical scalar (32 / 48 bytes, no sign byte).
+ *   - ecdsa:   curve + canonical scalar (32 / 48 / 66 bytes, no sign byte).
  *   - dsa:     canonical positive p, q, g, y (re-stated from the public
  *              key blob), plus the secret exponent x.
+ *   - rsa:     canonical positive n, e (re-stated), d, iqmp, p, q.
  */
 export type SshPrivateKeyData =
   | {
@@ -96,11 +106,11 @@ export type SshPrivateKeyData =
       pubBytes: Uint8Array;
     }
   | {
-      /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384`. */
+      /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
       kind: "ecdsa";
       /** The NIST curve. */
       curve: SshEcdsaCurve;
-      /** The canonical scalar (32 or 48 bytes, no sign byte). */
+      /** The canonical scalar (32, 48 or 66 bytes, no sign byte). */
       scalar: Uint8Array;
       /** The SEC1 uncompressed public point. */
       point: Uint8Array;
@@ -118,6 +128,22 @@ export type SshPrivateKeyData =
       y: Uint8Array;
       /** The secret exponent, canonical positive bytes. */
       x: Uint8Array;
+    }
+  | {
+      /** `ssh-rsa`. */
+      kind: "rsa";
+      /** The modulus, canonical positive bytes. */
+      n: Uint8Array;
+      /** The public exponent, canonical positive bytes. */
+      e: Uint8Array;
+      /** The private exponent, canonical positive bytes. */
+      d: Uint8Array;
+      /** The CRT coefficient `q^-1 mod p`, canonical positive bytes. */
+      iqmp: Uint8Array;
+      /** The first prime, canonical positive bytes. */
+      p: Uint8Array;
+      /** The second prime, canonical positive bytes. */
+      q: Uint8Array;
     };
 
 function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
@@ -129,7 +155,17 @@ function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 function decodeUtf8(bytes: Uint8Array): string {
-  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+}
+
+/** `EcdsaPrivateKey::encode`'s payload: the scalar, 0x00-prefixed iff its top bit is set. */
+function mpintOfFixedWidthScalar(scalar: Uint8Array): Uint8Array {
+  if (scalar.length > 0 && (scalar[0] & 0x80) !== 0) {
+    const out = new Uint8Array(scalar.length + 1);
+    out.set(scalar, 1);
+    return out;
+  }
+  return scalar;
 }
 
 function stripPositiveMpint(mpint: Uint8Array): Uint8Array {
@@ -176,6 +212,8 @@ export class SSHPrivateKey {
         return { kind: "ed25519" };
       case "dsa":
         return { kind: "dsa" };
+      case "rsa":
+        return { kind: "rsa" };
       case "ecdsa":
         return { kind: "ecdsa", curve: data.curve };
       default: {
@@ -201,6 +239,10 @@ export class SSHPrivateKey {
         throw ComponentsError.ssh(
           "SSHPrivateKey.publicBytes is not defined for DSA — use `data.p/q/g/y` instead",
         );
+      case "rsa":
+        throw ComponentsError.ssh(
+          "SSHPrivateKey.publicBytes is not defined for RSA — use `data.e/n` instead",
+        );
       default: {
         const _exhaustive: never = data;
         throw ComponentsError.ssh(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
@@ -219,6 +261,10 @@ export class SSHPrivateKey {
         throw ComponentsError.ssh(
           "SSHPrivateKey.privateBytes is not defined for DSA — use `data.x` instead",
         );
+      case "rsa":
+        throw ComponentsError.ssh(
+          "SSHPrivateKey.privateBytes is not defined for RSA — use `data.d/iqmp/p/q` instead",
+        );
       default: {
         const _exhaustive: never = data;
         throw ComponentsError.ssh(`SSHPrivateKey: unreachable kind ${String(_exhaustive)}`);
@@ -230,10 +276,9 @@ export class SSHPrivateKey {
   // OpenSSH armored format (PEM)
   // --------------------------------------------------------------------------
 
-  /** Parses the PEM-armoured OpenSSH private key text. */
+  /** Parses the PEM-armoured OpenSSH private key text, as `ssh_key::PrivateKey::from_openssh`. */
   static fromOpenssh(text: string): SSHPrivateKey {
-    const { data } = parsePem(text, PEM_LABEL);
-    return SSHPrivateKey.fromBlob(data);
+    return SSHPrivateKey.fromBlob(decodePem(text, PEM_LABEL));
   }
 
   /** Parses the binary `openssh-key-v1` blob (the base64 payload of the text form). */
@@ -265,7 +310,9 @@ export class SSHPrivateKey {
 
     const encryptedBlob = reader.readString();
     if (!reader.isAtEnd()) {
-      throw ComponentsError.ssh("SSHPrivateKey: trailing bytes after encrypted section");
+      throw ComponentsError.ssh(
+        `unexpected trailing data at end of message (${reader.remaining()} bytes)`,
+      );
     }
     if (encryptedBlob.length % BLOCK_SIZE_NONE !== 0) {
       throw ComponentsError.ssh(
@@ -300,7 +347,7 @@ export class SSHPrivateKey {
           );
         }
         if (publicKey.data.kind !== "ed25519" || !bytesEqual(pubBytes, publicKey.data.pubBytes)) {
-          throw ComponentsError.ssh("SSHPrivateKey ed25519: outer/inner public-key mismatch");
+          throw ComponentsError.ssh("public key is incorrect");
         }
         const combined = innerReader.readString();
         if (combined.length !== ED25519_SEED_LEN + ED25519_PUBLIC_LEN) {
@@ -337,7 +384,7 @@ export class SSHPrivateKey {
           );
         }
         if (publicKey.data.kind !== "ecdsa" || !bytesEqual(point, publicKey.data.point)) {
-          throw ComponentsError.ssh("SSHPrivateKey ecdsa: outer/inner public-key mismatch");
+          throw ComponentsError.ssh("public key is incorrect");
         }
         const mpint = innerReader.readMpint();
         const stripped = stripMpintSignByte(mpint);
@@ -356,19 +403,34 @@ export class SSHPrivateKey {
         const g = stripPositiveMpint(innerReader.readMpint());
         const y = stripPositiveMpint(innerReader.readMpint());
         const x = stripPositiveMpint(innerReader.readMpint());
-        if (publicKey.data.kind !== "dsa") {
-          throw ComponentsError.ssh("SSHPrivateKey dsa: outer key is not DSA");
-        }
         // Re-stated public params must match the outer pubkey blob.
         if (
+          publicKey.data.kind !== "dsa" ||
           !bytesEqual(p, publicKey.data.p) ||
           !bytesEqual(q, publicKey.data.q) ||
           !bytesEqual(g, publicKey.data.g) ||
           !bytesEqual(y, publicKey.data.y)
         ) {
-          throw ComponentsError.ssh("SSHPrivateKey dsa: outer/inner public-parameter mismatch");
+          throw ComponentsError.ssh("public key is incorrect");
         }
         data = { kind: "dsa", p, q, g, y, x };
+        break;
+      }
+      case "rsa": {
+        const n = stripPositiveMpint(innerReader.readMpint());
+        const e = stripPositiveMpint(innerReader.readMpint());
+        const d = stripPositiveMpint(innerReader.readMpint());
+        const iqmp = stripPositiveMpint(innerReader.readMpint());
+        const p = stripPositiveMpint(innerReader.readMpint());
+        const q = stripPositiveMpint(innerReader.readMpint());
+        if (
+          publicKey.data.kind !== "rsa" ||
+          !bytesEqual(n, publicKey.data.n) ||
+          !bytesEqual(e, publicKey.data.e)
+        ) {
+          throw ComponentsError.ssh("public key is incorrect");
+        }
+        data = { kind: "rsa", n, e, d, iqmp, p, q };
         break;
       }
     }
@@ -395,7 +457,7 @@ export class SSHPrivateKey {
    *
    */
   toOpenssh(): string {
-    return encodePem(PEM_LABEL, this.toBlob(), PEM_LINE_WIDTH);
+    return encodePem(PEM_LABEL, this.toBlob(), SSH_PEM_LINE_WIDTH);
   }
 
   /** The binary `openssh-key-v1` blob, byte for byte as OpenSSH writes it. */
@@ -420,6 +482,8 @@ export class SSHPrivateKey {
         return SSHPublicKey.ecdsa(this.data.curve, this.data.point, this.comment);
       case "dsa":
         return SSHPublicKey.dsa(this.data.p, this.data.q, this.data.g, this.data.y, this.comment);
+      case "rsa":
+        return SSHPublicKey.rsa(this.data.e, this.data.n, this.comment);
     }
   }
 
@@ -444,7 +508,10 @@ export class SSHPrivateKey {
       case "ecdsa": {
         w.writeStringUtf8(sshCurveName(this.data.curve));
         w.writeString(this.data.point);
-        w.writeMpintUnsigned(this.data.scalar);
+        // `EcdsaPrivateKey::encode`: the full fixed-width scalar, with a
+        // 0x00 prefix only when its top byte is >= 0x80 — leading zero
+        // bytes of the scalar itself are kept, unlike a canonical mpint.
+        w.writeString(mpintOfFixedWidthScalar(this.data.scalar));
         break;
       }
       case "dsa": {
@@ -453,6 +520,15 @@ export class SSHPrivateKey {
         w.writeMpintUnsigned(this.data.g);
         w.writeMpintUnsigned(this.data.y);
         w.writeMpintUnsigned(this.data.x);
+        break;
+      }
+      case "rsa": {
+        w.writeMpintUnsigned(this.data.n);
+        w.writeMpintUnsigned(this.data.e);
+        w.writeMpintUnsigned(this.data.d);
+        w.writeMpintUnsigned(this.data.iqmp);
+        w.writeMpintUnsigned(this.data.p);
+        w.writeMpintUnsigned(this.data.q);
         break;
       }
     }
@@ -492,7 +568,15 @@ export class SSHPrivateKey {
   // SSHSIG sign (PROTOCOL.sshsig §3.1)
   // --------------------------------------------------------------------------
 
-  /** Signs `message` in `namespace` with `hashAlgorithm`, producing an `sshsig` signature. */
+  /**
+   * Signs `message` in `namespace` with `hashAlgorithm`, producing an
+   * `sshsig` signature.
+   *
+   * RSA keys cannot sign: `ssh-key` 0.6.7 rebuilds the `rsa` private key
+   * from `(p, p)` instead of `(p, q)`, so the reference's
+   * `SigningPrivateKey::sign` fails with `cryptographic error` for every
+   * RSA key, and so does this method.
+   */
   sign(namespace: string, hashAlgorithm: SshHashAlgorithm, message: Uint8Array): SSHSignature {
     const messageDigest = digestForHash(hashAlgorithm, message);
     const signedData = SSHSignature.signedDataBlob(namespace, hashAlgorithm, messageDigest);
@@ -502,12 +586,15 @@ export class SSHPrivateKey {
         signatureBytes = ed25519.sign(signedData, this.data.seed);
         break;
       case "ecdsa": {
+        // noble prehashes with each curve's RFC 5656 hash (SHA-256 / SHA-384 /
+        // SHA-512) and derives the nonce per RFC 6979; `format: "compact"` is
+        // `r || s`. `lowS: false`: the reference does not normalise `s`, and
+        // neither does OpenSSH. For P-256 and P-384 RustCrypto `ecdsa` uses
+        // the same RFC 6979 nonce, so the bytes are identical to the
+        // reference's; for P-521 the reference (`p521` 0.13.3) draws a
+        // random nonce instead, so only verification can agree.
         switch (this.data.curve) {
           case "nistp256":
-            // p256 default: prehash=true (SHA-256), format='compact' (r||s as 64 bytes).
-            // `lowS: false`: the reference (`ssh-key` over RustCrypto `ecdsa`) signs
-            // with RFC 6979 and does not normalise `s`, and neither does OpenSSH;
-            // with the same nonce the bytes are then identical to the reference's.
             signatureBytes = p256.sign(signedData, this.data.scalar, {
               format: "compact",
               lowS: false,
@@ -515,6 +602,12 @@ export class SSHPrivateKey {
             break;
           case "nistp384":
             signatureBytes = p384.sign(signedData, this.data.scalar, {
+              format: "compact",
+              lowS: false,
+            });
+            break;
+          case "nistp521":
+            signatureBytes = p521.sign(signedData, this.data.scalar, {
               format: "compact",
               lowS: false,
             });
@@ -536,6 +629,8 @@ export class SSHPrivateKey {
         });
         break;
       }
+      case "rsa":
+        throw ComponentsError.ssh("cryptographic error");
     }
     return SSHSignature.fromParts(this.publicKey(), namespace, hashAlgorithm, signatureBytes);
   }

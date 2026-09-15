@@ -1,0 +1,14 @@
+{
+ "count": 1,
+ "vectors": [
+  {
+   "name": "hex digest \"zz\" (wrong code for the mapped panic: must be a MISMATCH)",
+   "recipe": {
+    "k": "hex",
+    "type": "digest",
+    "text": "zz"
+   },
+   "expect": "throw:InvalidSize:invalid digest size: expected 32, got 0"
+  }
+ ]
+}

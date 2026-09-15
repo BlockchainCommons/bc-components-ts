@@ -16,7 +16,11 @@ export class Ed25519PrivateKey {
 
   private constructor(seed: Uint8Array) {
     if (seed.length !== ed25519.PRIVATE_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ed25519.PRIVATE_KEY_SIZE, seed.length);
+      throw ComponentsError.invalidSize(
+        "Ed25519 private key",
+        ed25519.PRIVATE_KEY_SIZE,
+        seed.length,
+      );
     }
     this.seed = new Uint8Array(seed);
   }
@@ -32,7 +36,7 @@ export class Ed25519PrivateKey {
    * Create an Ed25519PrivateKey from hex string (64 hex characters)
    */
   static fromHex(hex: string): Ed25519PrivateKey {
-    return new Ed25519PrivateKey(bytesFromHex(hex, "Ed25519PrivateKey"));
+    return new Ed25519PrivateKey(bytesFromHex(hex));
   }
 
   /** A fresh random value; pass `rng` to make it deterministic. */

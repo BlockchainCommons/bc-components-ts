@@ -177,10 +177,10 @@ describe("Compressed", () => {
   });
 });
 
-describe("Compressed - miniz_oxide interop (RUST_DIVERGENCES D3)", () => {
-  // Produced by tests/rust-validation/examples/dump_compressed.rs with
-  // bc-components-rust 0.31.1 (miniz_oxide level 6). pako's level-6 stream
-  // for the same input differs; both sides must decompress each other's.
+describe("Compressed - the reference's bytes", () => {
+  // The reference's tagged CBOR for this input (bc-components 0.31.1 over
+  // miniz_oxide 0.8.9 at level 6); the in-package port produces the same
+  // stream.
   const RUST_TAGGED_HEX =
     "d99c43831a0eca22c618e4583cd5cb010dc0200c04402b2f6099124c90d22c9f504adae27f3a1070cd430ddc790cc3a70792856e5a0fc457aa94d609f4c1cd14ae0f3a592fda3df007";
   const TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. ".repeat(4);
@@ -192,10 +192,57 @@ describe("Compressed - miniz_oxide interop (RUST_DIVERGENCES D3)", () => {
     expect(c.decompressedSize).toBe(TEXT.length);
   });
 
-  it("produces a different but equivalent stream with pako", () => {
+  it("produces the reference's stream byte for byte", () => {
     const ours = Compressed.fromDecompressedData(new TextEncoder().encode(TEXT));
     const hex = Array.from(ours.toCbor().toData(), (b) => b.toString(16).padStart(2, "0")).join("");
-    expect(hex).not.toBe(RUST_TAGGED_HEX);
+    expect(hex).toBe(RUST_TAGGED_HEX);
     expect(ours.decompress()).toEqual(new TextEncoder().encode(TEXT));
+  });
+
+  it("compares the digest in equals, as the reference's derived PartialEq", () => {
+    const data = new TextEncoder().encode(TEXT);
+    const a = Compressed.fromDecompressedData(data);
+    const b = Compressed.fromDecompressedData(data, Digest.fromImage(data));
+    const c = Compressed.fromDecompressedData(data, Digest.fromImage(data));
+    expect(a.equals(b)).toBe(false);
+    expect(b.equals(c)).toBe(true);
+    expect(
+      b.equals(Compressed.fromDecompressedData(data, Digest.fromImage(new Uint8Array(1)))),
+    ).toBe(false);
+  });
+
+  it("decodes the checksum as a u32 and the size as a usize with the reference's negative wrap", () => {
+    const decode = (hex: string) =>
+      Compressed.fromCbor(decodeCbor(Uint8Array.from(Buffer.from(hex, "hex"))));
+    // [-1, 10, h'00'] → checksum 4294967295
+    expect(decode("d99c438320" + "0a" + "4100").checksum).toBe(0xffffffff);
+    // [-4294967296, 10, h'00'] → checksum 0
+    expect(decode("d99c43833affffffff" + "0a" + "4100").checksum).toBe(0);
+    // [0, 2^53 + 1, h'00'] → the exact size, a bigint
+    expect(decode("d99c438300" + "1b0020000000000001" + "4100").decompressedSize).toBe(
+      9007199254740993n,
+    );
+    // [0, -1, h'00'] → 2^64 − 1
+    expect(decode("d99c438300" + "20" + "4100").decompressedSize).toBe(18446744073709551615n);
+    // above the widths: OutOfRange as `Cbor`
+    for (const hex of [
+      "d99c43831b0000000100000000" + "0a" + "4100",
+      "d99c43833b0000000100000000" + "0a" + "4100",
+    ]) {
+      expect(() => decode(hex)).toThrow(
+        "the CBOR numeric value could not be represented in the specified numeric type",
+      );
+    }
+    // the size check is `Compression`
+    let thrown: unknown;
+    try {
+      Compressed.fromParts({ checksum: 0, decompressedSize: 1, compressedData: new Uint8Array(2) });
+    } catch (e) {
+      thrown = e;
+    }
+    expect((thrown as { code: string }).code).toBe("Compression");
+    expect((thrown as Error).message).toBe(
+      "compression error: compressed data is larger than decompressed size",
+    );
   });
 });

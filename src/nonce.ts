@@ -64,7 +64,7 @@ export class Nonce implements ToCbor, ToUR {
 
   private constructor(data: Uint8Array) {
     if (data.length !== Nonce.NONCE_SIZE) {
-      throw ComponentsError.invalidSize(Nonce.NONCE_SIZE, data.length);
+      throw ComponentsError.invalidSize("nonce", Nonce.NONCE_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -91,7 +91,7 @@ export class Nonce implements ToCbor, ToUR {
    * @throws Error if the string is not exactly 24 hexadecimal digits.
    */
   static fromHex(hex: string): Nonce {
-    return new Nonce(bytesFromHex(hex, "Nonce"));
+    return new Nonce(bytesFromHex(hex));
   }
 
   // ============================================================================

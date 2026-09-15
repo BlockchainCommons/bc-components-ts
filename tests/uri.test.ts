@@ -9,6 +9,10 @@ import { URI } from "../src/id/uri.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 describe("URI", () => {
   const TEST_URI = "https://example.com/path/to/resource";
   const TEST_URI_WITH_QUERY = "https://example.com/path?query=value&foo=bar";

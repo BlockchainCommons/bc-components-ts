@@ -50,7 +50,7 @@ export class URI implements ToCbor, ToUR {
       new URL(uri);
       return new URI(uri);
     } catch {
-      throw ComponentsError.invalidData("URI: invalid URI format");
+      throw ComponentsError.invalidDataForType("URI", "invalid URI format");
     }
   }
 

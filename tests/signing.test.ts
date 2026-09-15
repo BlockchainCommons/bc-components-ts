@@ -24,6 +24,10 @@ import {
 import { SecureRng } from "@blockchaincommons/rand";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 // Test vectors from the Rust implementation
 const TEST_PRIVATE_KEY_HEX = "322b5c1dd5a17c3481c2297990c85c232ed3c17b52ce9905c6ec5193ad132c36";
 const TEST_MESSAGE = new TextEncoder().encode("Wolf McNally");
@@ -100,14 +104,12 @@ describe("SignatureScheme", () => {
       expect(publicKey.scheme).toBe(SignatureScheme.SshEcdsaP384);
     });
 
-    it("throws for SSH DSA keypair (DSA-1024 keygen not yet ported)", () => {
-      // Mirrors Rust which fully supports DSA via the `dsa` crate's
-      // FIPS 186-4 prime search. Porting the prime search to TS is a
-      // documented gap. Sign/verify and PEM round-trip remain functional
-      // for parsed Rust-generated DSA PEM input.
-      expect(() => createKeypair(SignatureScheme.SshDsa)).toThrow(
-        "SSH DSA key generation is not yet implemented",
-      );
+    it("generates an SSH DSA keypair (the dsa crate's FIPS 186-4 search, over HKDFRng)", () => {
+      const [priv, pub] = createKeypair(SignatureScheme.SshDsa);
+      expect(priv.scheme).toBe(SignatureScheme.SshDsa);
+      const message = new TextEncoder().encode("dsa");
+      const sig = priv.signWithOptions(message, { type: "Ssh", namespace: "t", hashAlg: "sha256" });
+      expect(pub.verify(sig, message)).toBe(true);
     });
   });
 

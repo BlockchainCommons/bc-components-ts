@@ -3,7 +3,7 @@
  *
  *   bun scripts/annotate-isolated-declarations.ts [--dry-run]
  *
- * The reference tsconfig enables `isolatedDeclarations`, which the monorepo did
+ * The reference tsconfig enables `isolatedDeclarations`, which the bcts workspace did
  * not. It requires an explicit type on any exported declaration whose type a
  * single-file emit cannot infer. Most of those are one shape:
  *

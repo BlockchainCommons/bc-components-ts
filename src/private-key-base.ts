@@ -39,8 +39,12 @@ import {
   sshAlgorithmName,
   sshEcdsaPointLen,
   sshEcdsaScalarLen,
+  validateSshAlgorithm,
   type SshAlgorithm,
 } from "./ssh/ssh-algorithm.js";
+import { generateDsaKeypair } from "./ssh/internal/dsa-keygen.js";
+import { generateP521Keypair } from "./ssh/internal/p521-keygen.js";
+import { generateRsaKeypair } from "./ssh/internal/rsa-keygen.js";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { p256, p384 } from "@noble/curves/nist.js";
 import { ComponentsError } from "./error.js";
@@ -66,9 +70,6 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   private readonly _data: Uint8Array;
 
   private constructor(data: Uint8Array) {
-    if (data.length === 0) {
-      throw ComponentsError.invalidData("PrivateKeyBase must have non-zero length");
-    }
     this._data = new Uint8Array(data);
   }
 
@@ -226,26 +227,30 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
   /**
    * Derive an SSH `SigningPrivateKey` from this `PrivateKeyBase`.
    *
-   * builds an `HKDFRng` seeded by `this._data` with salt
-   * `sshAlgorithmName(algorithm)`, then dispatches to the matching
-   * `*Keypair::random` constructor.
+   * Builds an `HKDFRng` seeded by `this._data` with salt
+   * `sshAlgorithmName(algorithm)` (the wire name, as the reference's
+   * `HKDFRng::new(seed, algorithm.as_str())`), then dispatches to the
+   * matching `ssh-key` 0.6.7 `*Keypair::random` constructor, ported so the
+   * RNG is consumed identically and the key is byte-for-byte the reference's:
+   *   - Ed25519 (`ssh-ed25519`): `Ed25519Keypair::random` — 32 seed bytes.
+   *   - DSA (`ssh-dss`): `DsaKeypair::random` — the `dsa` crate's
+   *     FIPS 186-4 1024/160 parameter search (`generateDsaKeypair`).
+   *   - RSA (`ssh-rsa`): `RsaKeypair::random(rng, 2048)` — the `rsa`
+   *     crate's two-prime generation with e = 65537 (`generateRsaKeypair`).
+   *   - ECDSA P-256 / P-384 / P-521: `p{256,384,521}::SecretKey::random`
+   *     rejection sampling over the field-sized byte string.
    *
-   * Supported algorithms (matching the four `SignatureScheme.SshXxx`
-   * variants the reference ships in `signature_scheme.rs`):
-   *   - Ed25519 (`ssh-ed25519`)
-   *   - DSA (`ssh-dss`) — **throws**: byte-deterministic DSA-1024 prime
-   *     generation requires porting the upstream `dsa` crate's
-   *     FIPS 186-4 prime search, which is not yet implemented in TS.
-   *   - ECDSA P-256 (`ecdsa-sha2-nistp256`)
-   *   - ECDSA P-384 (`ecdsa-sha2-nistp384`)
+   * `algorithm` is validated before any bytes are drawn: an unknown kind or
+   * curve is `InvalidData`.
    *
    * @param algorithm - The SSH key algorithm to derive
    * @param comment   - Optional comment carried through the OpenSSH PEM
    */
   sshSigningPrivateKey(algorithm: SshAlgorithm, comment = ""): SigningPrivateKey {
-    const rng = new HKDFRng(this._data, sshAlgorithmName(algorithm));
+    const algo = validateSshAlgorithm(algorithm);
+    const rng = new HKDFRng(this._data, sshAlgorithmName(algo));
     let data: SshPrivateKeyData;
-    switch (algorithm.kind) {
+    switch (algo.kind) {
       case "ed25519": {
         // Mirror `ssh-key` 0.6.7 `Ed25519PrivateKey::random`:
         // `rng.fill_bytes(&mut [0u8; 32])`. The 32 bytes are the seed.
@@ -255,9 +260,14 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
         break;
       }
       case "ecdsa": {
-        const scalarLen = sshEcdsaScalarLen(algorithm.curve);
-        const pointLen = sshEcdsaPointLen(algorithm.curve);
-        const curve = algorithm.curve === "nistp256" ? p256 : p384;
+        if (algo.curve === "nistp521") {
+          const { scalar, point } = generateP521Keypair(rng);
+          data = { kind: "ecdsa", curve: algo.curve, point, scalar };
+          break;
+        }
+        const scalarLen = sshEcdsaScalarLen(algo.curve);
+        const pointLen = sshEcdsaPointLen(algo.curve);
+        const curve = algo.curve === "nistp256" ? p256 : p384;
         // Mirror `p{256,384}::SecretKey::random` rejection sampling:
         // read `scalarLen` bytes; if the big-endian scalar is zero or
         // ≥ n, retry. We delegate the bounds check to noble's
@@ -274,25 +284,23 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
         const point = curve.getPublicKey(scalar, false);
         if (point.length !== pointLen || point[0] !== 0x04) {
           throw ComponentsError.invalidData(
-            `sshSigningPrivateKey ecdsa-${algorithm.curve}: noble returned non-uncompressed point`,
+            `sshSigningPrivateKey ecdsa-${algo.curve}: noble returned non-uncompressed point`,
           );
         }
         data = {
           kind: "ecdsa",
-          curve: algorithm.curve,
+          curve: algo.curve,
           point: new Uint8Array(point),
           scalar,
         };
         break;
       }
       case "dsa":
-        throw ComponentsError.invalidData(
-          "SSH DSA key generation is not yet implemented in TS. The reference " +
-            "implementation ships byte-deterministic DSA-1024 keygen via the " +
-            "`dsa` crate's FIPS 186-4 prime search, which has not been ported. " +
-            "Sign/verify and PEM round-trip work for DSA keys parsed from " +
-            "existing reference-generated PEM input.",
-        );
+        data = { kind: "dsa", ...generateDsaKeypair(rng) };
+        break;
+      case "rsa":
+        data = { kind: "rsa", ...generateRsaKeypair(rng, 2048) };
+        break;
     }
     const checkint = sshCheckintFromPrivateBytes(data);
     const sshKey = SSHPrivateKey.fromParts(data, comment, checkint);
@@ -412,15 +420,19 @@ export class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
 
 /**
  * Mirror of `ssh-key` 0.6.7 `KeypairData::checkint`
- * (`ssh-key/src/private/keypair.rs:215-241`): XOR successive 4-byte
- * big-endian chunks of the algorithm-specific private bytes.
+ * (`ssh-key/src/private/keypair.rs`): XOR successive 4-byte big-endian
+ * chunks of the algorithm-specific private bytes, where those bytes are:
  *
- *   - Ed25519 → seed (32 bytes)
- *   - ECDSA   → canonical scalar (32 / 48 bytes)
- *   - DSA     → secret exponent x bytes
+ *   - Ed25519 → the 32-byte seed (`Ed25519PrivateKey::as_ref`)
+ *   - ECDSA   → the fixed-width scalar (`EcdsaKeypair::private_key_bytes`,
+ *               32 / 48 / 66 bytes, no sign byte)
+ *   - DSA     → `DsaPrivateKey::as_bytes`, the `Mpint` encoding of x
+ *   - RSA     → `RsaPrivateKey.d.as_bytes()`, the `Mpint` encoding of d
  *
- * The `chunks_exact(4)` rule discards any trailing bytes whose count
- * is not a multiple of 4 — match it here.
+ * An `Mpint`'s bytes carry a leading 0x00 when the top bit of the value
+ * is set, so for DSA and RSA the XOR runs over the sign-padded form. The
+ * `chunks_exact(4)` rule discards any trailing bytes whose count is not a
+ * multiple of 4 — match it here.
  */
 function sshCheckintFromPrivateBytes(data: SshPrivateKeyData): number {
   let bytes: Uint8Array;
@@ -432,7 +444,10 @@ function sshCheckintFromPrivateBytes(data: SshPrivateKeyData): number {
       bytes = data.scalar;
       break;
     case "dsa":
-      bytes = data.x;
+      bytes = mpintBytes(data.x);
+      break;
+    case "rsa":
+      bytes = mpintBytes(data.d);
       break;
   }
   let n = 0;
@@ -444,4 +459,17 @@ function sshCheckintFromPrivateBytes(data: SshPrivateKeyData): number {
     n = (n ^ chunk) >>> 0;
   }
   return n;
+}
+
+/**
+ * `Mpint::from_positive_bytes` on canonical positive bytes: a 0x00 is
+ * prefixed when the top bit is set so the value does not read as negative.
+ */
+function mpintBytes(canonical: Uint8Array): Uint8Array {
+  if (canonical.length > 0 && (canonical[0] & 0x80) !== 0) {
+    const out = new Uint8Array(canonical.length + 1);
+    out.set(canonical, 1);
+    return out;
+  }
+  return canonical;
 }

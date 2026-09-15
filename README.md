@@ -88,17 +88,18 @@ bundle:
 
 ### Version History
 
+- **1.0.0-beta.3 (September 15, 2026)** - Alignment with `bc-components-rust` 0.31.1: decode errors, texts, EC/PQ key semantics, `miniz_oxide` DEFLATE bytes, SSH DSA/RSA/P-521 keys, SSH-agent lock/unlock with an injectable agent.
 - **1.0.0-beta.2 (September 12, 2026)** - ECDSA SSH signatures follow the reference and OpenSSH: signing no longer low-s normalises (byte-identical to the reference) and verification accepts either form (a high-s `sshsig` from the reference or OpenSSH was rejected).
 - **1.0.0-beta.1 (September 9, 2026)** - Initial beta implementation.
 
 ### Roadmap
 
 - Continued testing and auditing on the path from beta to a stable **1.0.0** release.
-- Continued parity with the Rust reference implementation as it evolves (see [`RUST_DIVERGENCES.md`](./RUST_DIVERGENCES.md)).
+- Continued parity with the Rust reference implementation as it evolves; every release replays the vector corpus against the published crate (see [`tests/rust-validation/README.md`](./tests/rust-validation/README.md)).
 
 ### Dependencies
 
-`@blockchaincommons/components` depends on `@blockchaincommons/crypto`, `@blockchaincommons/dcbor`, `@blockchaincommons/rand`, `@blockchaincommons/sskr`, `@blockchaincommons/tags`, `@blockchaincommons/uniform-resources`, `@noble/curves`, `@noble/hashes`, `@noble/post-quantum`, `@scure/base`, `pako` at runtime.
+`@blockchaincommons/components` depends on `@blockchaincommons/crypto`, `@blockchaincommons/dcbor`, `@blockchaincommons/rand`, `@blockchaincommons/sskr`, `@blockchaincommons/tags`, `@blockchaincommons/uniform-resources`, `@noble/curves`, `@noble/hashes`, `@noble/post-quantum`, `@scure/base` at runtime.
 
 To build and work on this library, you'll need the following tools:
 

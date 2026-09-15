@@ -2,10 +2,11 @@ import {
   type Cbor,
   type Tag,
   cbor,
-  expectArray,
   expectBytes,
   decodeCbor,
   type ToCbor,
+  asArray,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { TAG_ENCRYPTED } from "@blockchaincommons/tags";
@@ -14,7 +15,6 @@ import { Nonce } from "../nonce.js";
 import { Digest } from "../digest.js";
 import { AuthenticationTag } from "./authentication-tag.js";
 import { bytesToHex } from "../utils.js";
-import { ComponentsError } from "../error.js";
 
 // The codec is built on first use so that an unused class tree-shakes away.
 let ENCRYPTED_MESSAGE_CODEC: ComponentCodec<EncryptedMessage> | undefined;
@@ -196,10 +196,10 @@ export class EncryptedMessage implements ToCbor, ToUR {
     return (ENCRYPTED_MESSAGE_CODEC ??= defineCodec({
       tags: [TAG_ENCRYPTED],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("EncryptedMessage must be an array");
         if (elements.length < 3) {
-          throw ComponentsError.invalidData("EncryptedMessage must have at least 3 elements");
+          throw CborError.custom("EncryptedMessage must have at least 3 elements");
         }
 
         const ciphertext = expectBytes(elements[0]);

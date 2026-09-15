@@ -1,0 +1,15 @@
+{
+ "count": 1,
+ "vectors": [
+  {
+   "name": "digest cyc:1.5 (unparsable, never a panic)",
+   "recipe": {
+    "k": "digest",
+    "image": {
+     "cycle": 1.5
+    }
+   },
+   "expect": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9|ur:digest/hdcxrhgtdirhmugtfmayondmgmtstnkipyzssslrwsvlkngulawymhloylpsvowssnwlamnlatrs|b94d27b9"
+  }
+ ]
+}

@@ -1,8 +1,16 @@
-import { type Cbor, type Tag, cbor, expectBytes, type ToCbor } from "@blockchaincommons/dcbor";
+import {
+  type Cbor,
+  type Tag,
+  cbor,
+  expectBytes,
+  type ToCbor,
+  CborError,
+} from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { TAG_UUID } from "@blockchaincommons/tags";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { ComponentsError } from "../error.js";
+import { bytesFromHex, rustTrim } from "../domain.js";
 import { bytesToHex, toBase64 } from "../utils.js";
 import { randomBytes, secureRng, type RngOptions } from "@blockchaincommons/rand";
 
@@ -47,7 +55,7 @@ export class UUID implements ToCbor, ToUR {
 
   private constructor(data: Uint8Array) {
     if (data.length !== UUID_SIZE) {
-      throw ComponentsError.invalidSize(UUID_SIZE, data.length);
+      throw ComponentsError.invalidSize("UUID", UUID_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -67,27 +75,17 @@ export class UUID implements ToCbor, ToUR {
    * Create a UUID from hex string (32 hex chars)
    */
   static fromHex(hex: string): UUID {
-    if (hex.length !== 32) {
-      throw ComponentsError.invalidFormat(`UUID hex must be 32 characters, got ${hex.length}`);
-    }
-    const data = new Uint8Array(16);
-    for (let i = 0; i < 16; i++) {
-      data[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
-    }
-    return new UUID(data);
+    return new UUID(bytesFromHex(hex));
   }
 
   /**
-   * Create a UUID from string representation (standard UUID format)
-   * Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+   * A UUID from its text, as the reference's `from_str`: Rust `str::trim`,
+   * every `-` removed, strict hex (`Hex` on a malformed string), and 16
+   * bytes (`InvalidSize` otherwise). Neither the dash positions nor the
+   * digit count between them is checked.
    */
   static fromString(uuidString: string): UUID {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(uuidString)) {
-      throw ComponentsError.invalidFormat(`Invalid UUID format: ${uuidString}`);
-    }
-    const hex = uuidString.replace(/-/g, "");
-    return UUID.fromHex(hex);
+    return new UUID(bytesFromHex(rustTrim(uuidString).replaceAll("-", "")));
   }
 
   /**
@@ -158,6 +156,7 @@ export class UUID implements ToCbor, ToUR {
       tags: [TAG_UUID],
       decodeUntagged: (cbor) => {
         const data = expectBytes(cbor);
+        if (data.length !== UUID_SIZE) throw CborError.custom("invalid UUID size");
         return UUID.from(data);
       },
       encodeUntagged: (value) => value.untaggedCbor(),

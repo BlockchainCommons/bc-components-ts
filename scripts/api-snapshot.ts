@@ -23,7 +23,7 @@ import { Extractor, ExtractorConfig } from "@microsoft/api-extractor";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const check = process.argv.includes("--check");
 
-const ENTRIES = ["index", "ssh", "pq", "kdf", "sskr", "tags"];
+const ENTRIES = ["index", "ssh", "pq", "kdf", "sskr", "tags", "ssh-agent-node"];
 
 const base = JSON.parse(readFileSync(join(root, "api-extractor.json"), "utf8"));
 

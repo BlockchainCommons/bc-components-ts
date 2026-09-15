@@ -116,5 +116,10 @@ export { MLDSALevel } from "./mldsa/index.js";
 // (mirrors the reference implementation feature `ssh`).
 export type { SshAlgorithm, SshEcdsaCurve, SshHashAlgorithm } from "./ssh/index.js";
 
+// SSH agent: the interface an SSH-agent key derivation uses and an in-memory
+// agent; the Node transport to a real agent is the `ssh-agent-node` subpath.
+export type { SshAgent } from "./ssh-agent/index.js";
+export { MemorySshAgent } from "./ssh-agent/index.js";
+
 // Post-quantum cryptography - ML-KEM (from mlkem/ module)
 export { MLKEMLevel } from "./mlkem/index.js";

@@ -79,11 +79,16 @@ const summary =
     try {
       return { ok: true, value: f(cbor) };
     } catch (e) {
+      // A decoder failure carries its dcbor error as `cause`; report it as
+      // the reference's summarisers return the `dcbor::Error`.
+      const cause: unknown = e instanceof Error ? e.cause : undefined;
       return {
         ok: false,
         error: CborError.isCborError(e)
           ? e
-          : CborError.custom(e instanceof Error ? e.message : String(e)),
+          : CborError.isCborError(cause)
+            ? cause
+            : CborError.custom(e instanceof Error ? e.message : String(e)),
       };
     }
   };
@@ -94,8 +99,8 @@ const summary =
  *
  * - `Digest(…)`, `ARID(…)`, `XID(…)` over the short description; `URI(…)`,
  *   `UUID(…)`, `JSON(…)` over the text
- * - `Nonce`, `Salt`, `Seed`, `SSKRShare`, `SSHSignature`, `SSHCertificate`
- *   as fixed words once the content parses
+ * - `Nonce`, `Salt`, `Seed`, `SSKRShare`, `SSHSignature` as fixed words
+ *   once the content parses; `SSHCertificate` for any content
  * - `Signature` for the default scheme, `Signature(Ed25519)` and so on
  *   otherwise; `SealedMessage` for X25519, `SealedMessage(MLKEM768)` …
  * - `toString()` of `PrivateKeys`, `PublicKeys`, `Reference`,
@@ -180,7 +185,15 @@ export function registerComponentSummarizers(store: TagsStore): void {
   store.setSummarizer(
     TAG_SIGNATURE.value,
     summary((c) => {
-      const scheme = Signature.codec.decodeUntagged(c).scheme;
+      const signature = Signature.codec.decodeUntagged(c);
+      // An SSH signature with no `SignatureScheme` (RSA, P-521) prints
+      // `Signature(Unknown)`, as the reference's summariser does.
+      let scheme: string;
+      try {
+        scheme = signature.scheme;
+      } catch {
+        return "Signature(Unknown)";
+      }
       return scheme === defaultSignatureScheme() ? "Signature" : `Signature(${scheme})`;
     }),
   );
@@ -216,12 +229,10 @@ export function registerComponentSummarizers(store: TagsStore): void {
       return "SSHSignature";
     }),
   );
+  // The reference's summariser does not look at the content.
   store.setSummarizer(
     TAG_SSH_TEXT_CERTIFICATE.value,
-    summary((c) => {
-      expectText(c);
-      return "SSHCertificate";
-    }),
+    summary(() => "SSHCertificate"),
   );
 }
 

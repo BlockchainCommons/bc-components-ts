@@ -10,16 +10,10 @@ import {
   type CborInput,
   type Tag,
   cbor,
-  expectMap,
+  tagsForValues,
   type ToCbor,
 } from "@blockchaincommons/dcbor";
-import {
-  taggedCborOf,
-  mapGetBoolean,
-  mapGetBytes,
-  type ComponentCodec,
-  defineCodec,
-} from "../codable.js";
+import { taggedCborOf } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
 import { TAG_EC_KEY, LEGACY_TAGS } from "@blockchaincommons/tags";
 const TAG_EC_KEY_V1 = LEGACY_TAGS.EC_KEY_V1;
@@ -27,13 +21,10 @@ import { ComponentsError } from "../error.js";
 import { ECPublicKey } from "./ec-public-key.js";
 import { SchnorrPublicKey } from "./schnorr-public-key.js";
 import { bytesToHex, toBase64 } from "../utils.js";
-import { bytesFromHex, expectSecp256k1Scalar, guarded } from "../domain.js";
+import { bytesFromHex, guarded } from "../domain.js";
 import type { ECKey } from "./ec-key-base.js";
 import { Reference } from "../reference.js";
 import { Digest } from "../digest.js";
-
-// The codec is built on first use so that an unused class tree-shakes away.
-let E_C_PRIVATE_KEY_CODEC: ComponentCodec<ECPrivateKey> | undefined;
 
 /**
  * EC private key for ECDSA and Schnorr signatures (secp256k1, 32 bytes)
@@ -68,9 +59,11 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
 
   private constructor(data: Uint8Array) {
     if (data.length !== ecdsa.PRIVATE_KEY_SIZE) {
-      throw ComponentsError.invalidSize(ecdsa.PRIVATE_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize("EC private key", ecdsa.PRIVATE_KEY_SIZE, data.length);
     }
-    expectSecp256k1Scalar(data, "ECPrivateKey");
+    // Any 32 bytes are accepted, as `ECPrivateKey::from_data_ref`; a scalar
+    // of 0 or ≥ n fails at `publicKey`, `schnorrPublicKey` and signing, where
+    // the reference panics.
     this._data = new Uint8Array(data);
   }
 
@@ -110,7 +103,7 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
    * Restore an ECPrivateKey from a hex string.
    */
   static fromHex(hex: string): ECPrivateKey {
-    return ECPrivateKey.from(bytesFromHex(hex, "ECPrivateKey"));
+    return ECPrivateKey.from(bytesFromHex(hex));
   }
 
   // ============================================================================
@@ -166,11 +159,7 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
    * @returns A 64-byte signature
    */
   ecdsaSign(message: Uint8Array): Uint8Array {
-    try {
-      return ecdsa.sign(this._data, message);
-    } catch (e) {
-      throw ComponentsError.crypto(`ECDSA signing failed: ${String(e)}`);
-    }
+    return guarded("ECPrivateKey", () => ecdsa.sign(this._data, message));
   }
 
   /**
@@ -180,11 +169,7 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
    * @returns A 64-byte signature
    */
   schnorrSign(message: Uint8Array): Uint8Array {
-    try {
-      return schnorr.sign(this._data, message);
-    } catch (e) {
-      throw ComponentsError.crypto(`Schnorr signing failed: ${String(e)}`);
-    }
+    return guarded("ECPrivateKey", () => schnorr.sign(this._data, message));
   }
 
   /**
@@ -195,11 +180,7 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
    * @returns A 64-byte signature
    */
   schnorrSignUsing(message: Uint8Array, rng: RandomNumberGenerator): Uint8Array {
-    try {
-      return schnorr.sign(this._data, message, { rng });
-    } catch (e) {
-      throw ComponentsError.crypto(`Schnorr signing failed: ${String(e)}`);
-    }
+    return guarded("ECPrivateKey", () => schnorr.sign(this._data, message, { rng }));
   }
 
   /**
@@ -235,35 +216,12 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   // CBOR Serialization (ToCbor)
   // ============================================================================
 
-  /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-  static get codec(): ComponentCodec<ECPrivateKey> {
-    return (E_C_PRIVATE_KEY_CODEC ??= defineCodec({
-      tags: [TAG_EC_KEY, TAG_EC_KEY_V1],
-      decodeUntagged: (cborValue) => {
-        const map = expectMap(cborValue);
-
-        // Check for key 2 (isPrivate = true)
-        const isPrivate = mapGetBoolean(map, 2);
-        if (isPrivate !== true) {
-          throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 2 set to true");
-        }
-
-        // Get key data from key 3
-        // CborMap.extract() returns native types (Uint8Array for byte strings)
-        const keyData = mapGetBytes(map, 3);
-        if (keyData === undefined || keyData.length === 0) {
-          throw ComponentsError.invalidData("ECPrivateKey CBOR must have key 3 (data)");
-        }
-
-        return ECPrivateKey.from(keyData);
-      },
-      encodeUntagged: (value) => value.untaggedCbor(),
-    }));
-  }
-
-  /** The CBOR tags this type decodes from; the first one is used to encode. */
+  /**
+   * The CBOR tags of this type; the first one is used to encode. As the
+   * reference, this type is only encoded: it has no `fromCbor`.
+   */
   cborTags(): Tag[] {
-    return [...ECPrivateKey.codec.tags];
+    return tagsForValues([TAG_EC_KEY.value, TAG_EC_KEY_V1.value]);
   }
 
   /**
@@ -287,15 +245,6 @@ export class ECPrivateKey implements ECKey, ToCbor, ToUR {
   toUR(): UR {
     return urFor(this);
   }
-
-  /** Decode tagged or untagged CBOR. */
-  static fromCbor(cborValue: Cbor): ECPrivateKey {
-    return ECPrivateKey.codec.decode(cborValue);
-  }
-
-  // ============================================================================
-  // CBOR Deserialization (CborTaggedDecodable)
-  // ============================================================================
 
   // ============================================================================
   // UR Serialization (ToUR)

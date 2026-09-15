@@ -30,6 +30,7 @@ import {
   EncapsulationPublicKey,
 } from "../src/index.js";
 import { SskrShare } from "../src/sskr.js";
+import { ComponentsError } from "../src/error.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
@@ -63,9 +64,11 @@ describe("PrivateKeyBase", () => {
       const longData = new Uint8Array(64).fill(0x42);
       expect(() => PrivateKeyBase.from(longData)).not.toThrow();
 
-      // Only reject zero-length
+      // Empty data is accepted too, as the reference's `from_data`; keys derive from it.
       const emptyData = new Uint8Array(0);
-      expect(() => PrivateKeyBase.from(emptyData)).toThrow();
+      const empty = PrivateKeyBase.from(emptyData);
+      expect(empty.bytes.length).toBe(0);
+      expect(empty.ed25519SigningPrivateKey().publicKey().isEd25519()).toBe(true);
     });
 
     it("should return a copy of data", () => {
@@ -559,9 +562,21 @@ describe("SskrShare", () => {
       expect(share.bytes).toEqual(testShareData);
     });
 
-    it("should reject data too short", () => {
-      const shortData = new Uint8Array(3);
-      expect(() => SskrShare.from(shortData)).toThrow();
+    it("holds any bytes; a header accessor on a short share is InvalidData", () => {
+      const share = SskrShare.from(new Uint8Array(3));
+      expect(share.bytes).toEqual(new Uint8Array(3));
+      expect(share.identifier).toBe(0);
+      expect(share.groupThreshold).toBe(1);
+      let thrown: unknown;
+      try {
+        void share.groupIndex;
+      } catch (e) {
+        thrown = e;
+      }
+      expect(ComponentsError.isComponentsError(thrown)).toBe(true);
+      expect((thrown as ComponentsError).code).toBe("InvalidData");
+      expect(() => share.share).toThrow(ComponentsError);
+      expect(() => SskrShare.combine([share])).toThrow();
     });
   });
 

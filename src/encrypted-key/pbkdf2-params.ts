@@ -10,7 +10,7 @@
  * ```
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { type Cbor, cbor, expectArray, expectUnsigned, CborError } from "@blockchaincommons/dcbor";
 import { pbkdf2Sha256, pbkdf2Sha512 } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
@@ -22,7 +22,8 @@ import { KeyDerivationMethod } from "./key-derivation-method.js";
 import { SALT_LEN } from "./hkdf-params.js";
 import type { KeyDerivation } from "./key-derivation.js";
 import { ComponentsError } from "../error.js";
-import { expectU32, guarded } from "../domain.js";
+import { decodeWith } from "../codable.js";
+import { expectU32, guarded, USIZE_FIELD, U32_FIELD } from "../domain.js";
 
 /** Default number of iterations for PBKDF2 */
 export const DEFAULT_PBKDF2_ITERATIONS = 100_000;
@@ -165,26 +166,21 @@ export class PBKDF2Params implements KeyDerivation {
   /**
    * Parse from CBOR.
    */
+  /**
+   * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+   * every failure is `Cbor` with the bare message. The index element is
+   * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+   * the fixed-width fields wrap the same way.
+   */
   static fromCbor(cborValue: Cbor): PBKDF2Params {
-    const array = expectArray(cborValue);
-
-    if (array.length !== 4) {
-      throw ComponentsError.invalidData(
-        `Invalid PBKDF2Params: expected 4 elements, got ${array.length}`,
-      );
-    }
-
-    const index = expectNumber(array[0]);
-    if (index !== PBKDF2Params.INDEX) {
-      throw ComponentsError.invalidData(
-        `Invalid PBKDF2Params index: expected ${PBKDF2Params.INDEX}, got ${index}`,
-      );
-    }
-
-    const salt = Salt.fromCbor(array[1]);
-    const iterations = expectU32(Number(expectNumber(array[2])), "iterations");
-    const hashType = hashTypeFromCbor(array[3]);
-
-    return new PBKDF2Params(salt, iterations, hashType);
+    return decodeWith(() => {
+      const array = expectArray(cborValue);
+      if (array.length !== 4) throw CborError.custom("Invalid PBKDF2Params");
+      expectUnsigned(array[0], USIZE_FIELD);
+      const salt = Salt.fromCbor(array[1]);
+      const iterations = Number(expectUnsigned(array[2], U32_FIELD));
+      const hashType = hashTypeFromCbor(array[3]);
+      return new PBKDF2Params(salt, iterations, hashType);
+    });
   }
 }

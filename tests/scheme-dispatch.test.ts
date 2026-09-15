@@ -26,14 +26,20 @@ import {
   X25519PrivateKey,
   createKeypair,
   createEncapsulationKeypair,
+  generateKeypair,
   defaultEncapsulationScheme,
 } from "../src/index.js";
+import { MLDSAPrivateKey, MLDSALevel } from "../src/pq.js";
 import { MLKEMPrivateKey } from "../src/pq.js";
 import {
   isMlkemScheme,
   schemeToMlkemLevel,
   mlkemLevelToScheme,
 } from "../src/encapsulation/encapsulation-scheme.js";
+
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
 
 const seed = Uint8Array.from({ length: 32 }, (_, i) => (i * 7 + 3) & 0xff);
 const msg = new TextEncoder().encode("scheme dispatch");
@@ -221,11 +227,6 @@ describe("SigningPublicKey and Signature over every scheme", () => {
 describe("keypair factories", () => {
   it("createKeypair covers every scheme", () => {
     for (const scheme of Object.values(SignatureScheme)) {
-      if (scheme === SignatureScheme.SshDsa) {
-        // DSA-1024 key generation is not ported (RUST_DIVERGENCES.md §2).
-        expect(() => createKeypair(scheme)).toThrow(ComponentsError);
-        continue;
-      }
       const [priv, pub] = createKeypair(scheme, { comment: "comment" });
       expect(priv.scheme).toBe(scheme);
       expect(pub.scheme).toBe(scheme);
@@ -236,19 +237,115 @@ describe("keypair factories", () => {
       expect(pub.verify(sig, msg)).toBe(true);
     }
   });
-  it("createKeypair with an rng is seeded for every scheme, ML-DSA included", () => {
+  it("createKeypair with an rng is seeded for every scheme the reference seeds", () => {
     for (const scheme of [
       SignatureScheme.Schnorr,
       SignatureScheme.Ecdsa,
       SignatureScheme.Ed25519,
-      SignatureScheme.MLDSA65,
       SignatureScheme.SshEd25519,
       SignatureScheme.SshEcdsaP256,
+      SignatureScheme.SshDsa,
     ]) {
       const [a] = createKeypair(scheme, { rng: rng() });
       const [b] = createKeypair(scheme, { rng: rng() });
       expect(a.equals(b), scheme).toBe(true);
     }
+  });
+  it("createKeypair refuses an rng for the ML-DSA schemes before drawing, as keypair_using", () => {
+    for (const scheme of [
+      SignatureScheme.MLDSA44,
+      SignatureScheme.MLDSA65,
+      SignatureScheme.MLDSA87,
+    ]) {
+      let draws = 0;
+      const counting = {
+        nextU32: () => {
+          draws++;
+          return 0;
+        },
+        nextU64: () => {
+          draws++;
+          return 0n;
+        },
+        fillBytes: () => {
+          draws++;
+        },
+      };
+      let thrown: unknown;
+      try {
+        createKeypair(scheme, { rng: counting });
+      } catch (e) {
+        thrown = e;
+      }
+      expect(ComponentsError.isComponentsError(thrown)).toBe(true);
+      expect((thrown as ComponentsError).code).toBe("General");
+      expect((thrown as ComponentsError).message).toBe(
+        "Deterministic keypair generation not supported for this signature scheme",
+      );
+      expect(draws).toBe(0);
+      // Without an rng the pair comes from the secure generator.
+      const [priv, pub] = createKeypair(scheme);
+      expect(priv.scheme).toBe(scheme);
+      expect(pub.verify(priv.sign(msg), msg)).toBe(true);
+    }
+    // The seeded route is the level's own factory.
+    const [a] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65, { rng: rng() });
+    const [b] = MLDSAPrivateKey.keypair(MLDSALevel.MLDSA65, { rng: rng() });
+    expect(a.equals(b)).toBe(true);
+  });
+  it("createEncapsulationKeypair and generateKeypair refuse an rng for ML-KEM, as keypair_opt_using", () => {
+    for (const scheme of [
+      EncapsulationScheme.MLKEM512,
+      EncapsulationScheme.MLKEM768,
+      EncapsulationScheme.MLKEM1024,
+    ]) {
+      let thrown: unknown;
+      try {
+        createEncapsulationKeypair(scheme, { rng: rng() });
+      } catch (e) {
+        thrown = e;
+      }
+      expect((thrown as ComponentsError).code).toBe("General");
+      expect((thrown as ComponentsError).message).toBe(
+        "Deterministic keypair generation not supported for this encapsulation scheme",
+      );
+      const [priv, pub] = createEncapsulationKeypair(scheme);
+      expect(priv.encapsulationScheme).toBe(scheme);
+      expect(pub.encapsulationScheme).toBe(scheme);
+    }
+    // The signing pair is made first and draws; the refusal comes at the encapsulation turn.
+    let draws = 0;
+    const counting = {
+      nextU32: () => {
+        draws++;
+        return 0;
+      },
+      nextU64: () => {
+        draws++;
+        return 0n;
+      },
+      fillBytes: (d: Uint8Array) => {
+        draws++;
+        d.fill(7);
+      },
+    };
+    expect(() =>
+      generateKeypair({
+        signing: SignatureScheme.Ed25519,
+        encapsulation: EncapsulationScheme.MLKEM768,
+        rng: counting,
+      }),
+    ).toThrow("Deterministic keypair generation not supported for this encapsulation scheme");
+    expect(draws).toBeGreaterThan(0);
+    draws = 0;
+    expect(() =>
+      generateKeypair({
+        signing: SignatureScheme.MLDSA44,
+        encapsulation: EncapsulationScheme.X25519,
+        rng: counting,
+      }),
+    ).toThrow("Deterministic keypair generation not supported for this signature scheme");
+    expect(draws).toBe(0);
   });
   it("createKeypair defaults to the reference's default scheme", () => {
     const [priv, pub] = createKeypair();
@@ -260,14 +357,13 @@ describe("keypair factories", () => {
 
 describe("Encapsulation types over both schemes", () => {
   const x = EncapsulationPrivateKey.fromX25519PrivateKey(X25519PrivateKey.from(seed));
-  const m = EncapsulationPrivateKey.fromMlkem(
-    MLKEMPrivateKey.random(MLKEMLevel.MLKEM512, { rng: rng() }),
-  );
-  const cases: [string, EncapsulationPrivateKey, EncapsulationScheme][] = [
-    ["x25519", x, EncapsulationScheme.X25519],
-    ["mlkem512", m, EncapsulationScheme.MLKEM512],
+  const [mPriv, mPub] = MLKEMPrivateKey.keypair(MLKEMLevel.MLKEM512, { rng: rng() });
+  const m = EncapsulationPrivateKey.fromMlkem(mPriv);
+  const cases: [string, EncapsulationPrivateKey, EncapsulationPublicKey, EncapsulationScheme][] = [
+    ["x25519", x, x.publicKey(), EncapsulationScheme.X25519],
+    ["mlkem512", m, EncapsulationPublicKey.fromMlkem(mPub), EncapsulationScheme.MLKEM512],
   ];
-  for (const [name, priv, scheme] of cases) {
+  for (const [name, priv, pub, scheme] of cases) {
     it(name, () => {
       const isX = scheme === EncapsulationScheme.X25519;
       expect(priv.encapsulationScheme).toBe(scheme);
@@ -283,12 +379,10 @@ describe("Encapsulation types over both schemes", () => {
       expect(priv.reference().toCbor().toData().length).toBeGreaterThan(0);
       const back = EncapsulationPrivateKey.fromCbor(decodeCbor(priv.toCbor().toData()));
       expect(back.equals(priv)).toBe(true);
-      expect(
-        decodeURWith(UR.parse(priv.toUR().toString()), EncapsulationPrivateKey.codec).equals(priv),
-      ).toBe(true);
-      expect(priv.toUR().type.name).toBe(isX ? "agreement-private-key" : "mlkem-private-key");
+      expect("toUR" in priv).toBe(false);
 
-      const pub = priv.publicKey();
+      if (isX) expect(priv.publicKey().equals(pub)).toBe(true);
+      else expect(() => priv.publicKey()).toThrow(ComponentsError);
       expect(pub.encapsulationScheme).toBe(scheme);
       expect(pub.isX25519()).toBe(isX);
       expect(pub.isMlkem()).toBe(!isX);
@@ -303,9 +397,7 @@ describe("Encapsulation types over both schemes", () => {
       expect(EncapsulationPublicKey.fromCbor(decodeCbor(pub.toCbor().toData())).equals(pub)).toBe(
         true,
       );
-      expect(
-        decodeURWith(UR.parse(pub.toUR().toString()), EncapsulationPublicKey.codec).equals(pub),
-      ).toBe(true);
+      expect("toUR" in pub).toBe(false);
 
       const [shared, ct] = pub.encapsulateNewSharedSecret();
       expect(ct.encapsulationScheme).toBe(scheme);
@@ -320,9 +412,7 @@ describe("Encapsulation types over both schemes", () => {
       expect(ct.toString()).toContain("EncapsulationCiphertext");
       const ctBack = EncapsulationCiphertext.fromCbor(decodeCbor(ct.toCbor().toData()));
       expect(ctBack.equals(ct)).toBe(true);
-      expect(
-        decodeURWith(UR.parse(ct.toUR().toString()), EncapsulationCiphertext.codec).equals(ct),
-      ).toBe(true);
+      expect("toUR" in ct).toBe(false);
       expect(priv.decapsulateSharedSecret(ctBack).equals(shared)).toBe(true);
     });
   }
@@ -335,12 +425,11 @@ describe("Encapsulation types over both schemes", () => {
     expect(EncapsulationCiphertext.fromX25519Data(seed).isX25519()).toBe(true);
     const mp = EncapsulationPrivateKey.fromMlkemData(MLKEMLevel.MLKEM512, m.bytes);
     expect(mp.equals(m)).toBe(true);
+    const mPublic = EncapsulationPublicKey.fromMlkem(mPub);
     expect(
-      EncapsulationPublicKey.fromMlkemData(MLKEMLevel.MLKEM512, m.publicKey().bytes).equals(
-        m.publicKey(),
-      ),
+      EncapsulationPublicKey.fromMlkemData(MLKEMLevel.MLKEM512, mPublic.bytes).equals(mPublic),
     ).toBe(true);
-    const [, ct] = m.publicKey().encapsulateNewSharedSecret();
+    const [, ct] = mPublic.encapsulateNewSharedSecret();
     expect(EncapsulationCiphertext.fromMlkemData(MLKEMLevel.MLKEM512, ct.bytes).equals(ct)).toBe(
       true,
     );
@@ -370,9 +459,12 @@ describe("Encapsulation types over both schemes", () => {
       expect(mlkemLevelToScheme(level)).toBe(scheme);
       const [priv, pub] = createEncapsulationKeypair(scheme);
       expect(priv.encapsulationScheme).toBe(scheme);
-      expect(priv.publicKey().equals(pub)).toBe(true);
-      const [s1] = createEncapsulationKeypair(scheme, { rng: rng() });
-      const [s2] = createEncapsulationKeypair(scheme, { rng: rng() });
+      expect(pub.encapsulationScheme).toBe(scheme);
+      // The public key is not derived from an ML-KEM private key (the reference refuses).
+      expect(() => priv.publicKey()).toThrow(ComponentsError);
+      // Seeded ML-KEM pairs come from the level's own factory.
+      const [s1] = EncapsulationPrivateKey.mlkemKeypair(level, { rng: rng() });
+      const [s2] = EncapsulationPrivateKey.mlkemKeypair(level, { rng: rng() });
       expect(s1.equals(s2), scheme).toBe(true);
     }
     expect(() => schemeToMlkemLevel(EncapsulationScheme.X25519)).toThrow();

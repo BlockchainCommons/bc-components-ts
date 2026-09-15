@@ -43,7 +43,7 @@ export class SymmetricKey implements ToCbor {
 
   private constructor(data: Uint8Array) {
     if (data.length !== SYMMETRIC_KEY_SIZE) {
-      throw ComponentsError.invalidSize(SYMMETRIC_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize("symmetric key", SYMMETRIC_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -68,7 +68,7 @@ export class SymmetricKey implements ToCbor {
    * Create a SymmetricKey from hex string.
    */
   static fromHex(hex: string): SymmetricKey {
-    return SymmetricKey.from(bytesFromHex(hex, "SymmetricKey"));
+    return SymmetricKey.from(bytesFromHex(hex));
   }
 
   // ============================================================================

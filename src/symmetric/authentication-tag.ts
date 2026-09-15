@@ -1,4 +1,5 @@
 import { type Cbor, cbor, expectBytes, decodeCbor } from "@blockchaincommons/dcbor";
+import { decodeComponent } from "../codable.js";
 import { ComponentsError } from "../error.js";
 import { bytesToHex, toBase64 } from "../utils.js";
 import { bytesFromHex } from "../domain.js";
@@ -28,7 +29,7 @@ export class AuthenticationTag {
 
   private constructor(data: Uint8Array) {
     if (data.length !== AUTHENTICATION_TAG_SIZE) {
-      throw ComponentsError.invalidSize(AUTHENTICATION_TAG_SIZE, data.length);
+      throw ComponentsError.invalidSize("authentication tag", AUTHENTICATION_TAG_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -48,7 +49,7 @@ export class AuthenticationTag {
    * Create an AuthenticationTag from hex string.
    */
   static fromHex(hex: string): AuthenticationTag {
-    return AuthenticationTag.from(bytesFromHex(hex, "AuthenticationTag"));
+    return AuthenticationTag.from(bytesFromHex(hex));
   }
 
   // ============================================================================
@@ -90,7 +91,7 @@ export class AuthenticationTag {
    * Get string representation.
    */
   toString(): string {
-    return `AuthenticationTag(${this.toHex()})`;
+    return `AuthenticationTag("${this.toHex()}")`;
   }
 
   // ============================================================================
@@ -115,9 +116,13 @@ export class AuthenticationTag {
   /**
    * Creates an AuthenticationTag from CBOR.
    */
+  /**
+   * From the untagged byte string, as the reference's `TryFrom<CBOR>`
+   * (error type `Error`): a non-byte-string is `Cbor` (`CBOR error: …`), a
+   * wrong length `InvalidSize`.
+   */
   static fromCbor(cbor: Cbor): AuthenticationTag {
-    const data = expectBytes(cbor);
-    return AuthenticationTag.from(data);
+    return decodeComponent(() => AuthenticationTag.from(expectBytes(cbor)));
   }
 
   /**

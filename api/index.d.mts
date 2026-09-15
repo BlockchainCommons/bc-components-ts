@@ -1,11 +1,13 @@
 import { bytesToHex } from '@blockchaincommons/dcbor';
 import { Cbor } from '@blockchaincommons/dcbor';
 import { CborCodec } from '@blockchaincommons/dcbor';
+import { CborDate } from '@blockchaincommons/dcbor';
 import { CborTagged } from '@blockchaincommons/dcbor';
 import { hexToBytes } from '@blockchaincommons/dcbor';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
 import { RngOptions } from '@blockchaincommons/rand';
 import { Tag } from '@blockchaincommons/dcbor';
+import { TagValue } from '@blockchaincommons/dcbor';
 import { ToCbor } from '@blockchaincommons/dcbor';
 import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
@@ -175,6 +177,11 @@ export declare class AuthenticationTag {
     /**
      * Creates an AuthenticationTag from CBOR.
      */
+    /**
+     * From the untagged byte string, as the reference's `TryFrom<CBOR>`
+     * (error type `Error`): a non-byte-string is `Cbor` (`CBOR error: …`), a
+     * wrong length `InvalidSize`.
+     */
     static fromCbor(cbor: Cbor): AuthenticationTag;
     /**
      * Creates an AuthenticationTag from CBOR binary data.
@@ -287,7 +294,13 @@ export declare type Codable = ToCbor & CborTagged;
  * tag has already been consumed by the caller.
  */
 export declare interface ComponentCodec<T> extends CborCodec<T> {
-    /** The tags this type is written and read with; the first is written. */
+    /** The tag values this type is written and read with; the first is written. */
+    readonly tagValues: readonly TagValue[];
+    /**
+     * `tagValues` resolved through dcbor's global tags store at each access
+     * (the reference's `tags_for_values`): named once `registerTags()` ran,
+     * numeric otherwise.
+     */
     readonly tags: readonly Tag[];
     /** Decode a value tagged with any of `tags`; anything else is a `Cbor` failure. */
     decode: (cbor: Cbor) => T;
@@ -327,10 +340,12 @@ export declare class ComponentsError extends Error {
     static isComponentsError(value: unknown): value is ComponentsError;
     /** `true` when this error carries `code`. */
     is(code: ComponentsErrorCode): boolean;
-    /** `InvalidSize` for unnamed data. */
-    static invalidSize(expected: number, actual: number): ComponentsError;
-    /** `InvalidSize` naming the type being constructed. */
-    static invalidSizeForType(dataType: string, expected: number, actual: number): ComponentsError;
+    /**
+     * `InvalidSize`: `invalid <dataType> size: expected <expected>, got
+     * <actual>`, with the reference's `data_type` (`"digest"`, `"nonce"`,
+     * `"symmetric key"`, `"ECDSA public key"`, …).
+     */
+    static invalidSize(dataType: string, expected: number, actual: number): ComponentsError;
     /** `InvalidData` for unnamed data. */
     static invalidData(reason: string, cause?: unknown): ComponentsError;
     /** `InvalidData` naming the type or parameter. */
@@ -341,8 +356,18 @@ export declare class ComponentsError extends Error {
     static invalidFormat(reason: string, cause?: unknown): ComponentsError;
     /** `Crypto`: a cryptographic operation failed (authentication, signing). */
     static crypto(message: string, cause?: unknown): ComponentsError;
-    /** `Cbor`: a dcbor failure at the package boundary. */
+    /**
+     * `Cbor` with the `CBOR error: ` prefix: a dcbor failure inside an
+     * operation whose reference error type is the component `Error`
+     * (`Error::Cbor`), or a dcbor failure met outside a decoder.
+     */
     static cbor(message: string, cause?: unknown): ComponentsError;
+    /**
+     * `Cbor` as a decoder reports it: the message is the dcbor `Display` of
+     * `cause` with no prefix, as the reference's `from_tagged_cbor` returns a
+     * `dcbor::Error`; `cause` is that `CborError`.
+     */
+    static cborDecode(cause: Error): ComponentsError;
     /** `Sskr`: a failure from the sskr package. */
     static sskr(message: string, cause?: unknown): ComponentsError;
     /** `Ssh`: an SSH key, signature or certificate could not be parsed or used. */
@@ -357,10 +382,14 @@ export declare class ComponentsError extends Error {
     static postQuantum(message: string, cause?: unknown): ComponentsError;
     /** `LevelMismatch`: an ML-DSA signature and key of different levels. */
     static levelMismatch(): ComponentsError;
-    /** `Hex`: a malformed hex string. */
+    /** `Hex`: a malformed hex string (`hex decoding error: <reason>`, the `hex` crate's texts). */
     static hex(message: string, cause?: unknown): ComponentsError;
-    /** `Utf8`: bytes that are not valid UTF-8. */
+    /** `Utf8`: bytes that are not valid UTF-8 (`UTF-8 conversion error: <reason>`). */
     static utf8(message: string, cause?: unknown): ComponentsError;
+    /** `Env`: an environment variable an SSH-agent transport needs is missing or unreadable. */
+    static env(message: string, cause?: unknown): ComponentsError;
+    /** `SshAgentClient`: the SSH-agent transport failed (socket, protocol). */
+    static sshAgentClient(message: string, cause?: unknown): ComponentsError;
     /** `General`: anything the other codes do not name. */
     static general(message: string, cause?: unknown): ComponentsError;
     private static of;
@@ -377,11 +406,11 @@ export declare class ComponentsError extends Error {
  * @module error
  */
 /**
- * The closed set of failure codes. `Hex` and `Utf8` mirror the reference's
- * `Error::Hex` / `Error::Utf8`; its `Env` and `SshAgentClient` belong to
- * the `ssh-agent` feature, which this package does not port.
+ * The closed set of failure codes, the reference's `Error` variants. `Env`
+ * and `SshAgentClient` are produced by an SSH-agent transport (the
+ * reference's `connect_to_ssh_agent`); the core package never raises them.
  */
-export declare type ComponentsErrorCode = "InvalidSize" | "InvalidData" | "DataTooShort" | "Crypto" | "Cbor" | "Sskr" | "Ssh" | "Uri" | "Compression" | "PostQuantum" | "LevelMismatch" | "SshAgent" | "Hex" | "Utf8" | "General";
+export declare type ComponentsErrorCode = "InvalidSize" | "InvalidData" | "DataTooShort" | "Crypto" | "Cbor" | "Sskr" | "Ssh" | "Uri" | "Compression" | "PostQuantum" | "LevelMismatch" | "SshAgent" | "Hex" | "Utf8" | "Env" | "SshAgentClient" | "General";
 
 /** `details` is discriminated by `code`. */
 export declare type ComponentsErrorDetails = InvalidSizeDetails | InvalidDataDetails | DataTooShortDetails | MessageDetails;
@@ -395,7 +424,7 @@ export declare type ComponentsErrorDetails = InvalidSizeDetails | InvalidDataDet
 export declare class Compressed implements ToCbor, DigestProvider {
     /** CRC32 checksum of the decompressed data for integrity verification */
     private readonly _checksum;
-    /** Size of the original decompressed data in bytes */
+    /** Size of the original decompressed data in bytes (a `usize`; a `bigint` above 2^53 − 1) */
     private readonly _decompressedSize;
     /** The compressed data (or original data if compression is ineffective) */
     private readonly _compressedData;
@@ -408,22 +437,25 @@ export declare class Compressed implements ToCbor, DigestProvider {
      * This is a low-level constructor that allows direct creation of a
      * `Compressed` object without performing compression. It's primarily
      * intended for deserialization or when working with pre-compressed data.
+     * `checksum` is a `u32` and `decompressedSize` a `usize` (a `bigint` is
+     * accepted above `Number.MAX_SAFE_INTEGER`), as the reference's fields.
      *
      * @returns A new `Compressed` object
-     * @throws ComponentsError if the compressed data is larger than the decompressed size
+     * @throws ComponentsError `Compression` if the compressed data is larger than the decompressed size
      * @param parts - `checksum`, `decompressedSize`, `compressedData` and the optional `digest`
      */
     static fromParts({ checksum, decompressedSize, compressedData, digest }: {
         checksum: number;
-        decompressedSize: number;
+        decompressedSize: number | bigint;
         compressedData: Uint8Array;
         digest?: Digest | undefined;
     }): Compressed;
     /**
      * Creates a new `Compressed` object by compressing the provided data.
      *
-     * This is the primary method for creating compressed data. It automatically
-     * handles compression using the DEFLATE algorithm with compression level 6.
+     * This is the primary method for creating compressed data. It compresses
+     * with raw DEFLATE at level 6, the reference's `compress_to_vec(data, 6)`,
+     * so the stream is byte-identical to the reference's for the same input.
      *
      * If the compressed data would be larger than the original data (which can
      * happen with small or already compressed inputs), the original data is
@@ -442,7 +474,8 @@ export declare class Compressed implements ToCbor, DigestProvider {
      * stored checksum.
      *
      * @returns The decompressed data
-     * @throws ComponentsError if the compressed data is corrupt or checksum doesn't match
+     * @throws ComponentsError `Compression` if the stream is corrupt (`corrupt compressed data`)
+     *   or the checksum does not match (`compressed data checksum mismatch`)
      */
     decompress(): Uint8Array;
     /**
@@ -450,9 +483,10 @@ export declare class Compressed implements ToCbor, DigestProvider {
      */
     get compressedSize(): number;
     /**
-     * Returns the size of the decompressed data in bytes.
+     * Returns the size of the decompressed data in bytes, as decoded: a
+     * `bigint` only when it exceeds `Number.MAX_SAFE_INTEGER`.
      */
-    get decompressedSize(): number;
+    get decompressedSize(): number | bigint;
     /**
      * Returns the CRC32 checksum of the decompressed data.
      */
@@ -483,18 +517,23 @@ export declare class Compressed implements ToCbor, DigestProvider {
      * Returns the cryptographic digest associated with this compressed data.
      *
      * @returns A `Digest`
-     * @throws Error if there is no digest associated with this compressed data
+     * @throws ComponentsError `Compression` if there is no digest (the reference `unwrap`s it)
      */
     digest(): Digest;
     /**
-     * Compare with another Compressed.
+     * Compare with another Compressed: checksum, size, compressed bytes and
+     * the digest, as the reference's derived `PartialEq`.
      */
     equals(other: Compressed): boolean;
     /**
-     * Get string representation.
+     * Get string representation (the reference's `Debug`).
      */
     toString(): string;
-    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
+    /**
+     * Tagged-CBOR codec. The checksum decodes as a `u32` and the size as a
+     * `usize`, each with dcbor's negative wrap (the reference's
+     * `TryFrom<CBOR>` for those widths).
+     */
     static get codec(): ComponentCodec<Compressed>;
     /** The CBOR tags this type decodes from; the first one is used to encode. */
     cborTags(): Tag[];
@@ -516,23 +555,29 @@ export declare class Compressed implements ToCbor, DigestProvider {
     toCbor(): Cbor;
     /** As a UR, typed by the first tag's name. */
     toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
+    /** Decode the tagged CBOR form. */
     static fromCbor(cborValue: Cbor): Compressed;
 }
 
 /**
- * A fresh encapsulation key pair for `scheme` (X25519 by default). With
- * `rng` the ML-KEM schemes throw, because their key generation cannot be
- * seeded.
+ * A fresh encapsulation key pair for `scheme` (X25519 by default). Without
+ * `rng` every scheme draws from the secure generator (`keypair`). With
+ * `rng` (`keypair_using`) the ML-KEM schemes throw `General` before drawing
+ * anything, as the reference does: their key generation takes no
+ * caller-supplied generator. Use `MLKEMPrivateKey.keypair(level, { rng })`
+ * or `EncapsulationPrivateKey.mlkemKeypair(level, { rng })` for a seeded
+ * ML-KEM pair.
  */
 export declare function createEncapsulationKeypair(scheme?: EncapsulationScheme, { rng }?: RngOptions): [EncapsulationPrivateKey, EncapsulationPublicKey];
 
 /**
  * A fresh signing key pair for `scheme`. Without `rng` every scheme draws
- * from the secure generator; with `rng` the ML-DSA schemes throw, because
- * their key generation cannot be seeded.
+ * from the secure generator (`keypair`). With `rng` (`keypair_using`) the
+ * ML-DSA schemes throw `General` before drawing anything, as the reference
+ * does: their key generation takes no caller-supplied generator. Use
+ * `MLDSAPrivateKey.keypair(level, { rng })` for a seeded ML-DSA pair.
  */
-export declare function createKeypair(scheme?: SignatureScheme, { rng, comment }?: CreateKeypairOptions): [SigningPrivateKey, SigningPublicKey];
+export declare function createKeypair(scheme?: SignatureScheme, { rng: given, comment }?: CreateKeypairOptions): [SigningPrivateKey, SigningPublicKey];
 
 /** What `createKeypair` accepts. */
 export declare interface CreateKeypairOptions {
@@ -926,9 +971,10 @@ export declare class ECPrivateKey implements ECKey, ToCbor, ToUR {
     refHexShort(): string;
     /** The reference's `Display`: the type name over the short reference. */
     toString(): string;
-    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static get codec(): ComponentCodec<ECPrivateKey>;
-    /** The CBOR tags this type decodes from; the first one is used to encode. */
+    /**
+     * The CBOR tags of this type; the first one is used to encode. As the
+     * reference, this type is only encoded: it has no `fromCbor`.
+     */
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -940,8 +986,6 @@ export declare class ECPrivateKey implements ECKey, ToCbor, ToUR {
     toCbor(): Cbor;
     /** As a UR, typed by the first tag's name. */
     toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
-    static fromCbor(cborValue: Cbor): ECPrivateKey;
 }
 
 /**
@@ -1009,6 +1053,12 @@ export declare class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
      * @param message - The message that was signed
      * @returns true if the signature is valid
      */
+    /**
+     * Verify an ECDSA signature. A key that does not decode, or a signature
+     * whose r or s is not below the curve order, is an `InvalidData` failure
+     * (the reference's `ecdsa_verify` panics on them); any other pair is
+     * `true` or `false`.
+     */
     verify(signature: Uint8Array, message: Uint8Array): boolean;
     /**
      * Compare with another ECPublicKey.
@@ -1023,9 +1073,10 @@ export declare class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
     refHexShort(): string;
     /** The reference's `Display`: the type name over the short reference. */
     toString(): string;
-    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static get codec(): ComponentCodec<ECPublicKey>;
-    /** The CBOR tags this type decodes from; the first one is used to encode. */
+    /**
+     * The CBOR tags of this type; the first one is used to encode. As the
+     * reference, this type is only encoded: it has no `fromCbor`.
+     */
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -1038,8 +1089,6 @@ export declare class ECPublicKey implements ECPublicKeyBase, ToCbor, ToUR {
     toCbor(): Cbor;
     /** As a UR, typed by the first tag's name. */
     toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
-    static fromCbor(cborValue: Cbor): ECPublicKey;
 }
 
 /**
@@ -1131,9 +1180,10 @@ export declare class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR 
     refHexShort(): string;
     /** The reference's `Display`: the type name over the short reference. */
     toString(): string;
-    /** Tagged-CBOR codec; `decode` also accepts the untagged form. */
-    static get codec(): ComponentCodec<ECUncompressedPublicKey>;
-    /** The CBOR tags this type decodes from; the first one is used to encode. */
+    /**
+     * The CBOR tags of this type; the first one is used to encode. As the
+     * reference, this type is only encoded: it has no `fromCbor`.
+     */
     cborTags(): Tag[];
     /**
      * Returns the untagged CBOR encoding.
@@ -1145,8 +1195,6 @@ export declare class ECUncompressedPublicKey implements ECKeyBase, ToCbor, ToUR 
     toCbor(): Cbor;
     /** As a UR, typed by the first tag's name. */
     toUR(): UR;
-    /** Decode tagged or untagged CBOR. */
-    static fromCbor(cborValue: Cbor): ECUncompressedPublicKey;
 }
 
 /**
@@ -1237,6 +1285,11 @@ export declare class Ed25519PublicKey {
     /**
      * Verify a signature using Ed25519
      */
+    /**
+     * Verify a signature (`verify_strict`). A key that does not decode is an
+     * `InvalidData` failure (the reference `unwrap`s the decode); a wrong-size
+     * signature is `InvalidSize`.
+     */
     verify(message: Uint8Array, signature: Uint8Array): boolean;
     /**
      * Compare with another Ed25519PublicKey
@@ -1324,7 +1377,7 @@ export declare class EncapsulationCiphertext implements ToCbor {
      * Get string representation.
      */
     toString(): string;
-    /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+    /** Tagged-CBOR codec; the tag value selects the scheme, as the reference's `TryFrom<CBOR>`. */
     static get codec(): ComponentCodec<EncapsulationCiphertext>;
     /**
      * Returns the CBOR tags associated with this ciphertext.
@@ -1336,8 +1389,6 @@ export declare class EncapsulationCiphertext implements ToCbor {
     untaggedCbor(): Cbor;
     /** The tagged CBOR form; the tag follows the scheme. */
     toCbor(): Cbor;
-    /** As a UR, typed by the scheme's tag name. */
-    toUR(): UR;
     /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
     static fromCbor(cborValue: Cbor): EncapsulationCiphertext;
 }
@@ -1347,7 +1398,7 @@ export declare class EncapsulationCiphertext implements ToCbor {
  *
  * Use this to decapsulate a shared secret from ciphertext.
  */
-export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbor, ToUR {
+export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbor {
     private readonly _scheme;
     private readonly _x25519PrivateKey;
     private readonly _mlkemPrivateKey;
@@ -1409,7 +1460,11 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbo
     /** The bytes (a view; do not mutate). */
     get bytes(): Uint8Array;
     /**
-     * Get the public key corresponding to this private key.
+     * The public key corresponding to this private key.
+     *
+     * Only an X25519 key derives its public key. For an ML-KEM key this
+     * throws `Crypto` (`Deriving ML-KEM public key not supported`), as the
+     * reference does: keep the public key `mlkemKeypair` hands out.
      */
     publicKey(): EncapsulationPublicKey;
     /**
@@ -1436,7 +1491,7 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbo
      * representation, providing a unique, content-addressable identifier.
      */
     reference(): Reference;
-    /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+    /** Tagged-CBOR codec; the tag value selects the scheme, as the reference's `TryFrom<CBOR>`. */
     static get codec(): ComponentCodec<EncapsulationPrivateKey>;
     /**
      * Returns the CBOR tags associated with this private key.
@@ -1448,8 +1503,6 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbo
     untaggedCbor(): Cbor;
     /** The tagged CBOR form; the tag follows the scheme. */
     toCbor(): Cbor;
-    /** As a UR, typed by the scheme's tag name. */
-    toUR(): UR;
     /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
     static fromCbor(cborValue: Cbor): EncapsulationPrivateKey;
 }
@@ -1459,7 +1512,7 @@ export declare class EncapsulationPrivateKey implements ReferenceProvider, ToCbo
  *
  * Use this to encapsulate a shared secret for a recipient.
  */
-export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor, ToUR {
+export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor {
     private readonly _scheme;
     private readonly _x25519PublicKey;
     private readonly _mlkemPublicKey;
@@ -1548,7 +1601,7 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
      * representation, providing a unique, content-addressable identifier.
      */
     reference(): Reference;
-    /** Tagged-CBOR codec; the tag selects the scheme, untagged bytes are X25519. */
+    /** Tagged-CBOR codec; the tag value selects the scheme, as the reference's `TryFrom<CBOR>`. */
     static get codec(): ComponentCodec<EncapsulationPublicKey>;
     /**
      * Returns the CBOR tags associated with this public key.
@@ -1560,8 +1613,6 @@ export declare class EncapsulationPublicKey implements ReferenceProvider, ToCbor
     untaggedCbor(): Cbor;
     /** The tagged CBOR form; the tag follows the scheme. */
     toCbor(): Cbor;
-    /** As a UR, typed by the scheme's tag name. */
-    toUR(): UR;
     /** Decode tagged (X25519 or ML-KEM) or untagged (X25519) CBOR. */
     static fromCbor(cborValue: Cbor): EncapsulationPublicKey;
 }
@@ -1754,7 +1805,10 @@ export declare function fromBase64(base64: string): Uint8Array;
 
 /**
  * A fresh `PrivateKeys`/`PublicKeys` pair: a signing key and an
- * encapsulation key in the chosen schemes.
+ * encapsulation key in the chosen schemes (`keypair_opt`, or
+ * `keypair_opt_using` with `rng`). The signing pair is made first, then the
+ * encapsulation pair, drawing from `rng` in that order; a post-quantum
+ * scheme with `rng` throws `General` at its turn, as the reference does.
  */
 export declare function generateKeypair({ signing, encapsulation, rng }?: KeypairOptions): [PrivateKeys, PublicKeys];
 
@@ -1774,7 +1828,7 @@ export declare interface InvalidDataDetails {
 export declare interface InvalidSizeDetails {
     /** The discriminant. */
     code: "InvalidSize";
-    /** What was being constructed (`"data"`, `"Digest"`, …). */
+    /** What was being constructed, in the reference's words (`"digest"`, `"symmetric key"`, …). */
     dataType: string;
     /** The byte length the type requires. */
     expected: number;
@@ -1853,6 +1907,52 @@ export declare interface KeypairOptions {
     rng?: RandomNumberGenerator;
 }
 
+/**
+ * An `SshAgent` whose identities are private keys held in memory, the
+ * analogue of the reference's test `MockSSHAgent`.
+ *
+ * Identities are keyed by comment: adding a key whose comment is already
+ * present replaces that identity in place. `listIdentities` returns the
+ * public keys in insertion order, so with an empty id a lock or unlock uses
+ * the first key added.
+ *
+ * `sign` signs `data` the way the reference's mock does: an `sshsig`
+ * signature in the namespace `test_namespace` over the SHA-256 digest of
+ * `data`, of which the inner raw signature bytes are returned. A real agent
+ * signs `data` itself, so a key locked with this agent cannot be unlocked
+ * with a real agent holding the same key, and vice versa.
+ */
+export declare class MemorySshAgent implements SshAgent {
+    private readonly _identities;
+    private readonly _refuseToSign;
+    /**
+     * An agent holding `identities` (none by default). With `refuseToSign`
+     * every `sign` call fails, the way an agent that declines a request does.
+     */
+    constructor({ identities, refuseToSign }?: {
+        identities?: Iterable<SSHPrivateKey>;
+        refuseToSign?: boolean;
+    });
+    /** Adds `key` under its comment, replacing any identity with that comment. */
+    addIdentity(key: SSHPrivateKey): void;
+    /** Removes the identity whose comment is `key`'s; nothing happens when there is none. */
+    removeIdentity(key: SSHPrivateKey): void;
+    /** Removes every identity. */
+    removeAllIdentities(): void;
+    /** The public keys of the identities, in insertion order, each with its comment. */
+    listIdentities(): Promise<readonly SSHPublicKey[]>;
+    /**
+     * The raw signature bytes of the `sshsig` signature (namespace
+     * `test_namespace`, SHA-256) over `data` by the private key whose comment
+     * is `identity`'s.
+     *
+     * @throws `SshAgent` `Identity not found` when no identity has that
+     * comment; `SshAgent` `Refused to sign` when the agent was built with
+     * `refuseToSign`.
+     */
+    sign(identity: SSHPublicKey, data: Uint8Array): Promise<Uint8Array>;
+}
+
 /** Details of every other failure: the unprefixed message. */
 export declare interface MessageDetails {
     /** The discriminant: every code without structured details. */
@@ -1914,14 +2014,6 @@ declare class MLDSAPrivateKey implements ToCbor, ToUR {
      * @returns The ML-DSA signature
      */
     sign(message: Uint8Array): MLDSASignature;
-    /**
-     * Derive the public key from this private key.
-     *
-     * Note: ML-DSA doesn't have a direct derivation method, so we need to
-     * regenerate the keypair from seed. For now, we extract from the secret key
-     * structure (the public key is embedded in the secret key for ML-DSA).
-     */
-    publicKey(): MLDSAPublicKey;
     /**
      * Compare with another MLDSAPrivateKey.
      */
@@ -2173,15 +2265,6 @@ declare class MLKEMPrivateKey implements ToCbor, ToUR {
      * @returns The decapsulated shared secret as a SymmetricKey
      */
     decapsulate(ciphertext: MLKEMCiphertext): SymmetricKey;
-    /**
-     * Derives and returns the corresponding public key.
-     *
-     * In ML-KEM (FIPS 203), the decapsulation key contains the encapsulation key (public key)
-     * embedded within it. This method extracts that public key.
-     *
-     * @returns The corresponding MLKEMPublicKey
-     */
-    publicKey(): MLKEMPublicKey;
     /**
      * Compare with another MLKEMPrivateKey.
      */
@@ -2464,18 +2547,21 @@ export declare class PrivateKeyBase implements ToCbor, ToUR, Decrypter {
     /**
      * Derive an SSH `SigningPrivateKey` from this `PrivateKeyBase`.
      *
-     * builds an `HKDFRng` seeded by `this._data` with salt
-     * `sshAlgorithmName(algorithm)`, then dispatches to the matching
-     * `*Keypair::random` constructor.
+     * Builds an `HKDFRng` seeded by `this._data` with salt
+     * `sshAlgorithmName(algorithm)` (the wire name, as the reference's
+     * `HKDFRng::new(seed, algorithm.as_str())`), then dispatches to the
+     * matching `ssh-key` 0.6.7 `*Keypair::random` constructor, ported so the
+     * RNG is consumed identically and the key is byte-for-byte the reference's:
+     *   - Ed25519 (`ssh-ed25519`): `Ed25519Keypair::random` — 32 seed bytes.
+     *   - DSA (`ssh-dss`): `DsaKeypair::random` — the `dsa` crate's
+     *     FIPS 186-4 1024/160 parameter search (`generateDsaKeypair`).
+     *   - RSA (`ssh-rsa`): `RsaKeypair::random(rng, 2048)` — the `rsa`
+     *     crate's two-prime generation with e = 65537 (`generateRsaKeypair`).
+     *   - ECDSA P-256 / P-384 / P-521: `p{256,384,521}::SecretKey::random`
+     *     rejection sampling over the field-sized byte string.
      *
-     * Supported algorithms (matching the four `SignatureScheme.SshXxx`
-     * variants the reference ships in `signature_scheme.rs`):
-     *   - Ed25519 (`ssh-ed25519`)
-     *   - DSA (`ssh-dss`) — **throws**: byte-deterministic DSA-1024 prime
-     *     generation requires porting the upstream `dsa` crate's
-     *     FIPS 186-4 prime search, which is not yet implemented in TS.
-     *   - ECDSA P-256 (`ecdsa-sha2-nistp256`)
-     *   - ECDSA P-384 (`ecdsa-sha2-nistp384`)
+     * `algorithm` is validated before any bytes are drawn: an unknown kind or
+     * curve is `InvalidData`.
      *
      * @param algorithm - The SSH key algorithm to derive
      * @param comment   - Optional comment carried through the OpenSSH PEM
@@ -2597,6 +2683,9 @@ export declare class PrivateKeys implements Signer, Decrypter, ReferenceProvider
     encapsulationPrivateKey(): EncapsulationPrivateKey;
     /**
      * Derive the corresponding public keys.
+     *
+     * Throws where a key cannot derive its public key: `General` for an
+     * ML-DSA signing key, `Crypto` for an ML-KEM encapsulation key.
      */
     publicKeys(): PublicKeys;
     /**
@@ -3023,6 +3112,10 @@ export declare class SchnorrPublicKey implements ECKeyBase {
      * @param message - The message that was signed
      * @returns true if the signature is valid
      */
+    /**
+     * Verify a BIP-340 signature. A key that is not an x-only point is an
+     * `InvalidData` failure (the reference's `schnorr_verify` panics on it).
+     */
     schnorrVerify(signature: Uint8Array, message: Uint8Array): boolean;
     /**
      * Compare with another SchnorrPublicKey.
@@ -3151,8 +3244,10 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
     private readonly _data;
     private _name;
     private _note;
+    /** The creation date as decoded or set (a `CborDate` keeps sub-millisecond precision on the wire). */
     private _creationDate;
     private constructor();
+    private static cborDateOf;
     /**
      * A random seed of `length` bytes (16 by default), with optional metadata;
      * pass `rng` to make it deterministic.
@@ -3214,6 +3309,8 @@ export declare class Seed implements ToCbor, ToUR, PrivateKeyDataProvider {
      */
     get creationDate(): Date | undefined;
     set creationDate(creationDate: Date | undefined);
+    /** The creation date as decoded, with the precision the wire carried. */
+    get creationCborDate(): CborDate | undefined;
     /**
      * Compare with another Seed.
      */
@@ -3339,8 +3436,14 @@ export declare class Signature implements ToCbor {
     static fromSsh(sig: SSHSignature): Signature;
     /**
      * Returns the signature scheme used to create this signature.
+     *
+     * As the reference's `Signature::scheme()`, an `sshsig` made with an RSA
+     * key or a P-521 key has no scheme and throws `Ssh`: `Unsupported SSH
+     * signature algorithm` / `Unsupported SSH ECDSA curve`.
      */
     get scheme(): SignatureScheme;
+    /** The SSH key algorithm of an `sshsig` signature; `Ssh` failure otherwise. */
+    private sshAlgorithm;
     /**
      * Returns a human-readable string identifying the signature type.
      * @returns A string like "Ed25519", "Schnorr", "ECDSA", "MLDSA-44", etc.
@@ -3598,8 +3701,15 @@ export declare class SigningPrivateKey implements Signer, Verifier, ReferencePro
     } & RngOptions): SigningPrivateKey;
     /**
      * Returns the signature scheme of this key.
+     *
+     * SSH RSA and P-521 keys have no `SignatureScheme` (the reference defines
+     * none for them) and throw `Ssh` with the reference's text for their
+     * signatures: `Unsupported SSH signature algorithm` / `Unsupported SSH
+     * ECDSA curve`.
      */
     get scheme(): SignatureScheme;
+    /** The SSH algorithm of an SSH key; `Ssh` failure for any other key. */
+    private sshAlgorithm;
     /**
      * Returns a human-readable string identifying the key type.
      * @returns A string like "Ed25519", "Schnorr", "ECDSA", "MLDSA-44", etc.
@@ -3852,8 +3962,15 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
     static fromSsh(key: SSHPublicKey): SigningPublicKey;
     /**
      * Returns the signature scheme of this key.
+     *
+     * SSH RSA and P-521 keys have no `SignatureScheme` (the reference defines
+     * none for them) and throw `Ssh` with the reference's text for their
+     * signatures: `Unsupported SSH signature algorithm` / `Unsupported SSH
+     * ECDSA curve`.
      */
     get scheme(): SignatureScheme;
+    /** The SSH algorithm of an SSH key; `Ssh` failure for any other key. */
+    private sshAlgorithm;
     /**
      * Returns a human-readable string identifying the key type.
      * @returns A string like "Ed25519", "Schnorr", "ECDSA", "MLDSA-44", etc.
@@ -3973,36 +4090,55 @@ export declare class SigningPublicKey implements Verifier, ReferenceProvider, To
 }
 
 /**
+ * What a key-derivation lock/unlock needs from an SSH agent (the reference's
+ * `SSHAgent` trait, asynchronous here).
+ *
+ * An implementation reports its own failures as a `ComponentsError`; a
+ * failure to sign is reported by the caller as `SSH agent refused to sign`
+ * whatever the implementation threw.
+ */
+export declare interface SshAgent {
+    /** The public keys the agent holds, each with its comment. */
+    listIdentities(): Promise<readonly SSHPublicKey[]>;
+    /** The raw signature bytes (for Ed25519 the 64-byte signature) over `data`. */
+    sign(identity: SSHPublicKey, data: Uint8Array): Promise<Uint8Array>;
+}
+
+/**
  * SSH key algorithm identifiers.
  *
- * Supports the four algorithms the reference implementation actually wires
- * through `SignatureScheme`:
+ * The six key algorithms `ssh-key` 0.6.7 generates and parses, and that the
+ * reference derives from a `PrivateKeyBase`:
  *
  *   - Ed25519 (`ssh-ed25519`)
  *   - DSA (`ssh-dss`) — 1024-bit p, 160-bit q, SHA-1
+ *   - RSA (`ssh-rsa`) — 2048-bit keys; `sshsig` signatures name their hash
+ *     as `rsa-sha2-256` / `rsa-sha2-512` (RFC 8332)
  *   - ECDSA P-256 (`ecdsa-sha2-nistp256`) — SHA-256
  *   - ECDSA P-384 (`ecdsa-sha2-nistp384`) — SHA-384
+ *   - ECDSA P-521 (`ecdsa-sha2-nistp521`) — SHA-512
  *
- * Deferred (blocked upstream in the reference's dependencies): RSA (commented out in
- * `signature_scheme.rs:80-81`), P-521 (`ssh-key` upstream bug
- * https://github.com/RustCrypto/SSH/issues/232), encrypted private
- * keys, `cert-v01@openssh.com`.
+ * Not supported: FIDO/U2F `sk-*` keys, opaque `name@domain` algorithms,
+ * encrypted private keys and `*-cert-v01@openssh.com` certificates.
  */
 export declare type SshAlgorithm = {
     /** `ssh-ed25519`. */
     kind: "ed25519";
 } | {
-    /** `ssh-dss` (parse only). */
+    /** `ssh-dss`. */
     kind: "dsa";
 } | {
-    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384`. */
+    /** `ssh-rsa`. */
+    kind: "rsa";
+} | {
+    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
     kind: "ecdsa";
     /** The NIST curve of an ECDSA key. */
     curve: SshEcdsaCurve;
 };
 
 /** The NIST curves an SSH ECDSA key can use. */
-export declare type SshEcdsaCurve = "nistp256" | "nistp384";
+export declare type SshEcdsaCurve = "nistp256" | "nistp384" | "nistp521";
 
 /** The hash an `sshsig` signature is made over. */
 export declare type SshHashAlgorithm = "sha256" | "sha512";
@@ -4031,7 +4167,7 @@ declare class SSHPrivateKey {
     get algorithm(): SshAlgorithm;
     get publicBytes(): Uint8Array;
     get privateBytes(): Uint8Array;
-    /** Parses the PEM-armoured OpenSSH private key text. */
+    /** Parses the PEM-armoured OpenSSH private key text, as `ssh_key::PrivateKey::from_openssh`. */
     static fromOpenssh(text: string): SSHPrivateKey;
     /** Parses the binary `openssh-key-v1` blob (the base64 payload of the text form). */
     static fromBlob(blob: Uint8Array): SSHPrivateKey;
@@ -4052,7 +4188,15 @@ declare class SSHPrivateKey {
     refHexShort(): string;
     /** `SSHPrivateKey(<short reference>)`, the reference's `Display`. */
     toString(): string;
-    /** Signs `message` in `namespace` with `hashAlgorithm`, producing an `sshsig` signature. */
+    /**
+     * Signs `message` in `namespace` with `hashAlgorithm`, producing an
+     * `sshsig` signature.
+     *
+     * RSA keys cannot sign: `ssh-key` 0.6.7 rebuilds the `rsa` private key
+     * from `(p, p)` instead of `(p, q)`, so the reference's
+     * `SigningPrivateKey::sign` fails with `cryptographic error` for every
+     * RSA key, and so does this method.
+     */
     sign(namespace: string, hashAlgorithm: SshHashAlgorithm, message: Uint8Array): SSHSignature;
 }
 
@@ -4060,9 +4204,10 @@ declare class SSHPrivateKey {
  * Algorithm-specific private-key data.
  *
  *   - ed25519: 32-byte seed.
- *   - ecdsa:   curve + canonical scalar (32 / 48 bytes, no sign byte).
+ *   - ecdsa:   curve + canonical scalar (32 / 48 / 66 bytes, no sign byte).
  *   - dsa:     canonical positive p, q, g, y (re-stated from the public
  *              key blob), plus the secret exponent x.
+ *   - rsa:     canonical positive n, e (re-stated), d, iqmp, p, q.
  */
 declare type SshPrivateKeyData = {
     /** `ssh-ed25519`. */
@@ -4072,11 +4217,11 @@ declare type SshPrivateKeyData = {
     /** The 32 raw public key bytes. */
     pubBytes: Uint8Array;
 } | {
-    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384`. */
+    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
     kind: "ecdsa";
     /** The NIST curve. */
     curve: SshEcdsaCurve;
-    /** The canonical scalar (32 or 48 bytes, no sign byte). */
+    /** The canonical scalar (32, 48 or 66 bytes, no sign byte). */
     scalar: Uint8Array;
     /** The SEC1 uncompressed public point. */
     point: Uint8Array;
@@ -4093,6 +4238,21 @@ declare type SshPrivateKeyData = {
     y: Uint8Array;
     /** The secret exponent, canonical positive bytes. */
     x: Uint8Array;
+} | {
+    /** `ssh-rsa`. */
+    kind: "rsa";
+    /** The modulus, canonical positive bytes. */
+    n: Uint8Array;
+    /** The public exponent, canonical positive bytes. */
+    e: Uint8Array;
+    /** The private exponent, canonical positive bytes. */
+    d: Uint8Array;
+    /** The CRT coefficient `q^-1 mod p`, canonical positive bytes. */
+    iqmp: Uint8Array;
+    /** The first prime, canonical positive bytes. */
+    p: Uint8Array;
+    /** The second prime, canonical positive bytes. */
+    q: Uint8Array;
 };
 
 declare class SSHPublicKey {
@@ -4109,16 +4269,26 @@ declare class SSHPublicKey {
     static ecdsaP256(uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
     /** A P-384 key from its 97-byte SEC1 uncompressed point. */
     static ecdsaP384(uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
+    /** A P-521 key from its 133-byte SEC1 uncompressed point. */
+    static ecdsaP521(uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
     /** An ECDSA key on `curve` from its SEC1 uncompressed point. */
     static ecdsa(curve: SshEcdsaCurve, uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
     /** DSA public key. p/q/g/y must already be canonical positive bytes (no sign byte). */
     static dsa(p: Uint8Array, q: Uint8Array, g: Uint8Array, y: Uint8Array, comment?: string): SSHPublicKey;
+    /** RSA public key. `e` and `n` must already be canonical positive bytes (no sign byte). */
+    static rsa(e: Uint8Array, n: Uint8Array, comment?: string): SSHPublicKey;
     /**
      * Returns a copy of this SSH public key with the comment replaced,
      * leaving this instance untouched.
      */
     withComment(comment: string): SSHPublicKey;
-    /** Parses the single-line OpenSSH text form (`<algorithm> <base64 blob> [comment]`). */
+    /**
+     * Parses the single-line OpenSSH text form (`<algorithm> <base64 blob> [comment]`)
+     * as `ssh-key` 0.6.7 `PublicKey::from_openssh`: trailing whitespace is
+     * removed, the algorithm and Base64 segments end at a single space, the
+     * Base64 is strict, and the text's algorithm name must equal the blob's
+     * (`unknown algorithm` otherwise).
+     */
     static fromOpenssh(text: string): SSHPublicKey;
     /** The single-line OpenSSH text form. */
     toOpenssh(): string;
@@ -4141,26 +4311,27 @@ declare class SSHPublicKey {
      */
     keyEquals(other: SSHPublicKey): boolean;
     /**
-     * Algorithm-specific raw payload bytes. Throws for DSA — DSA needs structured
-     * access via `data.p/q/g/y`.
+     * Algorithm-specific raw payload bytes. Throws for DSA and RSA, whose
+     * keys are several integers — use `data.p/q/g/y` or `data.e/n` instead.
      */
     get keyBytes(): Uint8Array;
-    /** Verifies an `sshsig` signature made over `message` in `namespace`. */
-    verifySshSignature(namespace: string, message: Uint8Array, signature: {
-        publicKey: SSHPublicKey;
-        namespace: string;
-        hashAlgorithm: "sha256" | "sha512";
-        signatureBytes: Uint8Array;
-    }): boolean;
+    /**
+     * Verifies an `sshsig` signature made over `message` in `namespace`, as
+     * `ssh_key::PublicKey::verify`: the embedded key must be this key, the
+     * namespace must match, and the algorithm-specific signature must verify
+     * over the signed-data blob. Never throws on malformed input.
+     */
+    verifySshSignature(namespace: string, message: Uint8Array, signature: SshSignatureParts): boolean;
 }
 
 /**
  * Internal discriminated union for the algorithm-specific public-key data.
  *
  *   - ed25519: the 32-byte raw public key.
- *   - ecdsa:   curve + 65/97-byte SEC1 uncompressed point.
+ *   - ecdsa:   curve + 65/97/133-byte SEC1 uncompressed point.
  *   - dsa:     four canonical-positive mpint bytes (p, q, g, y) — sign
  *              byte already stripped on parse, re-added by the writer.
+ *   - rsa:     canonical-positive e and n.
  */
 declare type SshPublicKeyData = {
     /** `ssh-ed25519`. */
@@ -4168,11 +4339,11 @@ declare type SshPublicKeyData = {
     /** The 32 raw public key bytes. */
     pubBytes: Uint8Array;
 } | {
-    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384`. */
+    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
     kind: "ecdsa";
     /** The NIST curve. */
     curve: SshEcdsaCurve;
-    /** The SEC1 uncompressed point (65 or 97 bytes). */
+    /** The SEC1 uncompressed point (65, 97 or 133 bytes). */
     point: Uint8Array;
 } | {
     /** `ssh-dss`. */
@@ -4185,6 +4356,13 @@ declare type SshPublicKeyData = {
     g: Uint8Array;
     /** The public value, canonical positive bytes. */
     y: Uint8Array;
+} | {
+    /** `ssh-rsa`. */
+    kind: "rsa";
+    /** The public exponent, canonical positive bytes. */
+    e: Uint8Array;
+    /** The modulus, canonical positive bytes. */
+    n: Uint8Array;
 };
 
 /** An OpenSSH `sshsig` signature (`-----BEGIN SSH SIGNATURE-----`), version 1. */
@@ -4198,15 +4376,22 @@ declare class SSHSignature {
     /** The hash the message was digested with. */
     readonly hashAlgorithm: SshHashAlgorithm;
     /**
+     * The algorithm name inside the signature blob: the key's wire name for
+     * Ed25519, DSA and ECDSA keys, and `rsa-sha2-256` / `rsa-sha2-512` (the
+     * hash the RSA signature was made with) for RSA keys.
+     */
+    readonly signatureAlgorithm: string;
+    /**
      * Raw signature bytes specific to the algorithm:
      *   ed25519 → 64-byte concatenation `r || s`
-     *   ecdsa-p256 → 64-byte concatenation `r || s` (we strip the SSH
-     *     mpint sign bytes on parse and re-add them on serialize, so this
-     *     stays a fixed 64-byte canonical form internally)
+     *   ecdsa   → fixed-width `r || s` (64 / 96 / 132 bytes; the SSH mpint
+     *     sign bytes are stripped on parse and re-added on serialize)
+     *   dsa     → 40-byte `r || s`
+     *   rsa     → the RSASSA-PKCS1-v1_5 signature as stored
      */
     readonly signatureBytes: Uint8Array;
     private constructor();
-    /** Parses the PEM-armoured `sshsig` text. */
+    /** Parses the PEM-armoured `sshsig` text, as `ssh_key::SshSig::from_pem`. */
     static fromPem(text: string): SSHSignature;
     /** Parses the binary `sshsig` blob (the base64 payload of the text form). */
     static fromBlob(blob: Uint8Array): SSHSignature;
@@ -4225,12 +4410,31 @@ declare class SSHSignature {
      *     string  H(message)        ← *digest*, not the raw message
      */
     static signedDataBlob(namespace: string, hashAlgorithm: SshHashAlgorithm, messageDigest: Uint8Array): Uint8Array;
-    /** Construct from already-decoded parts (used by the sign path). */
-    static fromParts(publicKey: SSHPublicKey, namespace: string, hashAlgorithm: SshHashAlgorithm, signatureBytes: Uint8Array): SSHSignature;
+    /**
+     * Construct from already-decoded parts (used by the sign path).
+     *
+     * `signatureAlgorithm` defaults to the key's wire name; for an RSA key it
+     * defaults to `rsa-sha2-512`, the algorithm `ssh-key`'s RSA signer names.
+     */
+    static fromParts(publicKey: SSHPublicKey, namespace: string, hashAlgorithm: SshHashAlgorithm, signatureBytes: Uint8Array, signatureAlgorithm?: string): SSHSignature;
     /** Fixed-string mirror of the reference's summarizer for `TAG_SSH_TEXT_SIGNATURE`. */
     toString(): string;
     /** SHA-256 digest of canonical PEM bytes — kept for parity with key types. */
     digest(): Uint8Array;
+}
+
+/** The parts of an `sshsig` signature `verifySshSignature` needs. */
+declare interface SshSignatureParts {
+    /** The key embedded in the signature. */
+    publicKey: SSHPublicKey;
+    /** The namespace the signature was made in. */
+    namespace: string;
+    /** The hash the message was digested with. */
+    hashAlgorithm: "sha256" | "sha512";
+    /** The algorithm name inside the signature blob (`rsa-sha2-256`, `ssh-ed25519`, …). */
+    signatureAlgorithm: string;
+    /** The raw algorithm-specific signature bytes. */
+    signatureBytes: Uint8Array;
 }
 
 /**
@@ -4470,8 +4674,10 @@ export declare class UUID implements ToCbor, ToUR {
      */
     static fromHex(hex: string): UUID;
     /**
-     * Create a UUID from string representation (standard UUID format)
-     * Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+     * A UUID from its text, as the reference's `from_str`: Rust `str::trim`,
+     * every `-` removed, strict hex (`Hex` on a malformed string), and 16
+     * bytes (`InvalidSize` otherwise). Neither the dash positions nor the
+     * digit count between them is checked.
      */
     static fromString(uuidString: string): UUID;
     /**

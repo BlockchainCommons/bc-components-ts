@@ -18,7 +18,10 @@
 
 import { ml_kem512, ml_kem768, ml_kem1024 } from "@noble/post-quantum/ml-kem.js";
 import { type RandomNumberGenerator, secureRng, randomBytes } from "@blockchaincommons/rand";
+import { type Cbor, expectUnsigned } from "@blockchaincommons/dcbor";
 import { ComponentsError } from "../error.js";
+import { decodeComponent } from "../codable.js";
+import { U32_FIELD } from "../domain.js";
 
 /**
  * ML-KEM security levels.
@@ -91,7 +94,7 @@ export const MLKEM_KEY_SIZES: Readonly<Record<MLKEMLevel, MLKEMSizes>> =
 function sizesFor(level: MLKEMLevel): (typeof MLKEM_KEY_SIZES)[MLKEMLevel] {
   const sizes = (MLKEM_KEY_SIZES as Partial<typeof MLKEM_KEY_SIZES>)[level];
   if (sizes === undefined) {
-    throw ComponentsError.postQuantum(`Invalid MLKEM level value: ${String(level)}`);
+    throw ComponentsError.postQuantum(`Invalid MLKEM level: ${String(level)}`);
   }
   return sizes;
 }
@@ -148,8 +151,18 @@ export function mlkemLevelFromValue(value: number): MLKEMLevel {
     case 1024:
       return MLKEMLevel.MLKEM1024;
     default:
-      throw ComponentsError.postQuantum(`Invalid MLKEM level value: ${value}`);
+      throw ComponentsError.postQuantum(`Invalid MLKEM level: ${value}`);
   }
+}
+
+/**
+ * The level from its CBOR encoding, as the reference's `TryFrom<CBOR>`
+ * (error type `Error`): a `u32` with dcbor's negative wrap, so `-1` reads
+ * as 4294967295; a non-integer or an out-of-width head is `Cbor`
+ * (`CBOR error: …`), an unknown level `PostQuantum` naming the value read.
+ */
+export function mlkemLevelFromCbor(cborValue: Cbor): MLKEMLevel {
+  return decodeComponent(() => mlkemLevelFromValue(Number(expectUnsigned(cborValue, U32_FIELD))));
 }
 
 /**
@@ -263,32 +276,4 @@ export function mlkemDecapsulate(
     case MLKEMLevel.MLKEM1024:
       return ml_kem1024.decapsulate(ciphertext, secretKey);
   }
-}
-
-/**
- * Private key portion sizes for each ML-KEM level.
- * The decapsulation key structure is: dk = (dk_pke || ek_pke || H(ek) || z)
- * where dk_pke is the private portion before the public key.
- */
-const MLKEM_DK_PKE_SIZES = /*#__PURE__*/ Object.freeze({
-  [MLKEMLevel.MLKEM512]: 768, // 12 * 64
-  [MLKEMLevel.MLKEM768]: 1152, // 12 * 96
-  [MLKEMLevel.MLKEM1024]: 1536, // 12 * 128
-} as const);
-
-/**
- * Extract the public key from a secret key.
- *
- * In ML-KEM (FIPS 203), the decapsulation key contains the encapsulation key (public key)
- * embedded within it. The structure is: dk = (dk_pke || ek_pke || H(ek) || z)
- *
- * @param level - The ML-KEM security level
- * @param secretKey - The secret key bytes
- * @returns The public key bytes extracted from the secret key
- */
-export function mlkemExtractPublicKey(level: MLKEMLevel, secretKey: Uint8Array): Uint8Array {
-  const dkPkeSize = MLKEM_DK_PKE_SIZES[level];
-  const publicKeySize = sizesFor(level).publicKey;
-  const offset = dkPkeSize;
-  return secretKey.slice(offset, offset + publicKeySize);
 }

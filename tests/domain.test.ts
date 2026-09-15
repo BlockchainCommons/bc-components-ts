@@ -13,7 +13,6 @@ import {
   expectLength,
   expectString,
   expectDate,
-  expectSecp256k1Scalar,
   bytesFromHex,
   wrapForeign,
   guarded,
@@ -65,40 +64,38 @@ describe("domain predicates", () => {
     expect(code(() => expectDate("2020-01-01", "creationDate"))).toBe("InvalidData:creationDate");
     expect(code(() => expectDate(new Date(NaN), "creationDate"))).toBe("InvalidData:creationDate");
   });
-  it("expectSecp256k1Scalar rejects 0 and n and above", () => {
-    const one = new Uint8Array(32);
-    one[31] = 1;
-    expect(expectSecp256k1Scalar(one, "k")).toBe(one);
-    const nMinus1 = Buffer.from(
-      "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
-      "hex",
-    );
-    expect(code(() => expectSecp256k1Scalar(nMinus1, "k"))).toBe("ok");
-    const n = Buffer.from(
-      "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
-      "hex",
-    );
-    expect(code(() => expectSecp256k1Scalar(n, "k"))).toBe("InvalidData:k");
-    expect(code(() => expectSecp256k1Scalar(new Uint8Array(32), "k"))).toBe("InvalidData:k");
-    expect(code(() => expectSecp256k1Scalar(new Uint8Array(32).fill(0xff), "k"))).toBe(
-      "InvalidData:k",
-    );
-  });
 });
 
 describe("foreign-error boundary", () => {
-  it("bytesFromHex reports Hex with the dcbor error as cause", () => {
-    expect(bytesFromHex("0aff", "Digest")).toEqual(new Uint8Array([0x0a, 0xff]));
-    for (const bad of ["zz", "abc"]) {
+  it("bytesFromHex is the hex crate's decode: odd length first, then the first bad byte", () => {
+    expect(bytesFromHex("0aff")).toEqual(new Uint8Array([0x0a, 0xff]));
+    expect(bytesFromHex("0AFF")).toEqual(new Uint8Array([0x0a, 0xff]));
+    expect(bytesFromHex("")).toEqual(new Uint8Array(0));
+    const message = (text: string): string => {
       try {
-        bytesFromHex(bad, "Digest");
-        expect.unreachable();
+        bytesFromHex(text);
+        return "ok";
       } catch (e) {
         expect(ComponentsError.isComponentsError(e) && e.code === "Hex").toBe(true);
-        expect((e as ComponentsError).message).toContain("Digest");
-        expect(CborError.isCborError((e as ComponentsError).cause)).toBe(true);
+        return (e as ComponentsError).message;
       }
-    }
+    };
+    expect(message("abc")).toBe("hex decoding error: Odd number of digits");
+    expect(message("zz")).toBe("hex decoding error: Invalid character 'z' at position 0");
+    expect(message("0aFg")).toBe("hex decoding error: Invalid character 'g' at position 3");
+    // Over UTF-8 bytes, as Rust: `é` is two bytes, its first is C3 (`Ã`).
+    expect(message("0é")).toBe("hex decoding error: Odd number of digits");
+    expect(message("00é")).toBe("hex decoding error: Invalid character 'Ã' at position 2");
+    expect(message("é0")).toBe("hex decoding error: Odd number of digits");
+    expect(message("0aé0")).toBe("hex decoding error: Odd number of digits");
+    // Rust's `char::escape_debug` for the byte.
+    expect(message("0a\t0")).toBe("hex decoding error: Invalid character '\\t' at position 2");
+    expect(message("0a\u00000")).toBe("hex decoding error: Invalid character '\\0' at position 2");
+    expect(message("0a\u007f0")).toBe(
+      "hex decoding error: Invalid character '\\u{7f}' at position 2",
+    );
+    expect(message("0a'0")).toBe("hex decoding error: Invalid character '\\'' at position 2");
+    expect(message("0a 0")).toBe("hex decoding error: Invalid character ' ' at position 2");
   });
   it("wrapForeign maps crypto, dcbor and other errors and passes ComponentsError through", () => {
     const own = ComponentsError.general("mine");
@@ -129,9 +126,10 @@ describe("foreign-error boundary", () => {
     expect(w2.details).toMatchObject({ code: "InvalidData", dataType: "SymmetricKey" });
     const cb = wrapForeign(CborError.underrun(), "decode");
     expect(cb.code).toBe("Cbor");
+    expect(wrapped.message).toBe("cryptographic operation failed: AEAD error");
     const other = wrapForeign(new RangeError("r"), "op");
     expect(other.code).toBe("Crypto");
-    expect(other.message).toBe("cryptographic operation failed: op: r");
+    expect(other.message).toBe("cryptographic operation failed: r");
     expect(wrapForeign("string", "op").code).toBe("Crypto");
   });
   it("guarded runs the thunk and wraps only on throw", () => {

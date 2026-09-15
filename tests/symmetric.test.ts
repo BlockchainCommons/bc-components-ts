@@ -10,6 +10,10 @@ import { Nonce } from "../src/nonce.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 describe("AuthenticationTag", () => {
   const TEST_HEX = "1ae10b594f09e26a7e902ecbd0600691";
 
@@ -72,7 +76,7 @@ describe("AuthenticationTag", () => {
     it("should return string representation", () => {
       const tag = AuthenticationTag.fromHex(TEST_HEX);
 
-      expect(tag.toString()).toBe(`AuthenticationTag(${TEST_HEX})`);
+      expect(tag.toString()).toBe(`AuthenticationTag("${TEST_HEX}")`);
     });
   });
 

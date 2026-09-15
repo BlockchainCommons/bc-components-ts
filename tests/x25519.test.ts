@@ -12,6 +12,10 @@ import { SecureRng } from "@blockchaincommons/rand";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 // Test vectors
 const TEST_PRIVATE_KEY_HEX = "7d68fb6fce4c86fc4527d27c7c50fbee5f9e5dc5c4e6c1d8e5f4e3d2c1b0a090";
 const TEST_KEY_MATERIAL = new TextEncoder().encode("test key material for derivation");

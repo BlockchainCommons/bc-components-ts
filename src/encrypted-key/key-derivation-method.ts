@@ -14,8 +14,10 @@
  * ```
  */
 
-import { type Cbor, expectNumber } from "@blockchaincommons/dcbor";
+import { type Cbor, expectUnsigned } from "@blockchaincommons/dcbor";
 import { ComponentsError } from "../error.js";
+import { decodeComponent } from "../codable.js";
+import { USIZE_FIELD } from "../domain.js";
 
 /**
  * Enum representing supported key derivation methods.
@@ -104,11 +106,16 @@ export function keyDerivationMethodToString(method: KeyDerivationMethod): string
 /**
  * Parse KeyDerivationMethod from CBOR.
  */
+/**
+ * As the reference's `TryFrom<CBOR>` (error type `Error`): the index as a
+ * `usize` with dcbor's negative wrap, then `General`
+ * `Invalid KeyDerivationMethod` for an unknown one; a non-integer or
+ * out-of-width head is `Cbor` (`CBOR error: …`).
+ */
 export function keyDerivationMethodFromCbor(cborValue: Cbor): KeyDerivationMethod {
-  const value = expectNumber(cborValue);
-  const method = keyDerivationMethodFromIndex(Number(value));
-  if (method === undefined) {
-    throw ComponentsError.invalidData(`Invalid KeyDerivationMethod index: ${value}`);
-  }
-  return method;
+  return decodeComponent(() => {
+    const method = keyDerivationMethodFromIndex(Number(expectUnsigned(cborValue, USIZE_FIELD)));
+    if (method === undefined) throw ComponentsError.general("Invalid KeyDerivationMethod");
+    return method;
+  });
 }

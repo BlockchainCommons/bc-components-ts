@@ -11,7 +11,7 @@
  * ```
  */
 
-import { type Cbor, cbor, expectArray, expectNumber } from "@blockchaincommons/dcbor";
+import { type Cbor, cbor, expectArray, expectUnsigned, CborError } from "@blockchaincommons/dcbor";
 import { scrypt } from "@blockchaincommons/crypto";
 
 import { Salt } from "../salt.js";
@@ -21,8 +21,8 @@ import { type EncryptedMessage } from "../symmetric/encrypted-message.js";
 import { KeyDerivationMethod } from "./key-derivation-method.js";
 import { SALT_LEN } from "./hkdf-params.js";
 import type { KeyDerivation } from "./key-derivation.js";
-import { ComponentsError } from "../error.js";
-import { expectU8, expectU32, guarded } from "../domain.js";
+import { decodeWith } from "../codable.js";
+import { expectU8, expectU32, guarded, USIZE_FIELD, U8_FIELD, U32_FIELD } from "../domain.js";
 
 // Defaults match the reference's `ScryptParams::new()` in the reference implementation v0.34.x
 // (`log_n = 15, r = 8, p = 1`). Distinct from the reference implementation's `bc_crypto::scrypt()`
@@ -180,27 +180,22 @@ export class ScryptParams implements KeyDerivation {
   /**
    * Parse from CBOR.
    */
+  /**
+   * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+   * every failure is `Cbor` with the bare message. The index element is
+   * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+   * the fixed-width fields wrap the same way.
+   */
   static fromCbor(cborValue: Cbor): ScryptParams {
-    const array = expectArray(cborValue);
-
-    if (array.length !== 5) {
-      throw ComponentsError.invalidData(
-        `Invalid ScryptParams: expected 5 elements, got ${array.length}`,
-      );
-    }
-
-    const index = expectNumber(array[0]);
-    if (index !== ScryptParams.INDEX) {
-      throw ComponentsError.invalidData(
-        `Invalid ScryptParams index: expected ${ScryptParams.INDEX}, got ${index}`,
-      );
-    }
-
-    const salt = Salt.fromCbor(array[1]);
-    const logN = expectU8(Number(expectNumber(array[2])), "logN");
-    const r = expectU32(Number(expectNumber(array[3])), "r");
-    const p = expectU32(Number(expectNumber(array[4])), "p");
-
-    return new ScryptParams(salt, logN, r, p);
+    return decodeWith(() => {
+      const array = expectArray(cborValue);
+      if (array.length !== 5) throw CborError.custom("Invalid ScryptParams");
+      expectUnsigned(array[0], USIZE_FIELD);
+      const salt = Salt.fromCbor(array[1]);
+      const logN = Number(expectUnsigned(array[2], U8_FIELD));
+      const r = Number(expectUnsigned(array[3], U32_FIELD));
+      const p = Number(expectUnsigned(array[4], U32_FIELD));
+      return new ScryptParams(salt, logN, r, p);
+    });
   }
 }

@@ -68,9 +68,12 @@ export class SshBufferReader {
     return slice;
   }
 
-  /** Read a length-prefixed string as UTF-8 text. */
+  /**
+   * Read a length-prefixed string as UTF-8 text. Invalid UTF-8 is rejected
+   * and a leading U+FEFF is kept, as Rust's `String::from_utf8` does.
+   */
   readStringUtf8(): string {
-    return new TextDecoder("utf-8", { fatal: true }).decode(this.readString());
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(this.readString());
   }
 
   /**

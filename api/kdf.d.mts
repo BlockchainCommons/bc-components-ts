@@ -3,6 +3,7 @@ import { CborCodec } from '@blockchaincommons/dcbor';
 import { RandomNumberGenerator } from '@blockchaincommons/rand';
 import { RngOptions } from '@blockchaincommons/rand';
 import { Tag } from '@blockchaincommons/dcbor';
+import { TagValue } from '@blockchaincommons/dcbor';
 import { ToCbor } from '@blockchaincommons/dcbor';
 import { ToUR } from '@blockchaincommons/uniform-resources';
 import { UR } from '@blockchaincommons/uniform-resources';
@@ -56,6 +57,12 @@ export declare class Argon2idParams implements KeyDerivation {
     toCborData(): Uint8Array;
     /**
      * Parse from CBOR.
+     */
+    /**
+     * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+     * every failure is `Cbor` with the bare message. The index element is
+     * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+     * the fixed-width fields wrap the same way.
      */
     static fromCbor(cborValue: Cbor): Argon2idParams;
 }
@@ -124,6 +131,11 @@ declare class AuthenticationTag {
     /**
      * Creates an AuthenticationTag from CBOR.
      */
+    /**
+     * From the untagged byte string, as the reference's `TryFrom<CBOR>`
+     * (error type `Error`): a non-byte-string is `Cbor` (`CBOR error: …`), a
+     * wrong length `InvalidSize`.
+     */
     static fromCbor(cbor: Cbor): AuthenticationTag;
     /**
      * Creates an AuthenticationTag from CBOR binary data.
@@ -138,7 +150,13 @@ declare class AuthenticationTag {
  * tag has already been consumed by the caller.
  */
 declare interface ComponentCodec<T> extends CborCodec<T> {
-    /** The tags this type is written and read with; the first is written. */
+    /** The tag values this type is written and read with; the first is written. */
+    readonly tagValues: readonly TagValue[];
+    /**
+     * `tagValues` resolved through dcbor's global tags store at each access
+     * (the reference's `tags_for_values`): named once `registerTags()` ran,
+     * numeric otherwise.
+     */
     readonly tags: readonly Tag[];
     /** Decode a value tagged with any of `tags`; anything else is a `Cbor` failure. */
     decode: (cbor: Cbor) => T;
@@ -334,7 +352,8 @@ declare interface DigestProvider {
  * Encrypted key providing secure storage of symmetric keys.
  *
  * Use `lock()` to encrypt a content key with a password or secret,
- * and `unlock()` to decrypt it.
+ * and `unlock()` to decrypt it. SSH-agent parameters need an `SshAgent`:
+ * `lockWithAgent()` and `unlockWithAgent()`.
  */
 export declare class EncryptedKey implements ToCbor, ToUR {
     private readonly _params;
@@ -359,6 +378,24 @@ export declare class EncryptedKey implements ToCbor, ToUR {
      */
     static lock(method: KeyDerivationMethod, secret: Uint8Array, contentKey: SymmetricKey): EncryptedKey;
     /**
+     * Lock (encrypt) a content key with an SSH agent, the asynchronous route
+     * for SSH-agent parameters: `SSHAgentParams.lock` with `options`, so the
+     * secret is the comment of the agent identity to use (empty for the only
+     * one) and `options.agent` signs the salt.
+     *
+     * The other methods need no agent and take no nonce, so they have no
+     * asynchronous route: use `lockOpt()` for them.
+     *
+     * @param params - SSH-agent parameters; `id` is set from the secret
+     * @param secret - The identity's comment as UTF-8
+     * @param contentKey - The symmetric key to encrypt
+     * @param options - The agent, and the nonce to use instead of a random one
+     * @returns The encrypted key
+     * @throws `InvalidData` when `params` are not SSH-agent parameters; the
+     * `SshAgent` failures of `SSHAgentParams.lock`
+     */
+    static lockWithAgent(params: KeyDerivationParams, secret: Uint8Array, contentKey: SymmetricKey, options: SshAgentLockOptions): Promise<EncryptedKey>;
+    /**
      * Returns the encrypted message.
      */
     get encryptedMessage(): EncryptedMessage;
@@ -377,9 +414,7 @@ export declare class EncryptedKey implements ToCbor, ToUR {
     /**
      * Check if this uses SSH Agent for key derivation.
      *
-     * Note: SSH Agent key derivation is not yet functional in TypeScript.
-     * This method is useful for detecting envelopes locked by other
-     * implementations (the reference included).
+     * Such a key is unlocked with `unlockWithAgent()`, which needs an `SshAgent`.
      */
     isSshAgent(): boolean;
     /**
@@ -390,6 +425,22 @@ export declare class EncryptedKey implements ToCbor, ToUR {
      * @throws ComponentsError if decryption fails (wrong password, tampered data, etc.)
      */
     unlock(secret: Uint8Array): SymmetricKey;
+    /**
+     * Unlock (decrypt) the content key with an SSH agent: for SSH-agent
+     * parameters `SSHAgentParams.unlock` with `options`, where the secret is
+     * the comment of the agent identity to use, or empty for the stored id or
+     * else the first identity; for every other method the same as
+     * `unlock(secret)`, the agent unused.
+     *
+     * @param secret - The identity's comment as UTF-8, or the secret used to lock
+     * @param options - The agent that signs the salt
+     * @returns The decrypted symmetric key
+     * @throws as `unlock`; the `SshAgent` and `Crypto` failures of
+     * `SSHAgentParams.unlock`
+     */
+    unlockWithAgent(secret: Uint8Array, options: SshAgentUnlockOptions): Promise<SymmetricKey>;
+    /** The derivation parameters, from the encrypted message's AAD. */
+    private _paramsFromAad;
     /**
      * Check equality with another EncryptedKey.
      */
@@ -537,6 +588,12 @@ export declare type HashType = (typeof HashType)[keyof typeof HashType];
 /**
  * Parse HashType from CBOR.
  */
+/**
+ * As the reference's `TryFrom<CBOR>` (error type `Error`): a `u8` with
+ * dcbor's negative wrap (`-256` reads as 0, SHA-256), then `General`
+ * `Invalid HashType` for any other value; a non-integer or out-of-width
+ * head is `Cbor` (`CBOR error: …`).
+ */
 export declare function hashTypeFromCbor(cborValue: Cbor): HashType;
 
 /**
@@ -602,6 +659,12 @@ export declare class HKDFParams implements KeyDerivation {
     /**
      * Parse from CBOR.
      */
+    /**
+     * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+     * every failure is `Cbor` with the bare message. The index element is
+     * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+     * the fixed-width fields wrap the same way.
+     */
     static fromCbor(cborValue: Cbor): HKDFParams;
 }
 
@@ -613,7 +676,9 @@ export declare function hkdfParams(params?: HKDFParams): KeyDerivationParams;
 /**
  * A deterministic random number generator based on HKDF-HMAC-SHA256.
  *
- * Implements the RandomNumberGenerator interface from @blockchaincommons/rand.
+ * Implements the RandomNumberGenerator interface from @blockchaincommons/rand
+ * (`fillBytes`, `nextU32`, `nextU64`); draw bytes with rand's `randomBytes`
+ * and `fillRandomBytes`.
  */
 export declare class HKDFRng implements RandomNumberGenerator {
     /** Internal buffer of generated bytes */
@@ -631,7 +696,10 @@ export declare class HKDFRng implements RandomNumberGenerator {
     /**
      * @param keyMaterial - The input key material for HKDF
      * @param salt - The salt string; page `i` uses `"<salt>-<i>"`
-     * @param pageLength - Bytes of output derived per page (32 by default)
+     * @param pageLength - Bytes of output derived per page (32 by default). A
+     *   page length of 0 is accepted, as the reference accepts it; the
+     *   generator then serves only empty draws and throws `InvalidData` on
+     *   the first request for a byte (where the reference never returns).
      */
     constructor(keyMaterial: Uint8Array, salt: string, { pageLength }?: {
         pageLength?: number;
@@ -651,13 +719,6 @@ export declare class HKDFRng implements RandomNumberGenerator {
      * @returns A Uint8Array containing the requested number of deterministic random bytes
      */
     private nextBytes;
-    /**
-     * Generates deterministic random bytes.
-     *
-     * @param length - The number of bytes to generate
-     * @returns A Uint8Array of random bytes
-     */
-    randomData(length: number): Uint8Array;
     /**
      * Fills the provided buffer with deterministic random bytes.
      *
@@ -679,20 +740,6 @@ export declare class HKDFRng implements RandomNumberGenerator {
      * @returns A deterministic random 64-bit unsigned integer as BigInt
      */
     nextU64(): bigint;
-    /**
-     * Attempts to fill the provided buffer with random bytes.
-     * This implementation never fails.
-     *
-     * @param dest - The buffer to fill with random bytes
-     */
-    tryFillBytes(dest: Uint8Array): void;
-    /**
-     * Fills the provided buffer with deterministic random bytes.
-     * Alias for fillBytes for interface compatibility.
-     *
-     * @param data - The buffer to fill with random bytes
-     */
-    fillRandomData(data: Uint8Array): void;
     get keyMaterial(): Uint8Array;
     get salt(): string;
     get pageLength(): number;
@@ -709,9 +756,7 @@ export declare function isPasswordBased(kdp: KeyDerivationParams): boolean;
 /**
  * Check if the parameters use SSH Agent for key derivation.
  *
- * Note: SSH Agent key derivation is not yet functional in TypeScript.
- * This function is useful for detecting envelopes locked by other
- * implementations (the reference included).
+ * Such parameters lock and unlock with an `SshAgent` (see `SSHAgentParams.lock`).
  */
 export declare function isSshAgent(kdp: KeyDerivationParams): boolean;
 
@@ -778,6 +823,12 @@ export declare type KeyDerivationMethod = (typeof KeyDerivationMethod)[keyof typ
 /**
  * Parse KeyDerivationMethod from CBOR.
  */
+/**
+ * As the reference's `TryFrom<CBOR>` (error type `Error`): the index as a
+ * `usize` with dcbor's negative wrap, then `General`
+ * `Invalid KeyDerivationMethod` for an unknown one; a non-integer or
+ * out-of-width head is `Cbor` (`CBOR error: …`).
+ */
 export declare function keyDerivationMethodFromCbor(cborValue: Cbor): KeyDerivationMethod;
 
 /**
@@ -831,6 +882,11 @@ export declare type KeyDerivationParams = {
 /**
  * Parse KeyDerivationParams from CBOR.
  */
+/**
+ * As the reference's `TryFrom<CBOR> for KeyDerivationParams` (a dcbor
+ * error): the first element, a `usize` with dcbor's negative wrap, selects
+ * the method, and that method's decoder reads the whole array.
+ */
 export declare function keyDerivationParamsFromCbor(cborValue: Cbor): KeyDerivationParams;
 
 /**
@@ -857,6 +913,52 @@ export declare function keyDerivationParamsToString(kdp: KeyDerivationParams): s
  * Lock (encrypt) a content key using the derived key.
  */
 export declare function lockWithParams(kdp: KeyDerivationParams, contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
+
+/**
+ * An `SshAgent` whose identities are private keys held in memory, the
+ * analogue of the reference's test `MockSSHAgent`.
+ *
+ * Identities are keyed by comment: adding a key whose comment is already
+ * present replaces that identity in place. `listIdentities` returns the
+ * public keys in insertion order, so with an empty id a lock or unlock uses
+ * the first key added.
+ *
+ * `sign` signs `data` the way the reference's mock does: an `sshsig`
+ * signature in the namespace `test_namespace` over the SHA-256 digest of
+ * `data`, of which the inner raw signature bytes are returned. A real agent
+ * signs `data` itself, so a key locked with this agent cannot be unlocked
+ * with a real agent holding the same key, and vice versa.
+ */
+export declare class MemorySshAgent implements SshAgent {
+    private readonly _identities;
+    private readonly _refuseToSign;
+    /**
+     * An agent holding `identities` (none by default). With `refuseToSign`
+     * every `sign` call fails, the way an agent that declines a request does.
+     */
+    constructor({ identities, refuseToSign }?: {
+        identities?: Iterable<SSHPrivateKey>;
+        refuseToSign?: boolean;
+    });
+    /** Adds `key` under its comment, replacing any identity with that comment. */
+    addIdentity(key: SSHPrivateKey): void;
+    /** Removes the identity whose comment is `key`'s; nothing happens when there is none. */
+    removeIdentity(key: SSHPrivateKey): void;
+    /** Removes every identity. */
+    removeAllIdentities(): void;
+    /** The public keys of the identities, in insertion order, each with its comment. */
+    listIdentities(): Promise<readonly SSHPublicKey[]>;
+    /**
+     * The raw signature bytes of the `sshsig` signature (namespace
+     * `test_namespace`, SHA-256) over `data` by the private key whose comment
+     * is `identity`'s.
+     *
+     * @throws `SshAgent` `Identity not found` when no identity has that
+     * comment; `SshAgent` `Refused to sign` when the agent was built with
+     * `refuseToSign`.
+     */
+    sign(identity: SSHPublicKey, data: Uint8Array): Promise<Uint8Array>;
+}
 
 /**
  * A random nonce ("number used once").
@@ -1008,6 +1110,12 @@ export declare class PBKDF2Params implements KeyDerivation {
     toCborData(): Uint8Array;
     /**
      * Parse from CBOR.
+     */
+    /**
+     * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+     * every failure is `Cbor` with the bare message. The index element is
+     * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+     * the fixed-width fields wrap the same way.
      */
     static fromCbor(cborValue: Cbor): PBKDF2Params;
 }
@@ -1299,6 +1407,12 @@ export declare class ScryptParams implements KeyDerivation {
     /**
      * Parse from CBOR.
      */
+    /**
+     * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+     * every failure is `Cbor` with the bare message. The index element is
+     * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+     * the fixed-width fields wrap the same way.
+     */
     static fromCbor(cborValue: Cbor): ScryptParams;
 }
 
@@ -1311,61 +1425,107 @@ export declare function scryptParams(params?: ScryptParams): KeyDerivationParams
 export declare const SSH_AGENT_SALT_LEN = 16;
 
 /**
+ * What a key-derivation lock/unlock needs from an SSH agent (the reference's
+ * `SSHAgent` trait, asynchronous here).
+ *
+ * An implementation reports its own failures as a `ComponentsError`; a
+ * failure to sign is reported by the caller as `SSH agent refused to sign`
+ * whatever the implementation threw.
+ */
+export declare interface SshAgent {
+    /** The public keys the agent holds, each with its comment. */
+    listIdentities(): Promise<readonly SSHPublicKey[]>;
+    /** The raw signature bytes (for Ed25519 the 64-byte signature) over `data`. */
+    sign(identity: SSHPublicKey, data: Uint8Array): Promise<Uint8Array>;
+}
+
+/** The options of an agent-backed lock. */
+export declare interface SshAgentLockOptions {
+    /** The agent that signs the salt. */
+    agent: SshAgent;
+    /** The nonce to encrypt with; a random one unless given. */
+    nonce?: Nonce;
+}
+
+/**
  * SSH Agent parameters for key derivation.
  *
- * This method uses an SSH agent daemon to derive encryption keys.
- * The agent signs a challenge derived from the salt using the specified
- * SSH key identity, and the signature is used to derive the encryption key.
+ * This method uses an SSH agent to derive encryption keys: the agent signs
+ * the salt with the Ed25519 identity `id` names (by comment), and the key
+ * is HKDF-SHA256 of that signature with the salt. The agent is passed to
+ * `lock` and `unlock` as an `SshAgent`: `MemorySshAgent` holds keys in
+ * memory, and the `ssh-agent-node` subpath connects to the agent
+ * `$SSH_AUTH_SOCK` names. Without an agent the synchronous `lock` and
+ * `unlock` of `KeyDerivation` throw `SshAgent`, where the reference would
+ * connect to `$SSH_AUTH_SOCK` itself.
  *
- * **Note:** SSH agent communication requires platform-specific support and
- * may not be available in all JavaScript environments. The lock/unlock
- * methods will throw an error if SSH agent support is not available.
- *
- * **Parity / portability note:** the reference gates SSH-agent support behind the
- * `ssh-agent` feature flag and links to OS-native libraries
- * (`ssh-agent-client-rs`). The TS port deliberately stubs the lock/unlock
- * paths because no portable browser-friendly SSH-agent transport exists.
- * The CBOR encoding of `SSHAgentParams` is still byte-identical, so a
- * payload produced in the reference implementation can be inspected and parsed in TS — only the
- * actual key-derivation operation is unavailable.
+ * The CBOR encoding of `SSHAgentParams` is byte-identical to the reference's,
+ * so a payload produced by either implementation is read by the other.
  */
 export declare class SSHAgentParams implements KeyDerivation {
     /** The method discriminant that opens the SSH-agent parameter array on the wire. */
     static readonly INDEX: KeyDerivationMethod;
     private readonly _salt;
-    private readonly _id;
+    private _id;
     private constructor();
-    /** Parameters with a fresh random salt unless one is given. */
-    static from({ id, salt }: {
-        id: string;
+    /** Parameters with a fresh random salt unless one is given, and an empty id unless one is given. */
+    static from({ id, salt }?: {
+        id?: string;
         salt?: Salt;
     }): SSHAgentParams;
     /** Returns the salt. */
     get salt(): Salt;
-    /** Returns the SSH key identity. */
+    /** Returns the SSH key identity: the comment of the agent identity; `lock` sets it from the secret. */
     get id(): string;
     /** Returns the method index for CBOR encoding. */
     index(): number;
     /**
-     * Derive a key using SSH agent and encrypt the content key.
+     * Derive a key with an SSH agent and encrypt the content key, the
+     * reference's `lock`.
      *
-     * **Note:** This method requires SSH agent support which is not yet
-     * implemented in this TypeScript port. Use an alternative key derivation
-     * method or implement SSH agent communication for your environment.
+     * Without `options` there is no agent to ask, and the call throws
+     * `SshAgent`. With `options.agent`:
      *
-     * @throws ComponentsError - SSH agent support is not available
+     * 1. `secret` is the id: the comment of the identity to use, as UTF-8
+     *    (`SSH Agent secret must be a valid UTF-8 string` otherwise).
+     * 2. The agent's identities are listed and reduced to the Ed25519 ones
+     *    (`No Ed25519 identities available in SSH agent` when there is none).
+     * 3. An empty id takes the only identity (`Multiple identities available
+     *    in SSH agent, but no ID provided` when there are several); a
+     *    non-empty id takes the identity with that comment (`No matching
+     *    identity found`).
+     * 4. The agent signs the salt (`SSH agent refused to sign` on any failure).
+     * 5. The encryption key is HKDF-SHA256 of the signature with the salt.
+     * 6. `id` is stored in these parameters, which are then the additional
+     *    authenticated data; the content key is encrypted with
+     *    `options.nonce` or a random nonce.
+     *
+     * @throws `SshAgent` as listed above.
      */
-    lock(_contentKey: SymmetricKey, _secret: Uint8Array): EncryptedMessage;
+    lock(contentKey: SymmetricKey, secret: Uint8Array): EncryptedMessage;
+    lock(contentKey: SymmetricKey, secret: Uint8Array, options: SshAgentLockOptions): Promise<EncryptedMessage>;
     /**
-     * Derive a key using SSH agent and decrypt the content key.
+     * Derive a key with an SSH agent and decrypt the content key, the
+     * reference's `unlock`.
      *
-     * **Note:** This method requires SSH agent support which is not yet
-     * implemented in this TypeScript port. Use an alternative key derivation
-     * method or implement SSH agent communication for your environment.
+     * Without `options` there is no agent to ask, and the call throws
+     * `SshAgent`. With `options.agent` the identity is chosen, among the
+     * agent's Ed25519 identities, by the first of these that applies: the
+     * secret's id when non-empty, the stored `id` when non-empty (each by
+     * comment, `No matching identity found` otherwise), else the first
+     * identity. The agent signs the stored salt, the key is derived as in
+     * `lock`, and the message is decrypted.
      *
-     * @throws ComponentsError - SSH agent support is not available
+     * @throws `SshAgent` for the secret, identity and signing failures of
+     * `lock`; `Crypto` `Failed to decrypt the encrypted key: <reason>` when
+     * the message does not decrypt (a wrong identity, tampered data), and
+     * `Crypto` `Failed to convert decrypted key to SymmetricKey: <reason>`
+     * when the plaintext is not a symmetric key.
      */
-    unlock(_encryptedMessage: EncryptedMessage, _secret: Uint8Array): SymmetricKey;
+    unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array): SymmetricKey;
+    unlock(encryptedMessage: EncryptedMessage, secret: Uint8Array, options: SshAgentUnlockOptions): Promise<SymmetricKey>;
+    private _lockWithAgent;
+    private _unlockWithAgent;
     /**
      * Get string representation.
      */
@@ -1386,6 +1546,12 @@ export declare class SSHAgentParams implements KeyDerivation {
     /**
      * Parse from CBOR.
      */
+    /**
+     * From the CBOR array, as the reference's `TryFrom<CBOR>` (a dcbor error):
+     * every failure is `Cbor` with the bare message. The index element is
+     * read as a `usize` (with dcbor's negative wrap) and its value ignored;
+     * the fixed-width fields wrap the same way.
+     */
     static fromCbor(cborValue: Cbor): SSHAgentParams;
 }
 
@@ -1395,6 +1561,345 @@ export declare class SSHAgentParams implements KeyDerivation {
  * @param idOrParams - Either an SSH key identity string or SSHAgentParams instance
  */
 export declare function sshAgentParams(idOrParams: string | SSHAgentParams): KeyDerivationParams;
+
+/** The options of an agent-backed unlock. */
+export declare interface SshAgentUnlockOptions {
+    /** The agent that signs the salt. */
+    agent: SshAgent;
+}
+
+/**
+ * SSH key algorithm identifiers.
+ *
+ * The six key algorithms `ssh-key` 0.6.7 generates and parses, and that the
+ * reference derives from a `PrivateKeyBase`:
+ *
+ *   - Ed25519 (`ssh-ed25519`)
+ *   - DSA (`ssh-dss`) — 1024-bit p, 160-bit q, SHA-1
+ *   - RSA (`ssh-rsa`) — 2048-bit keys; `sshsig` signatures name their hash
+ *     as `rsa-sha2-256` / `rsa-sha2-512` (RFC 8332)
+ *   - ECDSA P-256 (`ecdsa-sha2-nistp256`) — SHA-256
+ *   - ECDSA P-384 (`ecdsa-sha2-nistp384`) — SHA-384
+ *   - ECDSA P-521 (`ecdsa-sha2-nistp521`) — SHA-512
+ *
+ * Not supported: FIDO/U2F `sk-*` keys, opaque `name@domain` algorithms,
+ * encrypted private keys and `*-cert-v01@openssh.com` certificates.
+ */
+declare type SshAlgorithm = {
+    /** `ssh-ed25519`. */
+    kind: "ed25519";
+} | {
+    /** `ssh-dss`. */
+    kind: "dsa";
+} | {
+    /** `ssh-rsa`. */
+    kind: "rsa";
+} | {
+    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
+    kind: "ecdsa";
+    /** The NIST curve of an ECDSA key. */
+    curve: SshEcdsaCurve;
+};
+
+/** The NIST curves an SSH ECDSA key can use. */
+declare type SshEcdsaCurve = "nistp256" | "nistp384" | "nistp521";
+
+/** The hash an `sshsig` signature is made over. */
+declare type SshHashAlgorithm = "sha256" | "sha512";
+
+/** An OpenSSH private key (`-----BEGIN OPENSSH PRIVATE KEY-----`), unencrypted, for the algorithms in `SshAlgorithm`. */
+declare class SSHPrivateKey {
+    /** The parsed key material by algorithm. */
+    readonly data: SshPrivateKeyData;
+    /** The comment stored in the private-key section (may be empty). */
+    readonly comment: string;
+    /**
+     * 32-bit checkint preserved on round-trip — `ssh-key` retains the parsed
+     * value, so to round-trip byte-identically we do too.
+     */
+    readonly checkint: number;
+    private constructor();
+    /**
+     * Construct an `SSHPrivateKey` from already-decoded parts. Used by
+     * `PrivateKeyBase.sshSigningPrivateKey` after generating key material
+     * from an HKDF-seeded RNG. The `checkint` should be derived
+     * deterministically from the private bytes (mirrors `ssh-key` 0.6.7's
+     * `KeypairData::checkint`).
+     */
+    static fromParts(data: SshPrivateKeyData, comment: string, checkint: number): SSHPrivateKey;
+    /** Algorithm tag for this key. */
+    get algorithm(): SshAlgorithm;
+    get publicBytes(): Uint8Array;
+    get privateBytes(): Uint8Array;
+    /** Parses the PEM-armoured OpenSSH private key text, as `ssh_key::PrivateKey::from_openssh`. */
+    static fromOpenssh(text: string): SSHPrivateKey;
+    /** Parses the binary `openssh-key-v1` blob (the base64 payload of the text form). */
+    static fromBlob(blob: Uint8Array): SSHPrivateKey;
+    /**
+     * Re-serialize to the canonical OpenSSH armored format.
+     *
+     */
+    toOpenssh(): string;
+    /** The binary `openssh-key-v1` blob, byte for byte as OpenSSH writes it. */
+    toBlob(): Uint8Array;
+    /** The matching public key, with the same comment. */
+    publicKey(): SSHPublicKey;
+    private publicBlob;
+    private encryptedSection;
+    /** SHA-256 of the OpenSSH text form (the reference's `Reference` image). */
+    digest(): Uint8Array;
+    /** The first four bytes of `digest()` in hex, the reference's `ref_hex_short`. */
+    refHexShort(): string;
+    /** `SSHPrivateKey(<short reference>)`, the reference's `Display`. */
+    toString(): string;
+    /**
+     * Signs `message` in `namespace` with `hashAlgorithm`, producing an
+     * `sshsig` signature.
+     *
+     * RSA keys cannot sign: `ssh-key` 0.6.7 rebuilds the `rsa` private key
+     * from `(p, p)` instead of `(p, q)`, so the reference's
+     * `SigningPrivateKey::sign` fails with `cryptographic error` for every
+     * RSA key, and so does this method.
+     */
+    sign(namespace: string, hashAlgorithm: SshHashAlgorithm, message: Uint8Array): SSHSignature;
+}
+
+/**
+ * Algorithm-specific private-key data.
+ *
+ *   - ed25519: 32-byte seed.
+ *   - ecdsa:   curve + canonical scalar (32 / 48 / 66 bytes, no sign byte).
+ *   - dsa:     canonical positive p, q, g, y (re-stated from the public
+ *              key blob), plus the secret exponent x.
+ *   - rsa:     canonical positive n, e (re-stated), d, iqmp, p, q.
+ */
+declare type SshPrivateKeyData = {
+    /** `ssh-ed25519`. */
+    kind: "ed25519";
+    /** The 32-byte seed. */
+    seed: Uint8Array;
+    /** The 32 raw public key bytes. */
+    pubBytes: Uint8Array;
+} | {
+    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
+    kind: "ecdsa";
+    /** The NIST curve. */
+    curve: SshEcdsaCurve;
+    /** The canonical scalar (32, 48 or 66 bytes, no sign byte). */
+    scalar: Uint8Array;
+    /** The SEC1 uncompressed public point. */
+    point: Uint8Array;
+} | {
+    /** `ssh-dss`. */
+    kind: "dsa";
+    /** The prime modulus, canonical positive bytes. */
+    p: Uint8Array;
+    /** The subgroup order, canonical positive bytes. */
+    q: Uint8Array;
+    /** The generator, canonical positive bytes. */
+    g: Uint8Array;
+    /** The public value, canonical positive bytes. */
+    y: Uint8Array;
+    /** The secret exponent, canonical positive bytes. */
+    x: Uint8Array;
+} | {
+    /** `ssh-rsa`. */
+    kind: "rsa";
+    /** The modulus, canonical positive bytes. */
+    n: Uint8Array;
+    /** The public exponent, canonical positive bytes. */
+    e: Uint8Array;
+    /** The private exponent, canonical positive bytes. */
+    d: Uint8Array;
+    /** The CRT coefficient `q^-1 mod p`, canonical positive bytes. */
+    iqmp: Uint8Array;
+    /** The first prime, canonical positive bytes. */
+    p: Uint8Array;
+    /** The second prime, canonical positive bytes. */
+    q: Uint8Array;
+};
+
+declare class SSHPublicKey {
+    /** The parsed key material by algorithm. */
+    readonly data: SshPublicKeyData;
+    /** The comment field of the OpenSSH text form (may be empty). */
+    readonly comment: string;
+    private constructor();
+    /** Algorithm tag for this key. */
+    get algorithm(): SshAlgorithm;
+    /** An Ed25519 key from its 32 raw bytes. */
+    static ed25519(keyBytes: Uint8Array, comment?: string): SSHPublicKey;
+    /** A P-256 key from its 65-byte SEC1 uncompressed point. */
+    static ecdsaP256(uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
+    /** A P-384 key from its 97-byte SEC1 uncompressed point. */
+    static ecdsaP384(uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
+    /** A P-521 key from its 133-byte SEC1 uncompressed point. */
+    static ecdsaP521(uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
+    /** An ECDSA key on `curve` from its SEC1 uncompressed point. */
+    static ecdsa(curve: SshEcdsaCurve, uncompressedPoint: Uint8Array, comment?: string): SSHPublicKey;
+    /** DSA public key. p/q/g/y must already be canonical positive bytes (no sign byte). */
+    static dsa(p: Uint8Array, q: Uint8Array, g: Uint8Array, y: Uint8Array, comment?: string): SSHPublicKey;
+    /** RSA public key. `e` and `n` must already be canonical positive bytes (no sign byte). */
+    static rsa(e: Uint8Array, n: Uint8Array, comment?: string): SSHPublicKey;
+    /**
+     * Returns a copy of this SSH public key with the comment replaced,
+     * leaving this instance untouched.
+     */
+    withComment(comment: string): SSHPublicKey;
+    /**
+     * Parses the single-line OpenSSH text form (`<algorithm> <base64 blob> [comment]`)
+     * as `ssh-key` 0.6.7 `PublicKey::from_openssh`: trailing whitespace is
+     * removed, the algorithm and Base64 segments end at a single space, the
+     * Base64 is strict, and the text's algorithm name must equal the blob's
+     * (`unknown algorithm` otherwise).
+     */
+    static fromOpenssh(text: string): SSHPublicKey;
+    /** The single-line OpenSSH text form. */
+    toOpenssh(): string;
+    /** Parses the binary key blob (the base64 payload of the text form). */
+    static fromBlob(blob: Uint8Array, comment?: string): SSHPublicKey;
+    /** The binary key blob, byte for byte as OpenSSH writes it. */
+    toBlob(): Uint8Array;
+    /** SHA-256 of the OpenSSH text form (the reference's `Reference` image). */
+    digest(): Uint8Array;
+    /** The first four bytes of `digest()` in hex, the reference's `ref_hex_short`. */
+    refHexShort(): string;
+    /** `SSHPublicKey(<short reference>)`, the reference's `Display`. */
+    toString(): string;
+    /** `true` when algorithm, key material and comment are all equal. */
+    equals(other: SSHPublicKey): boolean;
+    /**
+     * Comment-insensitive equality: matches when algorithm and key data
+     * agree, ignoring the comment. Used by verify paths since SSH
+     * wire-format pubkey blobs carry the key but not the comment.
+     */
+    keyEquals(other: SSHPublicKey): boolean;
+    /**
+     * Algorithm-specific raw payload bytes. Throws for DSA and RSA, whose
+     * keys are several integers — use `data.p/q/g/y` or `data.e/n` instead.
+     */
+    get keyBytes(): Uint8Array;
+    /**
+     * Verifies an `sshsig` signature made over `message` in `namespace`, as
+     * `ssh_key::PublicKey::verify`: the embedded key must be this key, the
+     * namespace must match, and the algorithm-specific signature must verify
+     * over the signed-data blob. Never throws on malformed input.
+     */
+    verifySshSignature(namespace: string, message: Uint8Array, signature: SshSignatureParts): boolean;
+}
+
+/**
+ * Internal discriminated union for the algorithm-specific public-key data.
+ *
+ *   - ed25519: the 32-byte raw public key.
+ *   - ecdsa:   curve + 65/97/133-byte SEC1 uncompressed point.
+ *   - dsa:     four canonical-positive mpint bytes (p, q, g, y) — sign
+ *              byte already stripped on parse, re-added by the writer.
+ *   - rsa:     canonical-positive e and n.
+ */
+declare type SshPublicKeyData = {
+    /** `ssh-ed25519`. */
+    kind: "ed25519";
+    /** The 32 raw public key bytes. */
+    pubBytes: Uint8Array;
+} | {
+    /** `ecdsa-sha2-nistp256` / `ecdsa-sha2-nistp384` / `ecdsa-sha2-nistp521`. */
+    kind: "ecdsa";
+    /** The NIST curve. */
+    curve: SshEcdsaCurve;
+    /** The SEC1 uncompressed point (65, 97 or 133 bytes). */
+    point: Uint8Array;
+} | {
+    /** `ssh-dss`. */
+    kind: "dsa";
+    /** The prime modulus, canonical positive bytes. */
+    p: Uint8Array;
+    /** The subgroup order, canonical positive bytes. */
+    q: Uint8Array;
+    /** The generator, canonical positive bytes. */
+    g: Uint8Array;
+    /** The public value, canonical positive bytes. */
+    y: Uint8Array;
+} | {
+    /** `ssh-rsa`. */
+    kind: "rsa";
+    /** The public exponent, canonical positive bytes. */
+    e: Uint8Array;
+    /** The modulus, canonical positive bytes. */
+    n: Uint8Array;
+};
+
+/** An OpenSSH `sshsig` signature (`-----BEGIN SSH SIGNATURE-----`), version 1. */
+declare class SSHSignature {
+    /** The signing key, embedded in the signature. */
+    readonly publicKey: SSHPublicKey;
+    /** The application namespace the signature was made in. */
+    readonly namespace: string;
+    /** The reserved field (empty in every signature OpenSSH writes). */
+    readonly reserved: Uint8Array;
+    /** The hash the message was digested with. */
+    readonly hashAlgorithm: SshHashAlgorithm;
+    /**
+     * The algorithm name inside the signature blob: the key's wire name for
+     * Ed25519, DSA and ECDSA keys, and `rsa-sha2-256` / `rsa-sha2-512` (the
+     * hash the RSA signature was made with) for RSA keys.
+     */
+    readonly signatureAlgorithm: string;
+    /**
+     * Raw signature bytes specific to the algorithm:
+     *   ed25519 → 64-byte concatenation `r || s`
+     *   ecdsa   → fixed-width `r || s` (64 / 96 / 132 bytes; the SSH mpint
+     *     sign bytes are stripped on parse and re-added on serialize)
+     *   dsa     → 40-byte `r || s`
+     *   rsa     → the RSASSA-PKCS1-v1_5 signature as stored
+     */
+    readonly signatureBytes: Uint8Array;
+    private constructor();
+    /** Parses the PEM-armoured `sshsig` text, as `ssh_key::SshSig::from_pem`. */
+    static fromPem(text: string): SSHSignature;
+    /** Parses the binary `sshsig` blob (the base64 payload of the text form). */
+    static fromBlob(blob: Uint8Array): SSHSignature;
+    /** The PEM-armoured text, wrapped at 70 columns like OpenSSH. */
+    toPem(): string;
+    /** The binary `sshsig` blob, byte for byte as OpenSSH writes it. */
+    toBlob(): Uint8Array;
+    /**
+     * Build the message that gets signed/verified: the **signed-data** blob
+     * defined by `PROTOCOL.sshsig` §3.1.
+     *
+     *     "SSHSIG" magic
+     *     string  namespace
+     *     string  reserved
+     *     string  hash_algorithm
+     *     string  H(message)        ← *digest*, not the raw message
+     */
+    static signedDataBlob(namespace: string, hashAlgorithm: SshHashAlgorithm, messageDigest: Uint8Array): Uint8Array;
+    /**
+     * Construct from already-decoded parts (used by the sign path).
+     *
+     * `signatureAlgorithm` defaults to the key's wire name; for an RSA key it
+     * defaults to `rsa-sha2-512`, the algorithm `ssh-key`'s RSA signer names.
+     */
+    static fromParts(publicKey: SSHPublicKey, namespace: string, hashAlgorithm: SshHashAlgorithm, signatureBytes: Uint8Array, signatureAlgorithm?: string): SSHSignature;
+    /** Fixed-string mirror of the reference's summarizer for `TAG_SSH_TEXT_SIGNATURE`. */
+    toString(): string;
+    /** SHA-256 digest of canonical PEM bytes — kept for parity with key types. */
+    digest(): Uint8Array;
+}
+
+/** The parts of an `sshsig` signature `verifySshSignature` needs. */
+declare interface SshSignatureParts {
+    /** The key embedded in the signature. */
+    publicKey: SSHPublicKey;
+    /** The namespace the signature was made in. */
+    namespace: string;
+    /** The hash the message was digested with. */
+    hashAlgorithm: "sha256" | "sha512";
+    /** The algorithm name inside the signature blob (`rsa-sha2-256`, `ssh-ed25519`, …). */
+    signatureAlgorithm: string;
+    /** The raw algorithm-specific signature bytes. */
+    signatureBytes: Uint8Array;
+}
 
 /**
  * Symmetric key for ChaCha20-Poly1305 AEAD encryption (32 bytes)

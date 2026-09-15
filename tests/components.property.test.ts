@@ -11,6 +11,10 @@ import * as kdf from "../src/kdf.js";
 import { decodeCbor, type Cbor } from "@blockchaincommons/dcbor";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 const bytes32 = fc.uint8Array({ minLength: 32, maxLength: 32 });
 const hexOf = (b: Uint8Array): string => Buffer.from(b).toString("hex");
 
@@ -140,11 +144,11 @@ describe("crypto round-trips", () => {
     fc.assert(
       fc.property(bytes32, fc.uint8Array({ maxLength: 200 }), seed, (k, pt, sd) => {
         const x = c.EncapsulationPrivateKey.fromX25519PrivateKey(c.X25519PrivateKey.from(k));
-        const kem = c.EncapsulationPrivateKey.randomMlkem(c.MLKEMLevel.MLKEM512, {
+        const kem = c.EncapsulationPrivateKey.mlkemKeypair(c.MLKEMLevel.MLKEM512, {
           rng: new SeededRng(sd),
         });
-        return [x, kem].every((priv) => {
-          const sealed = c.SealedMessage.seal(pt, priv.publicKey());
+        return [[x, x.publicKey()] as const, kem].every(([priv, pub]) => {
+          const sealed = c.SealedMessage.seal(pt, pub);
           const back = c.SealedMessage.fromCbor(decodeCbor(sealed.toCbor().toData()));
           return (
             hexOf(sealed.decrypt(priv)) === hexOf(pt) && hexOf(back.decrypt(priv)) === hexOf(pt)
@@ -184,7 +188,7 @@ describe("crypto round-trips", () => {
 });
 
 describe("properties", () => {
-  it("bytes getters are copies: mutating the view never changes the value (B5)", () => {
+  it("bytes getters are copies: mutating the view never changes the value", () => {
     fc.assert(
       fc.property(bytes32, fc.nat({ max: 31 }), fc.integer({ min: 1, max: 255 }), (b, i, m) => {
         const items = [
@@ -209,7 +213,7 @@ describe("properties", () => {
       { numRuns: 60 },
     );
   });
-  it("every non-u32 / non-u8 KDF number is InvalidData at construction (B4)", () => {
+  it("every non-u32 / non-u8 KDF number is InvalidData at construction", () => {
     const salt = c.Salt.from(new Uint8Array(16));
     const nonU32 = fc.oneof(
       fc.constantFrom(NaN, Infinity, -Infinity, 4294967296, -1),

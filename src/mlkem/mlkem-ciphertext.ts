@@ -20,10 +20,10 @@ import {
   type Cbor,
   type Tag,
   cbor,
-  expectArray,
-  expectInteger,
   expectBytes,
   type ToCbor,
+  asArray,
+  CborError,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import { type UR, type ToUR, urFor } from "@blockchaincommons/uniform-resources";
@@ -31,9 +31,9 @@ import { TAG_MLKEM_CIPHERTEXT } from "@blockchaincommons/tags";
 
 import {
   type MLKEMLevel,
-  mlkemLevelFromValue,
   mlkemLevelToString,
   mlkemCiphertextSize,
+  mlkemLevelFromCbor,
 } from "./mlkem-level.js";
 import { bytesToHex } from "../utils.js";
 import { ComponentsError } from "../error.js";
@@ -52,7 +52,7 @@ export class MLKEMCiphertext implements ToCbor, ToUR {
     const expectedSize = mlkemCiphertextSize(level);
     if (data.length !== expectedSize) {
       throw ComponentsError.postQuantum(
-        `MLKEMCiphertext (${mlkemLevelToString(level)}) must be ${expectedSize} bytes, got ${data.length}`,
+        `error: Ciphertext expected ${expectedSize} bytes, got ${data.length}`,
       );
     }
     this._level = level;
@@ -127,14 +127,10 @@ export class MLKEMCiphertext implements ToCbor, ToUR {
     return (M_L_K_E_M_CIPHERTEXT_CODEC ??= defineCodec({
       tags: [TAG_MLKEM_CIPHERTEXT],
       decodeUntagged: (cborValue) => {
-        const elements = expectArray(cborValue);
-        if (elements.length !== 2) {
-          throw ComponentsError.postQuantum(
-            `MLKEMCiphertext CBOR must have 2 elements, got ${elements.length}`,
-          );
-        }
-        const levelValue = Number(expectInteger(elements[0]));
-        const level = mlkemLevelFromValue(levelValue);
+        const elements = asArray(cborValue);
+        if (elements === undefined) throw CborError.custom("MLKEMCiphertext must be an array");
+        if (elements.length !== 2) throw CborError.custom("MLKEMCiphertext must have two elements");
+        const level = mlkemLevelFromCbor(elements[0]);
         const data = expectBytes(elements[1]);
         return MLKEMCiphertext.fromBytes(level, data);
       },

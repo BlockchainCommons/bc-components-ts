@@ -45,7 +45,7 @@ export class X25519PrivateKey implements ToCbor, ToUR {
 
   private constructor(data: Uint8Array) {
     if (data.length !== x25519.PRIVATE_KEY_SIZE) {
-      throw ComponentsError.invalidSize(x25519.PRIVATE_KEY_SIZE, data.length);
+      throw ComponentsError.invalidSize("X25519 private key", x25519.PRIVATE_KEY_SIZE, data.length);
     }
     this._data = new Uint8Array(data);
   }
@@ -86,7 +86,7 @@ export class X25519PrivateKey implements ToCbor, ToUR {
    * Restore an X25519PrivateKey from a hex string.
    */
   static fromHex(hex: string): X25519PrivateKey {
-    return X25519PrivateKey.from(bytesFromHex(hex, "X25519PrivateKey"));
+    return X25519PrivateKey.from(bytesFromHex(hex));
   }
 
   // ============================================================================

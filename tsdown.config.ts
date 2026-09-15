@@ -7,6 +7,7 @@ const shared = {
     pq: "src/pq.ts",
     kdf: "src/kdf.ts",
     sskr: "src/sskr.ts",
+    "ssh-agent-node": "src/ssh-agent-node.ts",
   },
   outDir: "dist",
   format: ["cjs", "esm"],

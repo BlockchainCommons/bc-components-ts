@@ -11,7 +11,9 @@
  * ```
  */
 
-import { type Cbor, cbor, expectNumber } from "@blockchaincommons/dcbor";
+import { type Cbor, cbor, expectUnsigned } from "@blockchaincommons/dcbor";
+import { decodeComponent } from "../codable.js";
+import { U8_FIELD } from "../domain.js";
 import { ComponentsError } from "../error.js";
 
 /**
@@ -56,14 +58,21 @@ export function hashTypeToCbor(hashType: HashType): Cbor {
 /**
  * Parse HashType from CBOR.
  */
+/**
+ * As the reference's `TryFrom<CBOR>` (error type `Error`): a `u8` with
+ * dcbor's negative wrap (`-256` reads as 0, SHA-256), then `General`
+ * `Invalid HashType` for any other value; a non-integer or out-of-width
+ * head is `Cbor` (`CBOR error: …`).
+ */
 export function hashTypeFromCbor(cborValue: Cbor): HashType {
-  const value = expectNumber(cborValue);
-  switch (value) {
-    case 0:
-      return HashType.SHA256;
-    case 1:
-      return HashType.SHA512;
-    default:
-      throw ComponentsError.invalidData(`Invalid HashType: ${value}`);
-  }
+  return decodeComponent(() => {
+    switch (Number(expectUnsigned(cborValue, U8_FIELD))) {
+      case 0:
+        return HashType.SHA256;
+      case 1:
+        return HashType.SHA512;
+      default:
+        throw ComponentsError.general("Invalid HashType");
+    }
+  });
 }

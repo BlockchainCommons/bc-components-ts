@@ -9,6 +9,10 @@ import { UUID } from "../src/id/uuid.js";
 import { UR, decodeURWith } from "@blockchaincommons/uniform-resources";
 import { decodeCbor } from "@blockchaincommons/dcbor";
 
+// The reference needs `register_tags()` before a UR is made; so does this package.
+import { registerTags } from "../src/tags.js";
+registerTags();
+
 describe("UUID", () => {
   // Test UUID string (standard format with dashes)
   const TEST_UUID_STRING = "550e8400-e29b-41d4-a716-446655440000";

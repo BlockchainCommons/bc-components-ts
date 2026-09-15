@@ -1,0 +1,15 @@
+{
+ "count": 1,
+ "vectors": [
+  {
+   "name": "digest text:hello world (11B) (last hex digit of the digest flipped)",
+   "recipe": {
+    "k": "digest",
+    "image": {
+     "text": "hello world"
+    }
+   },
+   "expect": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde0|ur:digest/hdcxrhgtdirhmugtfmayondmgmtstnkipyzssslrwsvlkngulawymhloylpsvowssnwlamnlatrs|b94d27b9"
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+  "dsa": {
+    "count": 22,
+    "maxMillis": 347.267292,
+    "medianMillis": 128.582459,
+    "minMillis": 73.29266600000001,
+    "totalMillis": 3454.307209
+  },
+  "p521": {
+    "count": 22,
+    "maxMillis": 1.243208,
+    "medianMillis": 0.447625,
+    "minMillis": 0.26720900000000003,
+    "totalMillis": 11.826373
+  },
+  "rsa": {
+    "count": 22,
+    "maxMillis": 453.76,
+    "medianMillis": 172.60725,
+    "minMillis": 72.84620799999999,
+    "totalMillis": 4999.741417000001
+  }
+}

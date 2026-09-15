@@ -23,12 +23,13 @@ import {
   expectArray,
   expectBytes,
   expectText,
-  expectUnsigned,
   isBytes,
   isArray,
-  isTagged,
   asTaggedValue,
   type ToCbor,
+  CborError,
+  asUnsigned,
+  asBytes,
 } from "@blockchaincommons/dcbor";
 import { taggedCborOf, type ComponentCodec, defineCodec } from "../codable.js";
 import {
@@ -43,6 +44,12 @@ import { SignatureScheme, isMldsaScheme } from "./signature-scheme.js";
 import { MLDSASignature } from "../mldsa/mldsa-signature.js";
 import { MLDSALevel } from "../mldsa/mldsa-level.js";
 import { SSHSignature } from "../ssh/ssh-signature.js";
+import {
+  sshSchemeUnsupportedError,
+  sshSignatureScheme,
+  sshSignatureTypeName,
+  type SshAlgorithm,
+} from "../ssh/ssh-algorithm.js";
 import { type UR, urFor } from "@blockchaincommons/uniform-resources";
 
 // The codec is built on first use so that an unused class tree-shakes away.
@@ -58,13 +65,13 @@ let SIGNATURE_CODEC: ComponentCodec<Signature> | undefined;
  * - MLDSA signatures (post-quantum) - tagged CBOR delegating to MLDSASignature
  */
 export class Signature implements ToCbor {
-  private readonly _type: SignatureScheme;
+  private readonly _type: SignatureScheme | undefined;
   private readonly _data: Uint8Array;
   private readonly _mldsaSignature: MLDSASignature | undefined;
   private readonly _sshSig: SSHSignature | undefined;
 
   private constructor(
-    type: SignatureScheme,
+    type: SignatureScheme | undefined,
     data: Uint8Array,
     mldsaSignature?: MLDSASignature,
     sshSig?: SSHSignature,
@@ -87,7 +94,7 @@ export class Signature implements ToCbor {
    */
   static schnorrFromData(data: Uint8Array): Signature {
     if (data.length !== schnorr.SIGNATURE_SIZE) {
-      throw ComponentsError.invalidSize(schnorr.SIGNATURE_SIZE, data.length);
+      throw ComponentsError.invalidSize("Schnorr signature", schnorr.SIGNATURE_SIZE, data.length);
     }
     return new Signature(SignatureScheme.Schnorr, data);
   }
@@ -99,7 +106,7 @@ export class Signature implements ToCbor {
    * @returns A new Schnorr signature
    */
   static schnorrFromHex(hex: string): Signature {
-    return Signature.schnorrFromData(bytesFromHex(hex, "Signature"));
+    return Signature.schnorrFromData(bytesFromHex(hex));
   }
 
   /**
@@ -110,7 +117,7 @@ export class Signature implements ToCbor {
    */
   static ecdsaFromData(data: Uint8Array): Signature {
     if (data.length !== ecdsa.SIGNATURE_SIZE) {
-      throw ComponentsError.invalidSize(ecdsa.SIGNATURE_SIZE, data.length);
+      throw ComponentsError.invalidSize("ECDSA signature", ecdsa.SIGNATURE_SIZE, data.length);
     }
     return new Signature(SignatureScheme.Ecdsa, data);
   }
@@ -122,7 +129,7 @@ export class Signature implements ToCbor {
    * @returns A new ECDSA signature
    */
   static ecdsaFromHex(hex: string): Signature {
-    return Signature.ecdsaFromData(bytesFromHex(hex, "Signature"));
+    return Signature.ecdsaFromData(bytesFromHex(hex));
   }
 
   /**
@@ -133,7 +140,7 @@ export class Signature implements ToCbor {
    */
   static ed25519FromData(data: Uint8Array): Signature {
     if (data.length !== ed25519.SIGNATURE_SIZE) {
-      throw ComponentsError.invalidSize(ed25519.SIGNATURE_SIZE, data.length);
+      throw ComponentsError.invalidSize("Ed25519 signature", ed25519.SIGNATURE_SIZE, data.length);
     }
     return new Signature(SignatureScheme.Ed25519, data);
   }
@@ -145,7 +152,7 @@ export class Signature implements ToCbor {
    * @returns A new Ed25519 signature
    */
   static ed25519FromHex(hex: string): Signature {
-    return Signature.ed25519FromData(bytesFromHex(hex, "Signature"));
+    return Signature.ed25519FromData(bytesFromHex(hex));
   }
 
   /**
@@ -184,26 +191,12 @@ export class Signature implements ToCbor {
    * @returns A new SSH Signature
    */
   static fromSsh(sig: SSHSignature): Signature {
-    let scheme: SignatureScheme;
-    switch (sig.publicKey.data.kind) {
-      case "ed25519":
-        scheme = SignatureScheme.SshEd25519;
-        break;
-      case "dsa":
-        scheme = SignatureScheme.SshDsa;
-        break;
-      case "ecdsa":
-        switch (sig.publicKey.data.curve) {
-          case "nistp256":
-            scheme = SignatureScheme.SshEcdsaP256;
-            break;
-          case "nistp384":
-            scheme = SignatureScheme.SshEcdsaP384;
-            break;
-        }
-        break;
-    }
-    return new Signature(scheme, sig.signatureBytes, undefined, sig);
+    return new Signature(
+      sshSignatureScheme(sig.publicKey.algorithm),
+      sig.signatureBytes,
+      undefined,
+      sig,
+    );
   }
 
   // ============================================================================
@@ -212,9 +205,20 @@ export class Signature implements ToCbor {
 
   /**
    * Returns the signature scheme used to create this signature.
+   *
+   * As the reference's `Signature::scheme()`, an `sshsig` made with an RSA
+   * key or a P-521 key has no scheme and throws `Ssh`: `Unsupported SSH
+   * signature algorithm` / `Unsupported SSH ECDSA curve`.
    */
   get scheme(): SignatureScheme {
+    if (this._type === undefined) throw sshSchemeUnsupportedError(this.sshAlgorithm());
     return this._type;
+  }
+
+  /** The SSH key algorithm of an `sshsig` signature; `Ssh` failure otherwise. */
+  private sshAlgorithm(): SshAlgorithm {
+    if (this._sshSig === undefined) throw ComponentsError.ssh("not an SSH signature");
+    return this._sshSig.publicKey.algorithm;
   }
 
   /**
@@ -243,6 +247,8 @@ export class Signature implements ToCbor {
         return "SshEcdsaP256";
       case SignatureScheme.SshEcdsaP384:
         return "SshEcdsaP384";
+      case undefined:
+        return sshSignatureTypeName(this.sshAlgorithm());
       default:
         return this._type;
     }
@@ -316,7 +322,11 @@ export class Signature implements ToCbor {
    * @returns The MLDSASignature if this is an MLDSA signature, undefined otherwise
    */
   asMldsa(): MLDSASignature | undefined {
-    if (isMldsaScheme(this._type) && this._mldsaSignature !== undefined) {
+    if (
+      this._type !== undefined &&
+      isMldsaScheme(this._type) &&
+      this._mldsaSignature !== undefined
+    ) {
       return this._mldsaSignature;
     }
     return undefined;
@@ -326,7 +336,7 @@ export class Signature implements ToCbor {
    * Checks if this is an MLDSA signature.
    */
   isMldsa(): boolean {
-    return isMldsaScheme(this._type);
+    return this._type !== undefined && isMldsaScheme(this._type);
   }
 
   /**
@@ -373,7 +383,7 @@ export class Signature implements ToCbor {
    * Get string representation.
    */
   toString(): string {
-    return `Signature(${this._type}, ${this.toHex().substring(0, 16)}...)`;
+    return `Signature(${String(this._type)}, ${this.toHex().substring(0, 16)}...)`;
   }
 
   // ============================================================================
@@ -384,53 +394,47 @@ export class Signature implements ToCbor {
   static get codec(): ComponentCodec<Signature> {
     return (SIGNATURE_CODEC ??= defineCodec({
       tags: [TAG_SIGNATURE],
+      // The reference's `from_untagged_cbor`, branch for branch.
       decodeUntagged: (cborValue) => {
-        // Wire format: Schnorr is a bare byte string
+        // A byte string is a Schnorr signature.
         if (isBytes(cborValue)) {
-          const signatureData = expectBytes(cborValue);
-          return Signature.schnorrFromData(signatureData);
+          return Signature.schnorrFromData(expectBytes(cborValue));
         }
 
-        // Array format for ECDSA, Ed25519
+        // An array of exactly two elements: `[bytes, _]` is Schnorr (the
+        // second element is not looked at), then `[1, bytes]` and `[2, bytes]`.
         if (isArray(cborValue)) {
           const elements = expectArray(cborValue);
-
-          if (elements.length !== 2) {
-            throw ComponentsError.invalidData("Signature array must have 2 elements");
+          if (elements.length === 2) {
+            const first = asBytes(elements[0]);
+            if (first !== undefined) return Signature.schnorrFromData(first);
+            const head = asUnsigned(elements[0]);
+            const signatureData = asBytes(elements[1]);
+            if (signatureData !== undefined) {
+              if (head === 1) return Signature.ecdsaFromData(signatureData);
+              if (head === 2) return Signature.ed25519FromData(signatureData);
+            }
           }
-
-          const discriminator = expectUnsigned(elements[0]);
-          const signatureData = expectBytes(elements[1]);
-
-          switch (Number(discriminator)) {
-            case 1: // ECDSA
-              return Signature.ecdsaFromData(signatureData);
-            case 2: // Ed25519
-              return Signature.ed25519FromData(signatureData);
-            default:
-              throw ComponentsError.invalidData(
-                `Unknown signature discriminator: ${discriminator}`,
-              );
-          }
+          throw CborError.custom("Invalid signature format");
         }
 
-        // Tagged format for MLDSA / SSH
-        if (isTagged(cborValue)) {
-          const tagged = asTaggedValue(cborValue);
-          if (tagged?.[0].value === TAG_MLDSA_SIGNATURE.value) {
-            const mldsaSig = MLDSASignature.fromCbor(cborValue);
-            return Signature.mldsaFromSignature(mldsaSig);
+        // A tagged value: an ML-DSA signature or an SSH signature text.
+        const tagged = asTaggedValue(cborValue);
+        if (tagged !== undefined) {
+          if (tagged[0].value === TAG_MLDSA_SIGNATURE.value) {
+            return Signature.mldsaFromSignature(MLDSASignature.fromCbor(cborValue));
           }
-          if (tagged?.[0].value === TAG_SSH_TEXT_SIGNATURE.value) {
+          if (tagged[0].value === TAG_SSH_TEXT_SIGNATURE.value) {
             const text = expectText(tagged[1]);
-            const sshSig = SSHSignature.fromPem(text);
-            return Signature.fromSsh(sshSig);
+            try {
+              return Signature.fromSsh(SSHSignature.fromPem(text));
+            } catch {
+              throw CborError.custom("Invalid PEM format");
+            }
           }
         }
 
-        throw ComponentsError.invalidData(
-          "Signature must be a byte string (Schnorr), array (ECDSA/Ed25519), tagged MLDSA, or tagged SSH",
-        );
+        throw CborError.custom("Invalid signature format");
       },
       encodeUntagged: (value) => value.untaggedCbor(),
     }));
@@ -470,7 +474,8 @@ export class Signature implements ToCbor {
       case SignatureScheme.SshEd25519:
       case SignatureScheme.SshDsa:
       case SignatureScheme.SshEcdsaP256:
-      case SignatureScheme.SshEcdsaP384: {
+      case SignatureScheme.SshEcdsaP384:
+      case undefined: {
         if (this._sshSig === undefined) {
           throw ComponentsError.invalidData("SSH signature is missing");
         }

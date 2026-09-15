@@ -3,13 +3,13 @@ import { ComponentsError, COMPONENTS_ERROR_CODES, type ComponentsErrorCode } fro
 
 describe("ComponentsError", () => {
   it("carries a code and discriminated details", () => {
-    const e = ComponentsError.invalidSizeForType("Digest", 32, 31);
+    const e = ComponentsError.invalidSize("digest", 32, 31);
     expect(e).toBeInstanceOf(Error);
     expect(e.name).toBe("ComponentsError");
     expect(e.code).toBe("InvalidSize");
-    expect(e.message).toBe("invalid Digest size: expected 32, got 31");
+    expect(e.message).toBe("invalid digest size: expected 32, got 31");
     if (e.details.code === "InvalidSize") {
-      expect(e.details.dataType).toBe("Digest");
+      expect(e.details.dataType).toBe("digest");
       expect(e.details.expected).toBe(32);
       expect(e.details.actual).toBe(31);
     } else {
@@ -18,7 +18,9 @@ describe("ComponentsError", () => {
   });
 
   it("defaults the data type", () => {
-    expect(ComponentsError.invalidSize(1, 2).message).toBe("invalid data size: expected 1, got 2");
+    expect(ComponentsError.invalidSize("data", 1, 2).message).toBe(
+      "invalid data size: expected 1, got 2",
+    );
     const d = ComponentsError.invalidData("bad");
     expect(d.message).toBe("invalid data: bad");
     expect(d.details).toEqual({ code: "InvalidData", dataType: "data", reason: "bad" });
@@ -47,8 +49,10 @@ describe("ComponentsError", () => {
         "LevelMismatch",
         "signature level does not match key level",
       ],
-      [ComponentsError.hex("m"), "Hex", "invalid hex: m"],
-      [ComponentsError.utf8("m"), "Utf8", "invalid UTF-8: m"],
+      [ComponentsError.hex("m"), "Hex", "hex decoding error: m"],
+      [ComponentsError.utf8("m"), "Utf8", "UTF-8 conversion error: m"],
+      [ComponentsError.env("m"), "Env", "environment variable error: m"],
+      [ComponentsError.sshAgentClient("m"), "SshAgentClient", "SSH agent client error: m"],
       [ComponentsError.general("m"), "General", "m"],
     ];
     for (const [e, code, message] of table) {
@@ -78,13 +82,13 @@ describe("ComponentsError", () => {
 
   it("lists every code once", () => {
     expect(new Set(COMPONENTS_ERROR_CODES).size).toBe(COMPONENTS_ERROR_CODES.length);
-    expect(COMPONENTS_ERROR_CODES).toHaveLength(15);
+    expect(COMPONENTS_ERROR_CODES).toHaveLength(17);
     expect(Object.isFrozen(COMPONENTS_ERROR_CODES)).toBe(true);
   });
 
   it("narrows by code in a catch", () => {
     try {
-      throw ComponentsError.invalidSizeForType("Nonce", 12, 3);
+      throw ComponentsError.invalidSize("nonce", 12, 3);
     } catch (e) {
       expect(ComponentsError.isComponentsError(e)).toBe(true);
       if (ComponentsError.isComponentsError(e) && e.details.code === "InvalidSize") {
