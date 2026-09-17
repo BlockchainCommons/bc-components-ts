@@ -2735,6 +2735,8 @@ exports[`golden: summaries > matches the snapshot 1`] = `
   "ok:SSHCertificate",
   "ok:SSHCertificate",
   "ok:SSHCertificate",
+  "error:PEM type label invalid",
+  "error:the decoded CBOR value was not the expected type",
   "error:the decoded CBOR value was not the expected type",
   "none",
   "untagged",

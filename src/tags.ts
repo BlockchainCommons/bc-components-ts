@@ -50,6 +50,7 @@ import {
 import {
   ARID,
   CborJson,
+  ComponentsError,
   Digest,
   Nonce,
   PrivateKeyBase,
@@ -225,7 +226,17 @@ export function registerComponentSummarizers(store: TagsStore): void {
   store.setSummarizer(
     TAG_SSH_TEXT_SIGNATURE.value,
     summary((c) => {
-      SSHSignature.fromPem(expectText(c));
+      // The reference maps the ssh-key error's own text into the dcbor
+      // error (`SSHSignature::from_pem(...).map_err(|e| dcbor::Error::msg(e.to_string()))`),
+      // without the `SSH operation failed: ` wrapper `Ssh` carries.
+      try {
+        SSHSignature.fromPem(expectText(c));
+      } catch (e) {
+        if (ComponentsError.isComponentsError(e) && e.code === "Ssh" && "message" in e.details) {
+          throw CborError.custom(e.details.message);
+        }
+        throw e;
+      }
       return "SSHSignature";
     }),
   );

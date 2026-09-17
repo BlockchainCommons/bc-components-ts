@@ -20,10 +20,10 @@ cargo run --release --offline --features agent -- target/corpus.json
 Result lines on 2026-09-15:
 
 ```
-5699 vectors - 5228 match, 323 panic-mapped (hang 3, none 2, panic 318), 148 js-only (J1 35, J2 21, J3 91, J4 1), 0 MISMATCH
-10332 vectors - 9745 match, 331 panic-mapped (hang 3, none 2, panic 326), 256 js-only (J1 35, J2 21, J3 199, J4 1), 0 MISMATCH
-5699 vectors - 5319 match, 323 panic-mapped (hang 3, none 2, panic 318), 57 js-only (J1 35, J2 21, J4 1), 0 MISMATCH [agent]
-10332 vectors - 9944 match, 331 panic-mapped (hang 3, none 2, panic 326), 57 js-only (J1 35, J2 21, J4 1), 0 MISMATCH [agent]
+5701 vectors - 5230 match, 323 panic-mapped (hang 3, none 2, panic 318), 148 js-only (J1 35, J2 21, J3 91, J4 1), 0 MISMATCH
+10334 vectors - 9747 match, 331 panic-mapped (hang 3, none 2, panic 326), 256 js-only (J1 35, J2 21, J3 199, J4 1), 0 MISMATCH
+5701 vectors - 5321 match, 323 panic-mapped (hang 3, none 2, panic 318), 57 js-only (J1 35, J2 21, J4 1), 0 MISMATCH [agent]
+10334 vectors - 9946 match, 331 panic-mapped (hang 3, none 2, panic 326), 57 js-only (J1 35, J2 21, J4 1), 0 MISMATCH [agent]
 ```
 
 ## What is compared
