@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.0-beta.4 - 2026-09-17
+
+### Changed
+
+- The tag-40802 (SSH signature text form) summariser reports a malformed
+  PEM with the ssh-key text alone (`<error: PEM type label invalid>`), as
+  the reference's `tags_registry.rs` maps the error, not with the `SSH
+  operation failed: ` wrapper the `Ssh` code carries. The harness `summary`
+  rows `ssh signature bad pem` and `ssh signature not text` pin it.
+
 ## 1.0.0-beta.3 - 2026-09-15
 
 ### Added

@@ -932,6 +932,12 @@ function* summaries(): Generator<Recipe> {
     ["ssh certificate uint", "d99f6300"],
     ["ssh certificate text", "d99f636178"],
     ["ssh certificate bytes", "d99f634100"],
+    // the signature text form: an ssh-key failure is reported with its own text
+    [
+      "ssh signature bad pem",
+      "d99f62781d2d2d2d2d2d424547494e20535348205349474e41545552452d2d2d2d2d",
+    ],
+    ["ssh signature not text", "d99f6200"],
     ["ssh private key not text", "d99f6000"],
     ["unknown tag 40999", "d9a027" + "00"],
     ["untagged", "00"],
