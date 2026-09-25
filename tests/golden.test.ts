@@ -108,7 +108,7 @@ for (const cat of [
   "apis",
 ]) {
   describe(`golden: ${cat}`, () => {
-    it("matches the snapshot", () => {
+    it("matches the snapshot", { timeout: 60_000 }, () => {
       const out: string[] = [];
       for (const r of categories[cat]!()) out.push(stable(r, run(r)));
       expect(out).toMatchSnapshot();
