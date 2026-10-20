@@ -88,6 +88,7 @@ bundle:
 
 ### Version History
 
+- **1.0.0-beta.5 (October 19, 2026)** - Installs with npm on a host without Bun: the TypeScript 6 pin for the lint tools runs from `prepare`, not `postinstall` ([bc-components-ts#11](https://github.com/BlockchainCommons/bc-components-ts/issues/11)).
 - **1.0.0-beta.3 (September 15, 2026)** - Alignment with `bc-components-rust` 0.31.1: decode errors, texts, EC/PQ key semantics, `miniz_oxide` DEFLATE bytes, SSH DSA/RSA/P-521 keys, SSH-agent lock/unlock with an injectable agent.
 - **1.0.0-beta.2 (September 12, 2026)** - ECDSA SSH signatures follow the reference and OpenSSH: signing no longer low-s normalises (byte-identical to the reference) and verification accepts either form (a high-s `sshsig` from the reference or OpenSSH was rejected).
 - **1.0.0-beta.1 (September 9, 2026)** - Initial beta implementation.
